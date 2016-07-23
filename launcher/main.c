@@ -11,7 +11,7 @@
 #include <tpo_mod.h>
 #include <fsio.h>
 
-#if 1
+#if 0
 C_IMPORT int C_API_FUNC app_init(mem_zone_ref_ptr params);
 C_IMPORT int C_API_FUNC app_start(mem_zone_ref_ptr params);
 C_IMPORT int C_API_FUNC app_loop(mem_zone_ref_ptr params);
@@ -61,7 +61,7 @@ int main(int argc, char **argv)
 	load_module("modz/block_adx.tpo", "block_adx", &block_mod);
 	load_module("modz/iadixcoin.tpo", "iadixcoin", &iadix_mod);
 
-#if 0
+#if 1
 	app_init = get_tpo_mod_exp_addr_name(&iadix_mod, "app_init", iadix_mod.deco_type);
 	app_start = get_tpo_mod_exp_addr_name(&iadix_mod, "app_start", iadix_mod.deco_type);
 	app_loop = get_tpo_mod_exp_addr_name(&iadix_mod, "app_loop", iadix_mod.deco_type);
