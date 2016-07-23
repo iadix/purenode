@@ -686,7 +686,8 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 				if (!strcmp_c(dll_name, "libcon_d"))
 					strcpy_cs(dll_name, 64, "libcon");
 
-
+				if (!strncmp_c(dll_name, "libbase",7))
+					strcpy_cs(dll_name, 64, "libbase");
 					
 				dll_crc		=	calc_crc32_c(dll_name,64);
 				ofset		=	mem_stream_read_32		(file_stream);

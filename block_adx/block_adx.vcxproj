@@ -61,7 +61,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libbase_d.lib;libcon_d.lib;protocol_adx_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libbaseimpl_d.lib;libcon_d.lib;protocol_adx_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)export\</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>

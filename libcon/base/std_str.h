@@ -70,7 +70,7 @@ LIBC_API int			C_API_FUNC isxdigit_c				(int _c);
 LIBC_API int			C_API_FUNC isspace_c				(int _c);
 LIBC_API void			C_API_FUNC snooze					(unsigned int micro_sec);
 LIBC_API void			C_API_FUNC dtoa_c					(char *buff, char conv, int bsize, int dplace, double value);
-LIBC_API void			C_API_FUNC mbedtls_sha256			(const unsigned char *input, size_t ilen, unsigned char output[32], int is224);
+
 static const char		hex_chars[]		=	{'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
 
 typedef unsigned char	ipv4_t[4];

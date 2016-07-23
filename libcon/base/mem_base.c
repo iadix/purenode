@@ -544,6 +544,28 @@ OS_API_C_FUNC(void) init_mem_system()
 	sys_add_tpo_mod_func_name("libcon", "strcat_float", strcat_float, 0);
 	sys_add_tpo_mod_func_name("libcon", "copy_host_def", copy_host_def, 0);
 
+
+	sys_add_tpo_mod_func_name("libcon", "mem_stream_init", mem_stream_init, 0);
+	sys_add_tpo_mod_func_name("libcon", "mem_stream_decomp", mem_stream_decomp, 0);
+	sys_add_tpo_mod_func_name("libcon", "mem_stream_read_8", mem_stream_read_8, 0);
+	sys_add_tpo_mod_func_name("libcon", "mem_stream_peek_8", mem_stream_peek_8, 0);
+	sys_add_tpo_mod_func_name("libcon", "mem_stream_read_16", mem_stream_read_16, 0);
+	sys_add_tpo_mod_func_name("libcon", "mem_stream_read_32", mem_stream_read_32, 0);
+	sys_add_tpo_mod_func_name("libcon", "mem_stream_peek_32", mem_stream_peek_32, 0);
+	sys_add_tpo_mod_func_name("libcon", "mem_stream_read", mem_stream_read, 0);
+	sys_add_tpo_mod_func_name("libcon", "mem_stream_skip", mem_stream_skip, 0);
+	sys_add_tpo_mod_func_name("libcon", "mem_stream_skip_to", mem_stream_skip_to, 0);
+	sys_add_tpo_mod_func_name("libcon", "mem_stream_write", mem_stream_write, 0);
+	sys_add_tpo_mod_func_name("libcon", "mem_stream_close", mem_stream_close, 0);
+
+	sys_add_tpo_mod_func_name("libcon", "tpo_mod_load_tpo", tpo_mod_load_tpo, 0);
+	sys_add_tpo_mod_func_name("libcon", "tpo_mod_init", tpo_mod_init, 0);
+	sys_add_tpo_mod_func_name("libcon", "register_tpo_exports", register_tpo_exports, 0);
+	sys_add_tpo_mod_func_name("libcon", "get_tpo_mod_exp_addr_name", get_tpo_mod_exp_addr_name, 0);
+	
+
+
+	
 	init_funcs();
 	
 

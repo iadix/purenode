@@ -4,6 +4,7 @@
 #include <base/mem_base.h>
 #include <base/std_str.h>
 
+#include <sha256.h>
 #include <strs.h>
 #include <tree.h>
 

@@ -15,11 +15,16 @@
 
 #include <sys_include.h>
 
-mem_zone_ref			self_node  = { PTR_INVALID };
-mem_zone_ref			peer_nodes = { PTR_INVALID };
-hash_t					null_hash = { PTR_INVALID };
-unsigned int			synching = { PTR_INVALID };
-
+mem_zone_ref		self_node  = { PTR_INVALID };
+mem_zone_ref		peer_nodes = { PTR_INVALID };
+hash_t				null_hash = { PTR_INVALID };
+unsigned int		synching = { PTR_INVALID };
+mem_zone_ref		node_config = { PTR_INVALID };
+struct string		user_agent = { PTR_INVALID };;
+unsigned int		node_port = PTR_INVALID, seed_port = PTR_INVALID;
+struct string		node_port_str = { PTR_INVALID };
+struct string		node_hostname = { PTR_INVALID };
+tpo_mod_file		node_mod = { PTR_INVALID };
 
 typedef int	C_API_FUNC node_init_self_func(mem_zone_ref_ptr out_self_node, unsigned short node_port, mem_zone_ref_ptr node_config);
 typedef int	C_API_FUNC new_peer_node_func(struct host_def *host, mem_zone_ref_ptr peer_nodes);
@@ -94,41 +99,41 @@ C_IMPORT int			C_API_FUNC		queue_send_message(mem_zone_ref_ptr node, mem_zone_re
 C_IMPORT int			C_API_FUNC		queue_emitted_element(mem_zone_ref_ptr node, mem_zone_ref_ptr element);
 C_IMPORT int			C_API_FUNC		queue_emitted_message(mem_zone_ref_ptr node, mem_zone_ref_ptr msg);
 
-node_init_self_func_ptr						_node_init_self;
-new_peer_node_func_ptr						_new_peer_node;
-node_add_block_func_ptr						_node_add_block;
-read_node_msg_func_ptr						_read_node_msg;
-send_node_messages_func_ptr					_send_node_messages;
-node_add_block_header_func_ptr				_node_add_block_header;
-queue_version_message_func_ptr				_queue_version_message;
-queue_verack_message_func_ptr				_queue_verack_message;
-queue_ping_message_func_ptr					_queue_ping_message;
-queue_pong_message_func_ptr					_queue_pong_message;
-queue_getaddr_message_func_ptr				_queue_getaddr_message;
-queue_getdata_message_func_ptr				_queue_getdata_message;
-queue_getblocks_message_func_ptr			_queue_getblocks_message;
-queue_getblock_hdrs_message_func_ptr		_queue_getblock_hdrs_message;
-queue_send_message_func_ptr					_queue_send_message;
-queue_emitted_element_func_ptr				_queue_emitted_element;
-queue_emitted_message_func_ptr				_queue_emitted_message;
+node_init_self_func_ptr						_node_init_self=PTR_INVALID;
+new_peer_node_func_ptr						_new_peer_node=PTR_INVALID;
+node_add_block_func_ptr						_node_add_block=PTR_INVALID;
+read_node_msg_func_ptr						_read_node_msg=PTR_INVALID;
+send_node_messages_func_ptr					_send_node_messages=PTR_INVALID;
+node_add_block_header_func_ptr				_node_add_block_header=PTR_INVALID;
+queue_version_message_func_ptr				_queue_version_message=PTR_INVALID;
+queue_verack_message_func_ptr				_queue_verack_message=PTR_INVALID;
+queue_ping_message_func_ptr					_queue_ping_message=PTR_INVALID;
+queue_pong_message_func_ptr					_queue_pong_message=PTR_INVALID;
+queue_getaddr_message_func_ptr				_queue_getaddr_message=PTR_INVALID;
+queue_getdata_message_func_ptr				_queue_getdata_message=PTR_INVALID;
+queue_getblocks_message_func_ptr			_queue_getblocks_message=PTR_INVALID;
+queue_getblock_hdrs_message_func_ptr		_queue_getblock_hdrs_message=PTR_INVALID;
+queue_send_message_func_ptr					_queue_send_message=PTR_INVALID;
+queue_emitted_element_func_ptr				_queue_emitted_element=PTR_INVALID;
+queue_emitted_message_func_ptr				_queue_emitted_message=PTR_INVALID;
 #else
-node_init_self_func_ptr						node_init_self;
-new_peer_node_func_ptr						new_peer_node;
-node_add_block_func_ptr						node_add_block;
-read_node_msg_func_ptr						read_node_msg;
-send_node_messages_func_ptr					send_node_messages;
-node_add_block_header_func_ptr				node_add_block_header;
-queue_version_message_func_ptr				queue_version_message;
-queue_verack_message_func_ptr				queue_verack_message;
-queue_ping_message_func_ptr					queue_ping_message;
-queue_pong_message_func_ptr					queue_pong_message;
-queue_getaddr_message_func_ptr				queue_getaddr_message;
-queue_getdata_message_func_ptr				queue_getdata_message;
-queue_getblocks_message_func_ptr			queue_getblocks_message;
-queue_getblock_hdrs_message_func_ptr		queue_getblock_hdrs_message;
-queue_send_message_func_ptr					queue_send_message;
-queue_emitted_element_func_ptr				queue_emitted_element;
-queue_emitted_message_func_ptr				queue_emitted_message;
+node_init_self_func_ptr						node_init_self = PTR_INVALID;
+new_peer_node_func_ptr						new_peer_node = PTR_INVALID;
+node_add_block_func_ptr						node_add_block = PTR_INVALID;
+read_node_msg_func_ptr						read_node_msg = PTR_INVALID;
+send_node_messages_func_ptr					send_node_messages = PTR_INVALID;
+node_add_block_header_func_ptr				node_add_block_header = PTR_INVALID;
+queue_version_message_func_ptr				queue_version_message = PTR_INVALID;
+queue_verack_message_func_ptr				queue_verack_message = PTR_INVALID;
+queue_ping_message_func_ptr					queue_ping_message = PTR_INVALID;
+queue_pong_message_func_ptr					queue_pong_message = PTR_INVALID;
+queue_getaddr_message_func_ptr				queue_getaddr_message = PTR_INVALID;
+queue_getdata_message_func_ptr				queue_getdata_message = PTR_INVALID;
+queue_getblocks_message_func_ptr			queue_getblocks_message = PTR_INVALID;
+queue_getblock_hdrs_message_func_ptr		queue_getblock_hdrs_message = PTR_INVALID;
+queue_send_message_func_ptr					queue_send_message = PTR_INVALID;
+queue_emitted_element_func_ptr				queue_emitted_element = PTR_INVALID;
+queue_emitted_message_func_ptr				queue_emitted_message = PTR_INVALID;
 #endif
 
 
@@ -152,7 +157,7 @@ int read_config(const char *file,struct string *port, struct string *node_hostna
 	int				ret;
 
 	mem_zone_ref	iresp = { PTR_NULL };
-	if (!get_file(file, &data, &data_len))return 0;
+	if (get_file(file, &data, &data_len)<=0)return 0;
 	if (data_len == 0)return 0;
 
 	if (!tree_manager_json_loadb(data, data_len, &iresp))
@@ -562,102 +567,98 @@ int process_nodes()
 	return 1;
 }
 
-void load_module(const char *file,const char *mod_name,tpo_mod_file *mod)
+int load_module(const char *file, const char *mod_name, tpo_mod_file *mod)
 {
 	mem_stream			mod_file;
 	mem_zone_ref		tpo_file_data = { PTR_NULL };
-
 	unsigned char		*data;
 	size_t				data_len;
-	if (get_file(file, &data, &data_len))
-	{
-		mem_zone_ref		tpo_file_data = { PTR_NULL };
 
-		allocate_new_zone(0, data_len, &tpo_file_data);
-		memcpy_c(get_zone_ptr(&tpo_file_data, 0), data, data_len);
-		memset_c(&mod_file, 0, sizeof(mem_stream));
-		mem_stream_init(&mod_file, &tpo_file_data, 0);
-		tpo_mod_init(mod);
-		tpo_mod_load_tpo(&mod_file, mod, 0);
-		register_tpo_exports(mod, mod_name);
-		release_zone_ref(&tpo_file_data);
-		free_c(data);
-	}
+	if (get_file(file, &data, &data_len) <= 0)return 0;
+
+	allocate_new_zone(0, data_len, &tpo_file_data);
+	memcpy_c(get_zone_ptr(&tpo_file_data, 0), data, data_len);
+	memset_c(&mod_file, 0, sizeof(mem_stream));
+	mem_stream_init(&mod_file, &tpo_file_data, 0);
+	tpo_mod_init(mod);
+	tpo_mod_load_tpo(&mod_file, mod, 0);
+	register_tpo_exports(mod, mod_name);
+	release_zone_ref(&tpo_file_data);
+	free_c(data);
+
+	return 1;
 
 }
-void load_node_module(tpo_mod_file *mod)
+void load_node_module()
 {
-
+	load_module("modz/node_adx.tpo", "node_adx", &node_mod);
 #ifdef NODE_IMPORT
-	_node_init_self = get_tpo_mod_exp_addr_name(mod, "node_init_self",mod->deco_type);
-	_new_peer_node = get_tpo_mod_exp_addr_name(mod, "new_peer_node",mod->deco_type);
-	_node_add_block = get_tpo_mod_exp_addr_name(mod, "node_add_block",mod->deco_type);
-	_read_node_msg = get_tpo_mod_exp_addr_name(mod, "read_node_msg",mod->deco_type);
-	_send_node_messages = get_tpo_mod_exp_addr_name(mod, "send_node_messages",mod->deco_type);
-	_node_add_block_header = get_tpo_mod_exp_addr_name(mod, "node_add_block_header",mod->deco_type);
-	_queue_version_message = get_tpo_mod_exp_addr_name(mod, "queue_version_message",mod->deco_type);
-	_queue_verack_message = get_tpo_mod_exp_addr_name(mod, "queue_verack_message",mod->deco_type);
-	_queue_ping_message = get_tpo_mod_exp_addr_name(mod, "queue_ping_message",mod->deco_type);
-	_queue_pong_message = get_tpo_mod_exp_addr_name(mod, "queue_pong_message",mod->deco_type);
-	_queue_getaddr_message = get_tpo_mod_exp_addr_name(mod, "queue_getaddr_message",mod->deco_type);
-	_queue_getdata_message = get_tpo_mod_exp_addr_name(mod, "queue_getdata_message",mod->deco_type);
-	_queue_getblocks_message = get_tpo_mod_exp_addr_name(mod, "queue_getblocks_message",mod->deco_type);
-	_queue_getblock_hdrs_message = get_tpo_mod_exp_addr_name(mod, "queue_getblock_hdrs_message",mod->deco_type);
-	_queue_send_message = get_tpo_mod_exp_addr_name(mod, "queue_send_message",mod->deco_type);
-	_queue_emitted_element = get_tpo_mod_exp_addr_name(mod, "queue_emitted_element",mod->deco_type);
-	_queue_emitted_message = get_tpo_mod_exp_addr_name(mod, "queue_emitted_message",mod->deco_type);
+	_node_init_self = get_tpo_mod_exp_addr_name(&node_mod, "node_init_self",node_mod.deco_type);
+	_new_peer_node = get_tpo_mod_exp_addr_name(&node_mod, "new_peer_node",node_mod.deco_type);
+	_node_add_block = get_tpo_mod_exp_addr_name(&node_mod, "node_add_block",node_mod.deco_type);
+	_read_node_msg = get_tpo_mod_exp_addr_name(&node_mod, "read_node_msg",node_mod.deco_type);
+	_send_node_messages = get_tpo_mod_exp_addr_name(&node_mod, "send_node_messages",node_mod.deco_type);
+	_node_add_block_header = get_tpo_mod_exp_addr_name(&node_mod, "node_add_block_header",node_mod.deco_type);
+	_queue_version_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_version_message",node_mod.deco_type);
+	_queue_verack_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_verack_message",node_mod.deco_type);
+	_queue_ping_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_ping_message",node_mod.deco_type);
+	_queue_pong_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_pong_message",node_mod.deco_type);
+	_queue_getaddr_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_getaddr_message",node_mod.deco_type);
+	_queue_getdata_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_getdata_message",node_mod.deco_type);
+	_queue_getblocks_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_getblocks_message",node_mod.deco_type);
+	_queue_getblock_hdrs_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_getblock_hdrs_message",node_mod.deco_type);
+	_queue_send_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_send_message",node_mod.deco_type);
+	_queue_emitted_element = get_tpo_mod_exp_addr_name(&node_mod, "queue_emitted_element",node_mod.deco_type);
+	_queue_emitted_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_emitted_message",node_mod.deco_type);
 #else
-	node_init_self = get_tpo_mod_exp_addr_name(mod, "node_init_self",mod->deco_type);
-	new_peer_node = get_tpo_mod_exp_addr_name(mod, "new_peer_node",mod->deco_type);
-	node_add_block = get_tpo_mod_exp_addr_name(mod, "node_add_block",mod->deco_type);
-	read_node_msg = get_tpo_mod_exp_addr_name(mod, "read_node_msg",mod->deco_type);
-	send_node_messages = get_tpo_mod_exp_addr_name(mod, "send_node_messages",mod->deco_type);
-	node_add_block_header = get_tpo_mod_exp_addr_name(mod, "node_add_block_header",mod->deco_type);
-	queue_version_message = get_tpo_mod_exp_addr_name(mod, "queue_version_message",mod->deco_type);
-	queue_verack_message = get_tpo_mod_exp_addr_name(mod, "queue_verack_message",mod->deco_type);
-	queue_ping_message = get_tpo_mod_exp_addr_name(mod, "queue_ping_message",mod->deco_type);
-	queue_pong_message = get_tpo_mod_exp_addr_name(mod, "queue_pong_message",mod->deco_type);
-	queue_getaddr_message = get_tpo_mod_exp_addr_name(mod, "queue_getaddr_message",mod->deco_type);
-	queue_getdata_message = get_tpo_mod_exp_addr_name(mod, "queue_getdata_message",mod->deco_type);
-	queue_getblocks_message = get_tpo_mod_exp_addr_name(mod, "queue_getblocks_message",mod->deco_type);
-	queue_getblock_hdrs_message = get_tpo_mod_exp_addr_name(mod, "queue_getblock_hdrs_message",mod->deco_type);
-	queue_send_message = get_tpo_mod_exp_addr_name(mod, "queue_send_message",mod->deco_type);
-	queue_emitted_element = get_tpo_mod_exp_addr_name(mod, "queue_emitted_element",mod->deco_type);
-	queue_emitted_message = get_tpo_mod_exp_addr_name(mod, "queue_emitted_message",mod->deco_type);
+	node_init_self = get_tpo_mod_exp_addr_name(&node_mod, "node_init_self", node_mod.deco_type);
+	new_peer_node = get_tpo_mod_exp_addr_name(&node_mod, "new_peer_node", node_mod.deco_type);
+	node_add_block = get_tpo_mod_exp_addr_name(&node_mod, "node_add_block", node_mod.deco_type);
+	read_node_msg = get_tpo_mod_exp_addr_name(&node_mod, "read_node_msg", node_mod.deco_type);
+	send_node_messages = get_tpo_mod_exp_addr_name(&node_mod, "send_node_messages", node_mod.deco_type);
+	node_add_block_header = get_tpo_mod_exp_addr_name(&node_mod, "node_add_block_header", node_mod.deco_type);
+	queue_version_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_version_message", node_mod.deco_type);
+	queue_verack_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_verack_message", node_mod.deco_type);
+	queue_ping_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_ping_message", node_mod.deco_type);
+	queue_pong_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_pong_message", node_mod.deco_type);
+	queue_getaddr_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_getaddr_message", node_mod.deco_type);
+	queue_getdata_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_getdata_message", node_mod.deco_type);
+	queue_getblocks_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_getblocks_message", node_mod.deco_type);
+	queue_getblock_hdrs_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_getblock_hdrs_message", node_mod.deco_type);
+	queue_send_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_send_message", node_mod.deco_type);
+	queue_emitted_element = get_tpo_mod_exp_addr_name(&node_mod, "queue_emitted_element", node_mod.deco_type);
+	queue_emitted_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_emitted_message", node_mod.deco_type);
 #endif
-
 }
-int main(int argc, char **argv)
+
+
+OS_API_C_FUNC(int) app_init(mem_zone_ref_ptr params)
 {
-	tpo_mod_file		protocol_mod = { 0 }, block_mod = { 0 }, node_mod = { 0 }, libbase_mod = { 0 };
-	struct host_def		*seed_host;
-	struct string		node_port_str = { PTR_NULL };
-	struct string		node_hostname = { PTR_NULL };
-	struct string		user_agent;
-	unsigned int		node_port, seed_port;
-	unsigned int		done = 0;
-	mem_zone_ref		seed_node = { PTR_NULL }, genesis = { PTR_NULL };
-	mem_zone_ref		node_addr = { PTR_NULL },log = { PTR_NULL };
-	mem_zone_ref		tx = { PTR_NULL };
-	mem_zone_ref		node_config = { PTR_NULL };
 	unsigned char		*data;
+	struct host_def		*seed_host;
 	size_t				data_len;
-	unsigned int		*tree_area_ptr;
 
-	init_mem_system();
-	init_default_mem_area(8 * 1024 * 1024);
 	tree_manager_init();
-	network_init();
 
-	synching = 0;
+	load_node_module(&node_mod);
+
+	node_port_str.str = PTR_NULL;
+	node_port_str.len = 0;
+	node_port_str.size = 0;
+
+	node_hostname.str = PTR_NULL;
+	node_hostname.len = 0;
+	node_hostname.size = 0;
+
+	node_config.zone = PTR_NULL;
 
 	if (!read_config("config.json", &node_port_str, &node_hostname))
 	{
-		log_message("unable to load config\n",PTR_NULL);
+		log_message("unable to load config\n", PTR_NULL);
 		return 0;
 	}
 
-	if (!get_file("iadix.conf", &data, &data_len))
+	if (get_file("iadix.conf", &data, &data_len)<=0)
 	{
 		log_message("unable to file iadix.conf\n", PTR_NULL);
 		return 0;
@@ -671,6 +672,91 @@ int main(int argc, char **argv)
 	}
 	free_c(data);
 
+
+
+	memset_c(null_hash, 0, 32);
+
+	self_node.zone = PTR_NULL;
+
+	node_port = strtoul_c(node_port_str.str, PTR_NULL, 10);
+	node_init_self(&self_node, node_port, &node_config);
+
+	tree_manager_get_child_value_istr(&node_config, NODE_HASH("seed_node_host"), &node_hostname, 0);
+	tree_manager_get_child_value_i32(&node_config, NODE_HASH("seed_node_port"), &seed_port);
+
+	user_agent.str = PTR_NULL;
+	tree_manager_get_child_value_istr(&node_config, NODE_HASH("name"), &user_agent, 0);
+
+	peer_nodes.zone = PTR_NULL;
+	tree_manager_create_node("peer nodes", NODE_BITCORE_NODE_LIST, &peer_nodes);
+	seed_host = make_host_def(node_hostname.str, seed_port);
+	if (!new_peer_node(seed_host, &peer_nodes))
+	{
+		free_string(&node_port_str);
+		free_string(&node_hostname);
+		free_host_def(seed_host);
+		return 0;
+	}
+	free_host_def(seed_host);
+	return 1;
+}
+
+
+OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
+{
+	mem_zone_ref		log = { PTR_NULL };
+	mem_zone_ref		seed_node = { PTR_NULL };
+
+	tree_manager_create_node("log", NODE_LOG_PARAMS, &log);
+	tree_manager_set_child_value_i32(&log, "port", node_port);
+	tree_manager_set_child_value_str(&log, "hostname", node_hostname.str);
+	log_message("node port %port% open @ '%hostname%'", &log);
+	release_zone_ref(&log);
+	
+	tree_manager_get_child_at(&peer_nodes, 0, &seed_node);
+	queue_version_message(&seed_node, &user_agent);
+	release_zone_ref(&seed_node);
+
+	synching = 0;
+	return 1;
+
+}
+OS_API_C_FUNC(int) app_loop(mem_zone_ref_ptr params)
+{
+	update_nodes();
+	process_nodes();
+
+	return 1;
+}
+
+OS_API_C_FUNC(int) app_stop(mem_zone_ref_ptr params)
+{
+	release_zone_ref(&node_config);
+	return 1;
+}
+
+C_EXPORT int _fltused = 0;
+C_EXPORT mod_name_decoration_t	 mod_name_deco_type = MOD_NAME_DECO;
+unsigned int C_API_FUNC _DllMainCRTStartup(unsigned int *prev, unsigned int *cur, unsigned int *xx)
+{
+
+	return 1;
+}
+
+/*
+int main(int argc, char **argv)
+{
+	tpo_mod_file		protocol_mod = { 0 }, block_mod = { 0 }, node_mod = { 0 }, libbase_mod = { 0 };
+	unsigned int		done = 0;
+	mem_zone_ref		node_addr = { PTR_NULL },log = { PTR_NULL };
+	mem_zone_ref		tx = { PTR_NULL };
+
+	unsigned char		*data;
+	size_t				data_len;
+	unsigned int		*tree_area_ptr;
+
+
+
 	load_module		("modz/libbase.tpo", "libbase",&libbase_mod);
 	load_module		("modz/protocol_adx.tpo", "protocol_adx", &protocol_mod);
 	load_module		("modz/block_adx.tpo", "block_adx", &block_mod);
@@ -679,43 +765,9 @@ int main(int argc, char **argv)
 
 	tree_area_ptr = (unsigned int *)get_tpo_mod_exp_addr_name(&libbase_mod, "tree_mem_area_id",0);
 	*tree_area_ptr = tree_mem_area_id;
-		
-	memset_c(null_hash, 0, 32);
-
-	self_node.zone = PTR_NULL;
-
-	node_port = strtoul_c			(node_port_str.str,PTR_NULL,10);
-	node_init_self					(&self_node,node_port,&node_config);
-	
-	tree_manager_get_child_value_istr(&node_config, NODE_HASH("seed_node_host"), &node_hostname, 0);
-	tree_manager_get_child_value_i32 (&node_config, NODE_HASH("seed_node_port"), &seed_port);
-
-	peer_nodes.zone = PTR_NULL;
-	tree_manager_create_node	("peer nodes", NODE_BITCORE_NODE_LIST, &peer_nodes);
-	seed_host = make_host_def	(node_hostname.str, seed_port);
-	if (!new_peer_node(seed_host,&peer_nodes))
-	{
-		free_string(&node_port_str);
-		free_string(&node_hostname);
-		free_host_def(seed_host);
-		return 0;
-	}
-	
-	user_agent.str = PTR_NULL;
-	tree_manager_get_child_value_istr(&node_config, NODE_HASH("name"), &user_agent, 0);
 	
 	daemonize						(user_agent.str);
-	tree_manager_create_node		("log", NODE_LOG_PARAMS, &log);
-	tree_manager_set_child_value_i32(&log, "port", node_port);
-	tree_manager_set_child_value_str(&log, "hostname", node_hostname.str);
-	log_message						("node port %port% open @ '%hostname%'", &log);
-	release_zone_ref				(&log);
 
-
-
-	tree_manager_get_child_at		(&peer_nodes, 0, &seed_node);
-	queue_version_message			(&seed_node,&user_agent);
-	release_zone_ref				(&seed_node);
 
 	//load_tx(&tx,"C535E440C35184E7EBD13D686F0DE23EADC84D4C6C241E0685EDA456454C7FB2");
 	//check_txs();
@@ -723,11 +775,10 @@ int main(int argc, char **argv)
 	//get_addr_amounts("BPkMQCc6sjmbDpwpMNvyzMY7RuEQMAetHM", &total);
 	while (!done)
 	{
-		update_nodes			();
-		process_nodes			();
+
 
 	}
-	release_zone_ref(&node_config);
+
 	return 0;
 }
 
@@ -735,3 +786,4 @@ void mainCRTStartup(void)
 {
 	main(0, PTR_NULL);
 }
+*/
