@@ -96,9 +96,9 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\purenode\block.c" />
-    <ClCompile Include="..\purenode\scrypt.c" />
+    <ClCompile Include="block.c" />
     <ClCompile Include="main.c" />
+    <ClCompile Include="scrypt.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
