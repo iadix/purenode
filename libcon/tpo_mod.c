@@ -1,5 +1,4 @@
 #define LIBC_API C_EXPORT
-#include <windows.h>
 #include "base/std_def.h"
 #include "base/std_mem.h"
 #include "base/std_str.h"
