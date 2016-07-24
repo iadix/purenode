@@ -840,6 +840,7 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 		n++;
 	}
 	
+
 	VirtualProtect(get_zone_ptr(&tpo_file->data_sections,0), get_zone_size(&tpo_file->data_sections), PAGE_EXECUTE_READWRITE, &old);
 
 	return 1;
