@@ -12,6 +12,6 @@ LIBC_API int			C_API_FUNC get_sub_files(const char *path, struct string *file_li
 LIBC_API int			C_API_FUNC get_file(const char *path, unsigned char **data, size_t *data_len);
 LIBC_API int			C_API_FUNC get_hash_idx(const char *path, size_t idx, hash_t hash);
 LIBC_API int			C_API_FUNC daemonize(const char *name);
-LIBC_API time_t			C_API_FUNC get_time_c(void);
+LIBC_API ctime_t		C_API_FUNC get_time_c(void);
 LIBC_API void			C_API_FUNC console_print(const char *msg);
-LIBC_API struct string log_file_name;
+LIBC_API int			C_API_FUNC log_output(const char *data);

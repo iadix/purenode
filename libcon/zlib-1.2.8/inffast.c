@@ -3,7 +3,7 @@
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 #define LIBC_API C_EXPORT
-#include "../../base/std_def.h"
+#include "../../base/std_base.h"
 #include "zutil.h"
 #include "inftrees.h"
 #include "inflate.h"

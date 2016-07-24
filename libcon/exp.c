@@ -12,8 +12,9 @@
 #include "mem_stream.h"
 #include "tpo_mod.h"
 #include "fsio.h"
-#include "zlib.h"
 #include "xmlparse.h"
+
+extern int init_zfuncs();
 
 void init_funcs()
 {
@@ -30,10 +31,9 @@ void init_funcs()
 	sys_add_tpo_mod_func_name("libcon", "get_hash_idx", get_hash_idx, 0);
 	sys_add_tpo_mod_func_name("libcon", "get_sub_dirs", get_sub_dirs, 0);
 	sys_add_tpo_mod_func_name("libcon", "get_sub_files", get_sub_files, 0);
+	sys_add_tpo_mod_func_name("libcon", "log_output", log_output, 0);
 
-	sys_add_tpo_mod_func_name("libcon", "inflate", inflate, 0);
-	sys_add_tpo_mod_func_name("libcon", "inflateEnd", inflateEnd, 0);
-	sys_add_tpo_mod_func_name("libcon", "inflateInit2_", inflateInit2_, 0);
+
 	sys_add_tpo_mod_func_name("libcon", "daemonize", daemonize, 0);
 	sys_add_tpo_mod_func_name("libcon", "get_time_c", get_time_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "append_file", append_file, 0);
@@ -43,5 +43,6 @@ void init_funcs()
 	sys_add_tpo_mod_func_name("libcon", "XML_SetUserData", XML_SetUserData, 0);
 	sys_add_tpo_mod_func_name("libcon", "XML_Parse", XML_Parse, 0);
 	sys_add_tpo_mod_func_name("libcon", "XML_ParserFree", XML_ParserFree, 0);
-	sys_add_tpo_mod_func_name("libcon", "log_file_name", &log_file_name, 0);
+
+	init_zfuncs();	
 }

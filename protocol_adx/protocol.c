@@ -7,7 +7,7 @@
 #include <strs.h>
 #include <tree.h>
 
-C_IMPORT time_t C_API_FUNC  get_time_c();
+C_IMPORT ctime_t C_API_FUNC  get_time_c();
 
 unsigned int		GETDATA_BLOCK		= 2;
 unsigned int		magic				= PTR_INVALID;

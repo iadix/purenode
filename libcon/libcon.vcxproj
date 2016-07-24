@@ -157,6 +157,7 @@
     <ClCompile Include="zlib-1.2.8\zutil.c">
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">WIN32;_DEBUG;_LIB;IMP_API=;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="zlibexp.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\connect.h" />
@@ -164,6 +165,7 @@
     <ClInclude Include="include\io.h" />
     <ClInclude Include="include\strs.h" />
     <ClInclude Include="include\upnp.h" />
+    <ClInclude Include="std_base.h" />
     <ClInclude Include="unix\include\sys_include.h" />
     <ClInclude Include="win32\include\sys_include.h" />
   </ItemGroup>
@@ -171,16 +173,16 @@
     <None Include="libcon.def" />
     <CustomBuild Include="runtime.asm">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"C:\Program Files (x86)\NASM\nasm" -f win32  -DPREFIX= "%(FullPath)" -o "$(SolutionDir)\debug\%(Filename).obj"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"C:\Program Files (x86)\NASM\nasm" -f win32  -DPREFIX -DASM_EXPORT "%(FullPath)" -o "$(SolutionDir)\debug\%(Filename).obj"</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)\debug\%(Filename).obj;</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"C:\Program Files (x86)\NASM\nasm" -f win32  -DPREFIX= "%(FullPath)" -o "$(SolutionDir)\release\%(Filename).obj"</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)\release\%(Filename).obj;</Outputs>
     </CustomBuild>
     <CustomBuild Include="tpo.asm">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"C:\Program Files (x86)\NASM\nasm" -g -f win32  -DPREFIX= "%(FullPath)" -o "$(SolutionDir)\debug\%(Filename).obj"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"C:\Program Files (x86)\NASM\nasm" -f win32  -DPREFIX -DASM_EXPORT "%(FullPath)" -o "$(SolutionDir)\debug\%(Filename).obj"</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)\debug\%(Filename).obj;</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"C:\Program Files (x86)\NASM\nasm" -f win32  -DPREFIX= "%(FullPath)" -o "$(SolutionDir)\release\%(Filename).obj"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"C:\Program Files (x86)\NASM\nasm" -f win32  -DPREFIX -DASM_EXPORT "%(FullPath)" -o "$(SolutionDir)\release\%(Filename).obj"</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)\release\%(Filename).obj;</Outputs>
     </CustomBuild>
   </ItemGroup>

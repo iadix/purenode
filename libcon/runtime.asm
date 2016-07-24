@@ -1,21 +1,26 @@
-
 [BITS 32]
-
 section .text
+
+%ifdef ASM_EXPORT
+	export  _fetch_add_c
+	export  _memset
+	export  _compare_z_exchange_c
+%endif
+
 %ifdef PREFIX
 	global  _fetch_add_c
-	export  _fetch_add_c
-
 	global  _memset
-	export  _memset
-	
 	global  _compare_z_exchange_c
 %else
 	GLOBAL  compare_z_exchange_c:function
-	GLOBAL  fetch_add_c:function
+	GLOBAL  _fetch_add_c:function
 %endif
 
+%ifdef PREFIX
 _memset:
+%else
+memset
+%endif
  push ebp
     mov ebp, esp
     add ebp, 4 ; We pushed one register to stack, count it
@@ -42,7 +47,7 @@ ret
 %ifdef PREFIX
 _compare_z_exchange_c:
 %else
- compare_z_exchange_c:
+compare_z_exchange_c:
 %endif
 
 	push edi

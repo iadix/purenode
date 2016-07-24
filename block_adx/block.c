@@ -243,7 +243,7 @@ OS_API_C_FUNC(int) tx_add_output(mem_zone_ref_ptr tx, uint64_t value, const stru
 	return 1;
 }
 
-OS_API_C_FUNC(int) new_transaction(mem_zone_ref_ptr tx, time_t time)
+OS_API_C_FUNC(int) new_transaction(mem_zone_ref_ptr tx, ctime_t time)
 {
 	tree_manager_create_node		("transaction"	, NODE_BITCORE_TX, tx);
 	tree_manager_set_child_value_i32(tx, "version"	, 1);

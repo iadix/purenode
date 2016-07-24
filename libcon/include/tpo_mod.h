@@ -64,7 +64,7 @@ LIBC_API int			C_API_FUNC		run_tpo(const char *file_system, const char *file_nam
 LIBC_API int			C_API_FUNC		load_tpo_dll(const char *file_system, const char *file_name, tpo_mod_file *mod);
 LIBC_API int			C_API_FUNC		run_app(const char *file_system, const char *file_name, tpo_mod_file *mod, mem_zone_ref_ptr app_data);
 
-#define KERN_API_FUNC			ASM_API_FUNC
+
 
 #ifndef KERNEL_API
 #define KERNEL_API	C_IMPORT

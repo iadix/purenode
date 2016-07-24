@@ -11,7 +11,6 @@
 #include "../base/mem_base.h"
 #include "../base/std_str.h"
 #include "strs.h"
-#include "../base/tree.h"
 
 #include <connect.h>
 #include <sys_include.h>
@@ -35,11 +34,121 @@ struct read_group
 struct read_group my_read_group={0};
 struct string	  read_done[64]={0};
 
-extern void log_message(const char *fmt,mem_zone_ref_ptr args);
 
 int network_init()
 {
+	sys_add_tpo_mod_func_name("libcon", "network_init", network_init, 0);
+	sys_add_tpo_mod_func_name("libcon", "network_free", network_free, 0);
+	sys_add_tpo_mod_func_name("libcon", "get_if", get_if, 0);
+	sys_add_tpo_mod_func_name("libcon", "init_read_group", init_read_group, 0);
+	sys_add_tpo_mod_func_name("libcon", "read_group_has", read_group_has, 0);
+	sys_add_tpo_mod_func_name("libcon", "set_tcp_no_delay", set_tcp_no_delay, 0);
+	sys_add_tpo_mod_func_name("libcon", "add_read_group", add_read_group, 0);
+	sys_add_tpo_mod_func_name("libcon", "get_con_error", get_con_error, 0);
+	sys_add_tpo_mod_func_name("libcon", "get_con_lastline", get_con_lastline, 0);
+	sys_add_tpo_mod_func_name("libcon", "con_move_data", con_move_data, 0);
+	sys_add_tpo_mod_func_name("libcon", "con_consume_data", con_consume_data, 0);
+	sys_add_tpo_mod_func_name("libcon", "get_con_hostd", get_con_hostd, 0);
+	sys_add_tpo_mod_func_name("libcon", "do_connect", do_connect, 0);
+	sys_add_tpo_mod_func_name("libcon", "reconnect", reconnect, 0);
+	sys_add_tpo_mod_func_name("libcon", "open_port", open_port, 0);
+	sys_add_tpo_mod_func_name("libcon", "do_get_incoming", do_get_incoming, 0);
+	sys_add_tpo_mod_func_name("libcon", "read_data", read_data, 0);
+	sys_add_tpo_mod_func_name("libcon", "send_data", send_data, 0);
+	sys_add_tpo_mod_func_name("libcon", "readline", readline, 0);
+	sys_add_tpo_mod_func_name("libcon", "do_read_group", do_read_group, 0);
+	sys_add_tpo_mod_func_name("libcon", "pop_read_done", pop_read_done, 0);
+	sys_add_tpo_mod_func_name("libcon", "con_close", con_close, 0);
+	sys_add_tpo_mod_func_name("libcon", "get_con_saddr", get_con_saddr, 0);
+	sys_add_tpo_mod_func_name("libcon", "read_av_data", read_av_data, 0);
+	sys_add_tpo_mod_func_name("libcon", "send_data_av", send_data_av, 0);
+	sys_add_tpo_mod_func_name("libcon", "create_upnp_broadcast", create_upnp_broadcast, 0);
+	sys_add_tpo_mod_func_name("libcon", "send_upnpbroadcast", send_upnpbroadcast, 0);
 }
+
+OS_API_C_FUNC(int) send_data_av(struct con *Con, unsigned char *data, size_t len)
+{
+	fd_set				fd_write, fd_err;
+	struct timeval		timeout;
+	int					ret;
+	int					s;
+
+	free_string(&Con->error);
+
+	timeout.tv_sec = 0;
+	timeout.tv_usec = 1000;
+
+
+
+	/* Block until input arrives on one or more active sockets. */
+	fd_write = Con->con_set;
+	fd_err = Con->con_set;
+	ret = select(Con->sock + 1, NULL, &fd_write, &fd_err, &timeout);
+	if (ret < 0)
+		return 0;
+
+	if (FD_ISSET(Con->sock, &fd_err)){ Con->last_rd = 0; return 0; }
+	if (FD_ISSET(Con->sock, &fd_write))
+		s = send(Con->sock, data, (int)(len), 0);
+	else
+		return 0;
+
+	return s;
+}
+
+OS_API_C_FUNC(int) read_av_data(struct con *Con, size_t max)
+{
+	fd_set			read_fd_set, err_fd_set;
+	struct timeval	timeout;
+	int				ret;
+
+	free_string(&Con->error);
+	if (Con->lastLine.str == NULL)
+	{
+		Con->lastLine.size = max + 1;
+		Con->lastLine.str = malloc_c(Con->lastLine.size);
+		Con->lastLine.len = 0;
+	}
+	else if (Con->lastLine.size<(Con->lastLine.len + max + 1))
+	{
+		Con->lastLine.size = Con->lastLine.len + max + 1;
+		Con->lastLine.str = realloc_c(Con->lastLine.str, Con->lastLine.size);
+	}
+
+	timeout.tv_sec = 0;
+	timeout.tv_usec = 1000;
+	Con->last_rd = 0;
+
+	read_fd_set = Con->con_set;
+	err_fd_set = Con->con_set;
+	ret = select(Con->sock + 1, &read_fd_set, NULL, &err_fd_set, &timeout);
+	if (ret < 0)
+		return 0;
+
+	if (FD_ISSET(Con->sock, &err_fd_set)){ make_string(&Con->error, "select error");  Con->last_rd = 0; return 0; }
+	if (!FD_ISSET(Con->sock, &read_fd_set))return 0;
+
+	ret = recv(Con->sock, &Con->lastLine.str[Con->lastLine.len], max, 0);
+	if (ret > 0)
+	{
+		Con->last_rd = ret;
+		Con->lastLine.len += Con->last_rd;
+	}
+	else
+		Con->last_rd = 0;
+
+	return ret;
+
+}
+OS_API_C_FUNC(int) get_con_saddr(struct con *mycon, ipv4_t addr)
+{
+	addr[0] = mycon->peer.sin_addr.s_addr & 0xFF;
+	addr[1] = (mycon->peer.sin_addr.s_addr >> 8)  & 0xFF;
+	addr[2] = (mycon->peer.sin_addr.s_addr >> 16) & 0xFF;
+	addr[3] = (mycon->peer.sin_addr.s_addr >> 24) & 0xFF;
+	return 1;
+}
+
 int network_free()
 {
 	 return 0;
@@ -210,7 +319,7 @@ void con_close		(struct con *Con)
 	free_c			(Con);
 }
 
-char *readline(struct con *Con,time_t timeout)
+char *readline(struct con *Con,ctime_t timeout)
 {
 	fd_set			 fd_read,fd_err;
 	char			 line[1024];
@@ -334,8 +443,9 @@ int read_data(struct con *Con,size_t max)
 }
 
 
-void add_read_group(struct con *mycon,FILE *file,size_t transfer_len,const struct string *file_name)
+void add_read_group(struct con *mycon,void *ffile,size_t transfer_len,const struct string *file_name)
 {
+	FILE				*file = (FILE *)ffile;
 	struct read_con		*rcon;
 	rcon	=	my_read_group.cons;
 	
@@ -369,7 +479,6 @@ void do_read_group()
 
 	if (select (my_read_group.max_sock+1, &read_fd_set, NULL, NULL, &timeout) < 0)
    	{
-		log_message		("group select error",NULL);
    		return ;
   	}
 	for(rcon=my_read_group.cons;rcon->rd_con!=NULL;rcon++)
@@ -448,8 +557,7 @@ struct con *do_get_incoming(struct con *listen_con,unsigned int time_out)
 
 	if (FD_ISSET(listen_con->sock, &my_listen))
 	{
-		log_message		("new client con",NULL);
-		newCon			=	init_con	();
+	newCon			=	init_con	();
 		clilen			=	sizeof(struct sockaddr_in);
     	newCon->sock	=	accept(listen_con->sock, (struct sockaddr *)&newCon->peer, &clilen);
 		if(newCon->sock<0)

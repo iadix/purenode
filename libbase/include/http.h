@@ -46,7 +46,7 @@ LIBBASE_API const struct http_hdr *	C_API_FUNC find_key(const struct http_hdr *h
 LIBBASE_API void					C_API_FUNC free_request(struct http_req *req);
 LIBBASE_API void					C_API_FUNC free_response(struct http_resp *resp);
 
-LIBBASE_API struct http_resp *		C_API_FUNC http_request(struct con *mycon, struct http_req *req, unsigned int n_tries, time_t timeout);
+LIBBASE_API struct http_resp *		C_API_FUNC http_request(struct con *mycon, struct http_req *req, unsigned int n_tries, ctime_t timeout);
 LIBBASE_API struct http_resp *		C_API_FUNC http_parse_response_header(struct string *data);
 LIBBASE_API void					C_API_FUNC http_read_data(struct con *mycon, struct http_resp *resp, struct string *data);
 LIBBASE_API struct  http_req*		C_API_FUNC http_process_request(struct con *new_con, struct  http_infos	 *infos);

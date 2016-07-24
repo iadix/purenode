@@ -174,7 +174,7 @@ OS_API_C_FUNC(int) get_file(const char *path, unsigned char **data, size_t *data
 	return (int)len;
 
 }
-OS_API_C_FUNC(time_t)	 get_time_c()
+OS_API_C_FUNC(ctime_t)	 get_time_c()
 {
 	return time(0);
 }
@@ -202,4 +202,8 @@ OS_API_C_FUNC(void	*)kernel_memory_map_c(unsigned int size)
 	return 0;
 }
 
- 
+ OS_API_C_FUNC(int) log_output(const char *data)
+ {
+	 append_file(log_file_name.str, data, strlen_c(data));
+	 return 1;
+ }

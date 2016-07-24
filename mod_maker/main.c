@@ -6,40 +6,13 @@
 
 #include <zlib.h>
 
-extern unsigned int __cdecl calc_crc32_c(char *string,int len);
+//extern unsigned int __cdecl calc_crc32_c(char *string,int len);
 
 typedef void *mem_ptr;
 typedef const void *const_mem_ptr;
 typedef unsigned long mem_size;
 
 
-mem_ptr __stdcall memcpy_c(mem_ptr dst_ptr,const_mem_ptr src_ptr,mem_size size)
-{
-	const unsigned char *sptr	=src_ptr;
-	unsigned char *dptr			=dst_ptr;
-	unsigned int	n			=0;;
-
-	while(n<size){dptr[n]=sptr[n];n++;}
-
-	return dst_ptr;
-	
-}
-mem_ptr __stdcall memset_c(mem_ptr ptr,unsigned char v,mem_size size)
-{
-	unsigned char *cptr=ptr;
-	while(size--){cptr[size]=v;  }
-	return ptr;
-}
-
-void __stdcall free_c(mem_ptr ptr)
-{
-	free(ptr);
-}
-
-mem_ptr __stdcall calloc_c(mem_size sz,mem_size blk)
-{
-	return calloc(sz,blk);
-}
 
 void dump_reloc(PEFile *PE)
 {

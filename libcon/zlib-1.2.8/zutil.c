@@ -5,7 +5,7 @@
 
 /* @(#) $Id$ */
 #define LIBC_API C_EXPORT
-#include "../../base/std_def.h"
+#include "../../base/std_base.h"
 #include "zutil.h"
 #ifndef Z_SOLO
 #  include "gzguts.h"

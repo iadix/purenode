@@ -37,7 +37,7 @@ LIBC_API int					C_API_FUNC read_data(struct con *Con, size_t max);
 LIBC_API int					C_API_FUNC read_av_data(struct con *Con, size_t max);
 LIBC_API int					C_API_FUNC send_data(struct con *Con, unsigned char *data, size_t len);
 LIBC_API int					C_API_FUNC send_data_av(struct con *Con, unsigned char *data, size_t len);
-LIBC_API char	*				C_API_FUNC readline(struct con *Con, time_t timeout);
+LIBC_API char	*				C_API_FUNC readline(struct con *Con, ctime_t timeout);
 
 LIBC_API void					C_API_FUNC do_read_group();
 LIBC_API int					C_API_FUNC pop_read_done(struct string *out);

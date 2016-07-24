@@ -7,18 +7,18 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "../base/std_def.h"
-#include "../base/std_mem.h"
-#include "../base/mem_base.h"
-#include "../base/std_str.h"
+#include "base/std_def.h"
+#include "base/std_mem.h"
+#include "base/mem_base.h"
+#include "base/std_str.h"
 #include "strs.h"
-#include "../base/tree.h"
 
 #include <sys_include.h>
 struct string log_file_name	={PTR_NULL};
 FILE			 *log_file	=PTR_NULL;
 
-int stat_file		(const char *path)
+
+OS_API_C_FUNC(int) stat_file(const char *path)
 {
 	struct  stat	fileStat;
 	int				ret;
@@ -33,74 +33,11 @@ int stat_file		(const char *path)
 }
 
 
-void log_message(const char *fmt,mem_zone_ref_ptr args)
-{
-	const char					*fmt_ptr;
-	const char					*last_fmt_ptr;
-	const char					*end_fmt_ptr;
-	struct string				line={PTR_NULL};
-
-	fmt_ptr		=fmt;
-	last_fmt_ptr=fmt_ptr;
-	end_fmt_ptr	=mem_add(fmt,strlen_c(fmt));
-
-	make_string	(&line,"[");
-	strcat_int	(&line,time(0));
-	cat_cstring	(&line,"] ");
-
-	while((*fmt_ptr)!=0)
-	{
-		if((*fmt_ptr)=='%')
-		{
-			int				n;
-			char			pname[64];
-			struct string	value={PTR_NULL};
-			size_t			len;
-
-			if(last_fmt_ptr!=fmt_ptr)
-			{
-				len			=	mem_sub (last_fmt_ptr,fmt_ptr);
-				cat_ncstring (&line,last_fmt_ptr,(unsigned int)len);
-			}
-			
-			fmt_ptr++;
-			n=0;
-			while(((*fmt_ptr)!='%')&&((*fmt_ptr)!=0)&&(n<63))
-			{
-				pname[n++]=(*(fmt_ptr++));
-			}
-			pname[n++]=0;
-			fmt_ptr++;
-
-			if(tree_manager_get_child_value_istr	(args,NODE_HASH(pname),&value,10))
-			{
-				cat_string							(&line,&value);
-				free_string							(&value);
-			}
-			last_fmt_ptr		=	fmt_ptr;
-		}
-		fmt_ptr++;
-	}
-
-	if(last_fmt_ptr<end_fmt_ptr)
-		cat_cstring		(&line,last_fmt_ptr);
-
-	cat_cstring		(&line,"\n");
-
-	if(log_file!=PTR_NULL)
-	{
-		fwrite(line.str,line.len,1,log_file);
-		fflush(log_file);
-	}
-
-	free_string(&line);
-}
-
-int create_dir(const char *path)
+OS_API_C_FUNC(int) create_dir(const char *path)
 {
 	return mkdir(path,0775);
 }
-int get_sub_dirs(const char *path,struct string *dir_list)
+OS_API_C_FUNC(int) get_sub_dirs(const char *path, struct string *dir_list)
 {
 	struct dirent *direntp;
 	int ret=0;
@@ -114,20 +51,41 @@ int get_sub_dirs(const char *path,struct string *dir_list)
 	while ((direntp = readdir(dirp)) != NULL)
 	{
 		if(direntp->d_type!=DT_DIR)continue;
-		if(strlen_c(direntp->d_name)>=3)
-		{
-			cat_cstring (dir_list,direntp->d_name);
-			cat_cstring (dir_list,"\n");
-			ret++;
-		}
+		if (direntp->d_name[0] == '.')continue;
+		
+		cat_cstring (dir_list,direntp->d_name);
+		cat_cstring (dir_list,"\n");
+		ret++;
+		
 	}
 
    closedir(dirp);
    return ret;
 }
+OS_API_C_FUNC(int) get_sub_files(const char *path, struct string *dir_list)
+{
+	struct dirent *direntp;
+	int ret = 0;
+	DIR *dirp;
 
+	if ((dirp = opendir(path)) == NULL)
+	{
+		return ret;
+	}
 
-int put_file(const char *path,void *data,size_t data_len)
+	while ((direntp = readdir(dirp)) != NULL)
+	{
+		if (direntp->d_type == DT_DIR)continue;
+		cat_cstring(dir_list, direntp->d_name);
+		cat_cstring(dir_list, "\n");
+		ret++;
+	}
+
+	closedir(dirp);
+	return ret;
+}
+
+OS_API_C_FUNC(int) put_file(const char *path, void *data, size_t data_len)
 {
 	FILE		*f;
 	size_t		len;
@@ -139,7 +97,32 @@ int put_file(const char *path,void *data,size_t data_len)
 	return 1;
 
 }
+OS_API_C_FUNC(int) append_file(const char *path, void *data, size_t data_len)
+{
+	FILE		*f;
+	size_t		len;
+	int			ret;
+	f = fopen( path, "ab+");
+	if (f == NULL)return 0;
+	fseek(f, 0, SEEK_END);
+	len = fwrite(data, data_len, 1, f);
+	fclose(f);
+	return 1;
+}
 
+
+OS_API_C_FUNC(int) file_size(const char *path, void *data, size_t data_len)
+{
+	FILE		*f;
+	size_t		len;
+	int			ret;
+	f = fopen( path, "ab+");
+	if (f == NULL)return 0;
+	fseek(f, 0, SEEK_END);
+	len = ftell(f);
+	fclose(f);
+	return len;
+}
 int get_file(const char *path,unsigned char **data,size_t *data_len)
 {
 	FILE		*f;
@@ -163,13 +146,15 @@ void	*kernel_memory_map_c(unsigned int size)
 	return malloc(size);
 }
 
- unsigned int 	 get_system_time_c				()
+
+OS_API_C_FUNC(unsigned int)	 get_system_time_c()
 {
 	return 0;
 }
 
 
-int daemonize(const char *name)
+
+ OS_API_C_FUNC(int) daemonize(const char *name)
 {
    pid_t pid, sid;
    mem_zone_ref log={PTR_NULL};
@@ -202,7 +187,6 @@ int daemonize(const char *name)
    
    sid = setsid();
    if (sid < 0) {
-	   log_message("sid failure",PTR_NULL);
 	   fclose(log_file);
        // Log any failures here 
        return -1;
@@ -212,16 +196,16 @@ int daemonize(const char *name)
       
    // Change the current working directory 
    if ((chdir("./")) < 0) {
-	   log_message("chdir failure",PTR_NULL);
 	   fclose(log_file);
        return -1;
    }
-   
+   /*
    tree_manager_create_node("log",NODE_LOG_PARAMS,&log);
    tree_manager_set_child_value_i32(&log,"pid",pid);
    tree_manager_set_child_value_i32(&log,"sid",sid);
    log_message("process started %pid%, %sid%.",&log);
    release_zone_ref(&log);
+   */
 
    // Close out the standard file descriptors 
    /*
@@ -233,7 +217,42 @@ int daemonize(const char *name)
    return 0;
 }
 
-time_t get_time_c()
+OS_API_C_FUNC(void) console_print(const char *msg)
+{
+	printf(msg);
+
+}
+
+
+ctime_t get_time_c()
 {
 	return time(0);
+}
+
+OS_API_C_FUNC(int) get_hash_idx(const char *path, size_t idx, hash_t hash)
+{
+	FILE		*f;
+	size_t		len = 0;
+	int			ret;
+
+	f = fopen( path, "rb");
+	if (f == NULL){ return -1; }
+	fseek(f, 0, SEEK_END);
+	len = ftell(f);
+	if ((idx * 32 + 32) <= len)
+	{
+		fseek(f, idx*sizeof(hash_t), SEEK_SET);
+		len = fread(hash, sizeof(hash_t), 1, f);
+	}
+	else
+		len = 0;
+
+	fclose(f);
+	return len;
+}
+
+OS_API_C_FUNC(int) log_output(const char *data)
+{
+	append_file(log_file_name.str, data,strlen_c(data));
+	return 1;
 }

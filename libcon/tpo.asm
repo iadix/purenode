@@ -145,59 +145,47 @@ debug_id		:dd 0
 section .text
 
 
+%ifdef ASM_EXPORT
+	export  _fetch_add_c
+	export  _compare_z_exchange_c
+	export  _sys_add_tpo_mod_func_name
+	export  _calc_crc32_c
+	export  _tpo_calc_imp_func_hash_name_c
+	export  _tpo_calc_exp_func_hash_name_c
+	export  _tpo_calc_exp_func_hash_c
+	export  _tpo_mod_add_func_c
+	export  _tpo_mod_add_section_c
+	export  _tpo_add_mod_c
+	export  _tpo_mod_imp_func_addr_c
+	export  _tpo_mod_add_func_addr_c
+	export  _tpo_get_mod_entry_hash_c
+	export  _tpo_get_mod_sec_idx_c
+	export  _tpo_get_mod_entry_idx_c
+	export  _tpo_get_fn_entry_name_c
+	export  _tpo_get_fn_entry_hash_c
+	export  _tpo_get_fn_entry_idx_c
+%endif
 
 %ifdef PREFIX
 	global  _tpo_mod_imp_func_addr_c
-	export  _tpo_mod_imp_func_addr_c
-	
 	global  _tpo_mod_add_func_addr_c
-	export  _tpo_mod_add_func_addr_c
-
 	global  _tpo_get_mod_entry_hash_c
-	export  _tpo_get_mod_entry_hash_c
-
 	global  _tpo_get_mod_sec_idx_c
-	export  _tpo_get_mod_sec_idx_c
-
 	global  _tpo_get_mod_entry_idx_c
-	export  _tpo_get_mod_entry_idx_c
-
 	global  _tpo_get_fn_entry_name_c
-	export  _tpo_get_fn_entry_name_c
-	
 	global  _tpo_get_fn_entry_hash_c
-	export  _tpo_get_fn_entry_hash_c
-
 	global  _tpo_get_fn_entry_idx_c
-	export  _tpo_get_fn_entry_idx_c
-
 	global  _tpo_add_mod_c
-	export  _tpo_add_mod_c
-
 	global  _tpo_mod_add_section_c
-	export  _tpo_mod_add_section_c
-
 	global  _tpo_mod_add_func_c
-	export  _tpo_mod_add_func_c
-
 	global  _tpo_calc_exp_func_hash_c
-	export  _tpo_calc_exp_func_hash_c
-
 	global  _tpo_calc_exp_func_hash_name_c
-	export  _tpo_calc_exp_func_hash_name_c
-
 	global  _tpo_calc_imp_func_hash_name_c
-	export  _tpo_calc_imp_func_hash_name_c
-
 	global  _calc_crc32_c
-	export  _calc_crc32_c
-
 	global  _sys_add_tpo_mod_func_name
-	export  _sys_add_tpo_mod_func_name
-
 
 %else
-	GLOBAL  _tpo_mod_imp_func_addr:function
+	GLOBAL _tpo_mod_imp_func_addr:function
 	GLOBAL _tpo_mod_imp_func_addr_c:function
 	GLOBAL _tpo_mod_add_func_addr_c:function
 	GLOBAL _tpo_get_mod_entry_hash_c:function
@@ -340,8 +328,6 @@ calc_import_hash:
 			jmp tpo_module_src_no_deco_end
 	
 			tpo_module_src_no_deco_dst_msvc_stdcall_32:
-				   ;call _ExitProcess@4
-
 				inc esi	
 				xor ecx			,	ecx
 				loop_src_no_deco_dst_msvc_stdcall_32:
@@ -367,9 +353,27 @@ calc_import_hash:
 
 		
 			tpo_module_src_no_deco_dst_gcc_stdcall_32:
-				mov edi			,	[sys_tpo_fn_name_ptr]
-				mov ecx			,	256
-				rep movsb			
+				inc esi	
+				xor ecx			,	ecx
+				loop_src_no_deco_dst_gcc_stdcall_32:
+					lodsb
+					cmp al,0
+					je end_loop_src_no_deco_dst_gcc_stdcall_32
+					
+					cmp al,'@'
+					je end_loop_src_no_deco_dst_gcc_stdcall_32
+					
+					mov [esp+ecx],al
+					inc ecx
+				jmp loop_src_no_deco_dst_gcc_stdcall_32
+				
+				end_loop_src_no_deco_dst_gcc_stdcall_32:
+				
+				mov byte [esp+ecx],0				
+
+				;mov edi			,	[sys_tpo_fn_name_ptr]
+				;mov ecx			,	256
+				;rep movsb			
 			jmp tpo_module_src_no_deco_end
 		tpo_module_src_no_deco_end:
 	
@@ -910,7 +914,11 @@ sys_get_tpo_mod_func_name:
   mov		eax,[esi+4]						;return function address in eax
 ret
 
+%ifdef PREFIX
 _calc_crc32_c:
+%else
+calc_crc32_c:
+%endif
 
   mov eax							,	[esp+4]
   mov [addr_crc_str]				,	eax

@@ -1,10 +1,14 @@
-CONSRC=libcon/md5.c libcon/base/utf.c libcon/base/string.c libcon/base/strbuffer.c libcon/base/tree.c libcon/base/mem_base.c libcon/http.c libcon/unix/stat_file.c libcon/unix/connect.c libcon/upnp.c libcon/strs.c
+CONSRC=libcon/base/utf.c libcon/base/string.c libcon/base/mem_base.c libcon/unix/stat_file.c libcon/unix/connect.c libcon/strs.c libcon/mem_stream.c libcon/tpo_mod.c libcon/exp.c libcon/zlibexp.c
 XMLSRC=libcon/expat/xmlparse/xmlparse.c libcon/expat/xmltok/xmltok.c libcon/expat/xmltok/xmlrole.c
 ZLIBSRC=libcon/zlib-1.2.8/zutil.c libcon/zlib-1.2.8/uncompr.c libcon/zlib-1.2.8/inftrees.c libcon/zlib-1.2.8/compress.c libcon/zlib-1.2.8/infback.c libcon/zlib-1.2.8/trees.c libcon/zlib-1.2.8/inflate.c libcon/zlib-1.2.8/crc32.c libcon/zlib-1.2.8/inffast.c libcon/zlib-1.2.8/adler32.c libcon/zlib-1.2.8/deflate.c
 
-export/libcon.so: $(CONSRC) $(XMLSRC) $(ZLIBSRC)
-	nasm -f elf32 libcon/base/acrc32.asm -o acrc32.o
-	gcc -g -Ilibcon/include -Ilibcon/unix/include -Ilibcon/expat/xmlparse -Ilibcon/expat/xmltok acrc32.o $(CONSRC) $(XMLSRC) $(ZLIBSRC) -DIMP_API= --shared -o export/libcon.so
+default: export/libcon_cyg.dll export/launcher_cyg.exe
+	echo 'done'
 
-stratum: export/libcon.so
-	gcc -g -Ilibcon/include  -Ilibcon/base/ -Ilibcon/unix/include -Lexport/ -lcon -DIMP_API= sync/site_api.c stratum/main.c -o export/stratum
+export/launcher_cyg.exe:
+	gcc -Lexport/ -lcon_cyg -Ilibcon -Ilibcon/include -Ilibase/include launcher/main.c -o export/launcher_cyg.exe
+
+export/libcon_cyg.dll: $(CONSRC) $(XMLSRC) $(ZLIBSRC)
+	nasm -f elf32 -DPREFIX libcon/tpo.asm -o tpo.o
+	nasm -f elf32 -DPREFIX libcon/runtime.asm -o runtime.o
+	gcc -Ilibcon -Ilibcon/include -Ilibcon/unix/include -Ilibcon/expat/xmlparse -Ilibcon/expat/xmltok runtime.o tpo.o $(CONSRC) $(XMLSRC) $(ZLIBSRC) -DIMP_API= --shared -o export/libcon_cyg.dll

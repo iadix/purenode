@@ -80,7 +80,7 @@ typedef queue_send_message_func				 *queue_send_message_func_ptr;
 typedef queue_emitted_element_func			 *queue_emitted_element_func_ptr;
 typedef queue_emitted_message_func			 *queue_emitted_message_func_ptr;
 
-#ifdef NODE_IMPORT
+#ifdef _DEBUG
 C_IMPORT int			C_API_FUNC		node_init_self(mem_zone_ref_ptr out_self_node, unsigned short node_port, mem_zone_ref_ptr node_config);
 C_IMPORT int			C_API_FUNC		new_peer_node(struct host_def *host, mem_zone_ref_ptr peer_nodes);
 C_IMPORT int			C_API_FUNC		node_add_block(mem_zone_ref_ptr header, mem_zone_ref_ptr txs);
@@ -592,7 +592,7 @@ int load_module(const char *file, const char *mod_name, tpo_mod_file *mod)
 void load_node_module()
 {
 	load_module("modz/node_adx.tpo", "node_adx", &node_mod);
-#ifdef NODE_IMPORT
+#ifdef _DEBUG
 	_node_init_self = get_tpo_mod_exp_addr_name(&node_mod, "node_init_self",node_mod.deco_type);
 	_new_peer_node = get_tpo_mod_exp_addr_name(&node_mod, "new_peer_node",node_mod.deco_type);
 	_node_add_block = get_tpo_mod_exp_addr_name(&node_mod, "node_add_block",node_mod.deco_type);
