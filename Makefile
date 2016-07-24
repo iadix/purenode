@@ -9,6 +9,6 @@ export/launcher:
 	gcc -Lexport/ -lcon -Ilibcon -Ilibcon/include -Ilibase/include launcher/main.c -o export/launcher.exe
 
 export/libcon.so: $(CONSRC) $(XMLSRC) $(ZLIBSRC)
-	nasm -f elf32 -DPREFIX -DASM_EXPORT libcon/tpo.asm -o tpo.o
-	nasm -f elf32 -DPREFIX -DASM_EXPORT libcon/runtime.asm -o runtime.o
+	nasm -f elf32 libcon/tpo.asm -o tpo.o
+	nasm -f elf32 libcon/runtime.asm -o runtime.o
 	gcc -Ilibcon -Ilibcon/include -Ilibcon/unix/include -Ilibcon/expat/xmlparse -Ilibcon/expat/xmltok runtime.o tpo.o $(CONSRC) $(XMLSRC) $(ZLIBSRC) -DIMP_API= --shared -o export/libcon.so
