@@ -6,7 +6,7 @@ default: export/libcon.so export/launcher
 	echo 'done'
 
 export/launcher:
-	gcc -Lexport/ -lcon -Ilibcon -Ilibcon/include -Ilibase/include launcher/main.c -o export/launcher.exe
+	gcc -Lexport/ -lcon -Ilibcon -Ilibcon/include -Ilibase/include launcher/main.c -o export/launcher
 
 export/libcon.so: $(CONSRC) $(XMLSRC) $(ZLIBSRC)
 	nasm -f elf32 libcon/tpo.asm -o tpo.o
