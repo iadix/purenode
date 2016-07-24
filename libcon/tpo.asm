@@ -840,8 +840,11 @@ error_get_tpo_mod_func:
 ret	
 
 
-
+%ifdef PREFIX
 _sys_add_tpo_mod_func_name:
+%else
+sys_add_tpo_mod_func_name:
+%endif
   
   mov	eax						,	[esp+4]
   mov	[sys_tpo_mod_name_ptr]	,	eax

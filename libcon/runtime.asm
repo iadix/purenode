@@ -13,7 +13,8 @@ section .text
 	global  _compare_z_exchange_c
 %else
 	GLOBAL  compare_z_exchange_c:function
-	GLOBAL  _fetch_add_c:function
+	GLOBAL  fetch_add_c:function
+	global  memset:function
 %endif
 
 %ifdef PREFIX
