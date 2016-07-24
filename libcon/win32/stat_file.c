@@ -10,7 +10,6 @@
 #include "strs.h"
 #include "fsio.h"
 
-#include <windows.h>
 
 struct string log_file_name = { PTR_NULL };
 
