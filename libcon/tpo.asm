@@ -185,22 +185,22 @@ section .text
 	global  _sys_add_tpo_mod_func_name
 
 %else
-	GLOBAL _tpo_mod_imp_func_addr:function
-	GLOBAL _tpo_mod_imp_func_addr_c:function
-	GLOBAL _tpo_mod_add_func_addr_c:function
-	GLOBAL _tpo_get_mod_entry_hash_c:function
-	GLOBAL _tpo_get_mod_sec_idx_c:function
-	GLOBAL _tpo_get_mod_entry_idx_c:function
-	GLOBAL _tpo_get_fn_entry_name_c:function
-	GLOBAL _tpo_get_fn_entry_hash_c:function
-	GLOBAL _tpo_get_fn_entry_idx_c:function
-	GLOBAL _tpo_add_mod_c:function
-	GLOBAL _tpo_mod_add_section_c:function
-	GLOBAL _tpo_mod_add_func_c:function
-	GLOBAL _tpo_calc_exp_func_hash_c:function
-	GLOBAL _tpo_calc_exp_func_hash_name_c:function
-	GLOBAL _calc_crc32_c:function
-	global  _sys_add_tpo_mod_func_name:function
+	GLOBAL tpo_mod_imp_func_addr:function
+	GLOBAL tpo_mod_imp_func_addr_c:function
+	GLOBAL tpo_mod_add_func_addr_c:function
+	GLOBAL tpo_get_mod_entry_hash_c:function
+	GLOBAL tpo_get_mod_sec_idx_c:function
+	GLOBAL tpo_get_mod_entry_idx_c:function
+	GLOBAL tpo_get_fn_entry_name_c:function
+	GLOBAL tpo_get_fn_entry_hash_c:function
+	GLOBAL tpo_get_fn_entry_idx_c:function
+	GLOBAL tpo_add_mod_c:function
+	GLOBAL tpo_mod_add_section_c:function
+	GLOBAL tpo_mod_add_func_c:function
+	GLOBAL tpo_calc_exp_func_hash_c:function
+	GLOBAL tpo_calc_exp_func_hash_name_c:function
+	GLOBAL calc_crc32_c:function
+	global sys_add_tpo_mod_func_name:function
 %endif
 
 
@@ -942,7 +942,8 @@ ret
 ;------------------------------------------------------------------------------------------------------------------------------------------------
 ;			unsigned int 	tpo_mod_imp_func_addr_c	(unsigned int mod_hash,unsigned int crc_func);
 ;------------------------------------------------------------------------------------------------------------------------------------------------
-_tpo_mod_imp_func_addr_c:
+
+%ifdef PREFIX _tpo_mod_imp_func_addr_c: %else tpo_mod_imp_func_addr_c: %endif
 ;------------------------------------------------------------------------------------------------------------------------------------------------
 
 	mov eax						,[esp+4]				; import dll hash
@@ -965,7 +966,7 @@ ret
 ;------------------------------------------------------------------------------------------------------------------------------------------------
 ;			unsigned int 	tpo_mod_add_func_addr_c			(unsigned int mod_hash,unsigned int crc_func,unsigned int func_addr);
 ;------------------------------------------------------------------------------------------------------------------------------------------------
-_tpo_mod_add_func_addr_c:
+%ifdef PREFIX _tpo_mod_add_func_addr_c: %else tpo_mod_add_func_addr_c: %endif
 ;------------------------------------------------------------------------------------------------------------------------------------------------
 
 	mov eax,	[esp+4]
@@ -989,7 +990,7 @@ ret
 ;------------------------------------------------------------------------------------------------------------------------------------------------
 ;			struct kern_mod_t	*KERN_API_FUNC 	tpo_get_mod_entry_hash_c		(unsigned int mod_hash);
 ;------------------------------------------------------------------------------------------------------------------------------------------------
-_tpo_get_mod_entry_hash_c:
+%ifdef PREFIX _tpo_get_mod_entry_hash_c: %else tpo_get_mod_entry_hash_c:  %endif
 ;------------------------------------------------------------------------------------------------------------------------------------------------
 
 	mov eax							,[esp+4]				; import dll hash
@@ -1009,7 +1010,7 @@ ret
 ;------------------------------------------------------------------------------------------------------------------------------------------------
 ;			struct kern_mod_sec_t	*KERN_API_FUNC 	tpo_get_mod_sec_idx_c		(unsigned int mod_idx,unsigned int sec_idx);
 ;------------------------------------------------------------------------------------------------------------------------------------------------
-_tpo_get_mod_sec_idx_c:
+%ifdef PREFIX _tpo_get_mod_sec_idx_c: %else tpo_get_mod_sec_idx_c: %endif
 ;-------------------------------------------------------
 	push ebx
 	mov eax		,	[esp+8]				; import dll idx
@@ -1049,7 +1050,7 @@ ret
 ;------------------------------------------------------------------------------------------------------------------------------------------------
 ;			struct kern_mod_t	*KERN_API_FUNC 	tpo_get_mod_entry_idx_c		(unsigned int idx);
 ;------------------------------------------------------------------------------------------------------------------------------------------------
-_tpo_get_mod_entry_idx_c:
+%ifdef PREFIX _tpo_get_mod_entry_idx_c: %else tpo_get_mod_entry_idx_c: %endif
 ;------------------------------------------------------------------------------------------------------------------------------------------------
 
 	mov eax	,[esp+4]				; import dll idx
@@ -1069,7 +1070,7 @@ ret
 ;------------------------------------------------------------------------------------------------------------------------------------------------
 ;			kern_mod_fn_t *_tpo_get_fn_entry_name_c	(unsigned int mod_idx,unsigned int mod_hash,unsigned int str_idx,unsigned int deco_type);
 ;------------------------------------------------------------------------------------------------------------------------------------------------
-_tpo_get_fn_entry_name_c:
+%ifdef PREFIX _tpo_get_fn_entry_name_c: %else tpo_get_fn_entry_name_c: %endif
 ;------------------------------------------------------------------------------------------------------------------------------------------------
 
   mov	eax							,	[esp+4]
@@ -1133,7 +1134,7 @@ ret
 ;------------------------------------------------------------------------------------------------------------------------------------------------
 ;			kern_mod_fn_t *tpo_get_fn_entry_hash_c	(unsigned int mod_hash,unsigned int crc_func);
 ;------------------------------------------------------------------------------------------------------------------------------------------------
-_tpo_get_fn_entry_hash_c:
+%ifdef PREFIX _tpo_get_fn_entry_hash_c: %else tpo_get_fn_entry_hash_c: %endif
 ;------------------------------------------------------------------------------------------------------------------------------------------------
 
 	mov eax						,[esp+4]				; import dll hash
@@ -1157,7 +1158,7 @@ ret
 ;------------------------------------------------------------------------------------------------------------------------------------------------
 ;		kern_mod_fn_t *tpo_get_fn_entry_idx_c	(unsigned int mod_hash,unsigned int idx_func); 
 ;------------------------------------------------------------------------------------------------------------------------------------------------
-_tpo_get_fn_entry_idx_c:
+%ifdef PREFIX _tpo_get_fn_entry_idx_c: %else _tpo_get_fn_entry_idx_c:  %endif
 ;------------------------------------------------------------------------------------------------------------------------------------------------
 
 	mov eax						,[esp+4]				; import dll hash
@@ -1209,7 +1210,7 @@ ret
 ;------------------------------------------------------------------------------------------------------------------------------------------------
 ;		unsigned int 		tpo_add_mod_c			(unsigned int mod_hash,unsigned int deco_type	,unsigned int string_table_addr);
 ;------------------------------------------------------------------------------------------------------------------------------------------------
-_tpo_add_mod_c:
+%ifdef PREFIX _tpo_add_mod_c: %else tpo_add_mod_c:  %endif
 ;------------------------------------------------------------------------------------------------------------------------------------------------
 	mov eax							,[esp+4]
 	mov [sys_tpo_mod_hash]			,eax
@@ -1253,7 +1254,7 @@ ret
 ;------------------------------------------------------------------------------------------------------------------------------------------------
 ;		unsigned int 		tpo_mod_add_section_c			(unsigned int mod_idx,unsigned int section_addr,unsigned int section_size);
 ;------------------------------------------------------------------------------------------------------------------------------------------------
-_tpo_mod_add_section_c:
+%ifdef PREFIX _tpo_mod_add_section_c: %else tpo_mod_add_section_c:  %endif
 ;------------------------------------------------------------------------------------------------------------------------------------------------
 	mov eax							,[esp+4]
 	mov [sys_tpo_mod_idx]			,eax
@@ -1276,7 +1277,7 @@ ret
 ;------------------------------------------------------------------------------------------------------------------------------------------------
 ;		unsigned int 		tpo_mod_add_func_c				(unsigned int mod_idx ,unsigned int func_addr	,unsigned int func_type,unsigned int string_id);
 ;------------------------------------------------------------------------------------------------------------------------------------------------
-_tpo_mod_add_func_c:
+%ifdef PREFIX _tpo_mod_add_func_c: %else tpo_mod_add_func_c: %endif
 ;------------------------------------------------------------------------------------------------------------------------------------------------	
 	mov eax							,[esp+4]
 	mov [sys_tpo_mod_idx]			,eax
@@ -1321,7 +1322,7 @@ ret
 ;------------------------------------------------------------------------------------------------------------------------------------------------
 ;unsigned int 		tpo_calc_exp_func_hash_c	(unsigned int mod_idx ,unsigned int string_id);
 ;------------------------------------------------------------------------------------------------------------------------------------------------
-_tpo_calc_exp_func_hash_c:
+%ifdef PREFIX _tpo_calc_exp_func_hash_c: %else tpo_calc_exp_func_hash_c: %endif
 ;------------------------------------------------------------------------------------------------------------------------------------------------
 
   mov	eax						,	[esp+4]
@@ -1355,7 +1356,7 @@ ret
 ;------------------------------------------------------------------------------------------------------------------------------------------------
 ;unsigned int 	tpo_calc_exp_func_hash_name_c	(char *func_name ,unsigned int deco_type);
 ;------------------------------------------------------------------------------------------------------------------------------------------------
-_tpo_calc_exp_func_hash_name_c:
+%ifdef PREFIX _tpo_calc_exp_func_hash_name_c: %else _tpo_calc_exp_func_hash_name_c: %endif
 ;------------------------------------------------------------------------------------------------------------------------------------------------
 
   mov	eax							,	[esp+4]
@@ -1378,7 +1379,7 @@ ret
 ;------------------------------------------------------------------------------------------------------------------------------------------------
 ;unsigned int 	tpo_calc_imp_func_hash_name_c	(char *func_name ,unsigned int src_deco_type,unsigned int deco_type);
 ;------------------------------------------------------------------------------------------------------------------------------------------------
-_tpo_calc_imp_func_hash_name_c:
+%ifdef PREFIX _tpo_calc_imp_func_hash_name_c: %else tpo_calc_imp_func_hash_name_c:  %endif
 ;------------------------------------------------------------------------------------------------------------------------------------------------
 
   mov	eax								,	[esp+4]
