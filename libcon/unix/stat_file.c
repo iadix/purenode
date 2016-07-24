@@ -17,6 +17,10 @@
 struct string log_file_name	={PTR_NULL};
 FILE			 *log_file	=PTR_NULL;
 
+OS_API_C_FUNC(int) set_mem_exe(mem_zone_ref_ptr zone)
+{
+	mprotect(get_zone_ptr(zone, 0), get_zone_size(zone), PROT_READ | PROT_EXEC|PROT_WRITE);
+}
 
 OS_API_C_FUNC(int) stat_file(const char *path)
 {

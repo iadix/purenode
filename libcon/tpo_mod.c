@@ -6,6 +6,7 @@
 #include "base/mem_base.h"
 
 #define KERNEL_API				C_EXPORT
+#include "include/fsio.h"
 #include "include/mem_stream.h"
 #include "include/tpo_mod.h"
 
@@ -506,7 +507,7 @@ OS_API_C_FUNC(void) register_tpo_exports(tpo_mod_file *tpo_mod,const char *mod_n
 OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_file,unsigned int imp_func_addr)
 {
 	char			mod_name[128];
-	unsigned int	old;
+
 	
 	unsigned int	nsecs;
 	mem_ptr			section_remaps[16];
@@ -726,8 +727,14 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 					dll_crc		=	calc_crc32_c(dll_imp_name,64);
 					func_ptr = tpo_get_fn_entry_name_c(tpo_file->mod_idx, dll_crc, ofset, deco_type);
 					if (func_ptr == PTR_FF)
-						printf("import symbol not found %s@%s\n", sym_name, dll_imp_name);
-					
+					{
+						console_print("import symbol not found ");
+						console_print(sym_name);
+						console_print(" ");
+						console_print(dll_imp_name);
+						console_print("\n");
+
+					}
 					if(dll_name[imp_ofs]==0)break;
 					imp_ofs++;
 				}
@@ -789,8 +796,11 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 
 				if(tpo_mod_add_export(tpo_file,sec_idx,crc_func,fn_str_ofs,sym_ofs)!=1)
 				{
-					printf("could not add tpo export %s@%s\n", sym_name, dll_name);
-					//kernel_log	(kernel_log_id,"could not add tpo export \n");
+					console_print("could not add tpo export ");
+					console_print(sym_name);
+					console_print(" ");
+					console_print(dll_name);
+					console_print("\n");
 				}
 					
 				
@@ -830,7 +840,7 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 
 			if(!tpo_mod_write_reloc		(tpo_file,n,baseAddr,offset))
 			{
-				printf("error in hard remap \n");
+				console_print("error in hard remap \n");
 			}
 			n_rmp++;
 		}
@@ -839,10 +849,7 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 		tpo_mod_add_section_c	(tpo_file->mod_idx,mem_to_uint(get_zone_ptr(&tpo_file->data_sections,tpo_file->sections[n].section_ptr)),(unsigned int)tpo_file->sections[n].section_size);
 		n++;
 	}
-	
-
-	VirtualProtect(get_zone_ptr(&tpo_file->data_sections,0), get_zone_size(&tpo_file->data_sections), PAGE_EXECUTE_READWRITE, &old);
-
+	set_mem_exe(&tpo_file->data_sections);
 	return 1;
 }
 
