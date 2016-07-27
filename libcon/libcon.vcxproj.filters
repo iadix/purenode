@@ -142,11 +142,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="libcon.def">
-      <Filter>Fichiers de ressources</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
     <CustomBuild Include="runtime.asm">
       <Filter>Fichiers sources</Filter>
     </CustomBuild>
