@@ -5,7 +5,7 @@ BASESRC=libbase/http.c libbase/main.c libbase/tree.c libbase/md5.c libbase/sha25
 CFLAG=-m32
 
 default: export/libcon.so export/launcher
-	echo 'done'
+	@echo 'done'
 
 export/launcher: launcher/main.c export/libcon.so
 	gcc $(CFLAGS) -Lexport -lcon -Ilibcon -Ilibcon/include -Ilibbase/include launcher/main.c -o export/launcher
@@ -22,6 +22,25 @@ export/libprotocol_adx.so:protocol_adx/main.c protocol_adx/protocol.c export/lib
 export/libbase.so:libbaseimpl/funcs.c
 	gcc $(CFLAGS) -Ilibcon -Ilibcon/include -Ilibbase/include  libbaseimpl/funcs.c --shared -o export/libbase.so
 
+modz:export/modz/protocol_adx.tpo export/modz/block_adx.tpo export/modz/iadixcoin.tpo
+	@echo "modz ok"
+
+export/modz/iadixcoin.tpo:mod_maker export/libiadixcoin.so
+	export/mod_maker export/libiadixcoin.so ./export/modz
+	mv export/modz/libiadixcoin.tpo export/modz/iadixcoin.tpo
+
+export/modz/block_adx.tpo:mod_maker export/libblock_adx.so
+	export/mod_maker ./export/libblock_adx.so ./export/modz
+	mv export/modz/libblock_adx.tpo export/modz/block_adx.tpo
+	
+export/modz/protocol_adx.tpo:mod_maker export/libprotocol_adx.so
+	export/mod_maker ./export/libprotocol_adx.so ./export/modz
+	mv export/modz/libprotocol_adx.tpo export/modz/protocol_adx.tpo
+
+
+export/mod_maker:
+	gcc  $(CFLAGS)  -Lexport -lcon  -Ilibcon -Ilibcon/include mod_maker/coff.c mod_maker/main.c mod_maker/elf.c -o export/mod_maker
+	
 export/libcon.so: $(CONSRC) $(XMLSRC) $(ZLIBSRC)
 	nasm -f elf32 libcon/tpo.asm -o tpo.o
 	nasm -f elf32 libcon/runtime.asm -o runtime.o
@@ -29,3 +48,6 @@ export/libcon.so: $(CONSRC) $(XMLSRC) $(ZLIBSRC)
 
 clean:
 	rm -f export/libcon.so export/libprotocol_adx.so export/libblock_adx.so export/libiadixcoin.so export/launcher
+
+clean_mod:
+	rm -f export/modz/protocol_adx.tpo export/modz/block_adx.tpo export/modz/iadixcoin.tpo
