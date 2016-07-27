@@ -10,7 +10,7 @@
 
 typedef void *mem_ptr;
 typedef const void *const_mem_ptr;
-typedef unsigned long mem_size;
+//typedef unsigned long mem_size;
 
 
 
