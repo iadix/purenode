@@ -50,14 +50,6 @@
 	#endif
 #endif
 
-
-
-typedef		unsigned int		C_INT_FUNC interupt_func(void *data);
-typedef		interupt_func		*interupt_func_ptr	;
-
-
-
-
 typedef union
 {
 	struct {

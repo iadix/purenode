@@ -35,7 +35,7 @@ struct read_group my_read_group={0};
 struct string	  read_done[64]={0};
 
 
-int network_init()
+OS_API_C_FUNC(int) network_init()
 {
 	sys_add_tpo_mod_func_name("libcon", "network_init", network_init, 0);
 	sys_add_tpo_mod_func_name("libcon", "network_free", network_free, 0);
@@ -149,11 +149,11 @@ OS_API_C_FUNC(int) get_con_saddr(struct con *mycon, ipv4_t addr)
 	return 1;
 }
 
-int network_free()
+OS_API_C_FUNC(int) network_free()
 {
 	 return 0;
 }
-int get_if(const char *gw_ip,struct string *name,struct string *ip)
+OS_API_C_FUNC(int) get_if(const char *gw_ip, struct string *name, struct string *ip)
 {
 	struct ifaddrs *addrs,*tmp;
 	//unsigned int 	  gw_addr;
@@ -189,19 +189,19 @@ int get_if(const char *gw_ip,struct string *name,struct string *ip)
 	return 0;
 }
 
-const struct string *get_con_error(struct con *Con)
+OS_API_C_FUNC(const struct string *)get_con_error(struct con *Con)
 {
 	return &Con->error;
 }
-struct string *get_con_lastline(struct con *Con)
+OS_API_C_FUNC(struct string *)get_con_lastline(struct con *Con)
 {
 	return &Con->lastLine;
 }
-const struct host_def *get_con_hostd(struct con *Con)
+OS_API_C_FUNC(const struct host_def *)get_con_hostd(struct con *Con)
 {
 	return &Con->host;
 }
-int con_consume_data(struct con *Con,size_t mov_len)
+OS_API_C_FUNC(int) con_consume_data(struct con *Con, size_t mov_len)
 {
 	if(Con->lastLine.str==NULL)return 0;
 	if(Con->lastLine.len==0)return 0;
@@ -216,7 +216,7 @@ int con_consume_data(struct con *Con,size_t mov_len)
 	Con->lastLine.str[Con->lastLine.len]=0;
 	return (int)mov_len;
 }
-int con_move_data(struct con *Con,struct string *data,size_t mov_len)
+OS_API_C_FUNC(int) con_move_data(struct con *Con, struct string *data, size_t mov_len)
 {
 	size_t		new_len,new_size;
 
@@ -252,14 +252,14 @@ int con_move_data(struct con *Con,struct string *data,size_t mov_len)
 	Con->lastLine.str[Con->lastLine.len]=0;
 	return (int)mov_len;
 }
-void init_read_group()
+OS_API_C_FUNC(void) init_read_group()
 {
 	FD_ZERO(&my_read_group.read_set);
 	memset(my_read_group.cons,0,sizeof(my_read_group.cons));
 	my_read_group.max_sock=0;
 }
 
-int read_group_has(const char *file)
+OS_API_C_FUNC(int) read_group_has(const char *file)
 {
 	struct read_con		*rcon;
 	for(rcon=my_read_group.cons;rcon->rd_con!=NULL;rcon++)
@@ -276,7 +276,7 @@ void add_read_done(const char *file_name)
 	make_string(file_done,file_name);
 }
 
-int pop_read_done(struct string *out)
+OS_API_C_FUNC(int) pop_read_done(struct string *out)
 {
 	struct string		*file_done=	read_done;
 
@@ -291,7 +291,7 @@ int pop_read_done(struct string *out)
 }
 
 
-struct con	*init_con	()
+OS_API_C_FUNC(struct con	*)init_con()
 {
 	struct con	*newCon;
 	newCon		=	malloc_c(sizeof(struct con));
@@ -305,7 +305,7 @@ struct con	*init_con	()
 	return newCon;
 }
 
-void con_close		(struct con *Con)
+OS_API_C_FUNC(void) con_close(struct con *Con)
 {
 	FD_ZERO			(&Con->con_set);
 	if(Con->sock>0)
@@ -319,7 +319,7 @@ void con_close		(struct con *Con)
 	free_c			(Con);
 }
 
-char *readline(struct con *Con,ctime_t timeout)
+OS_API_C_FUNC(char *)readline(struct con *Con, ctime_t timeout)
 {
 	fd_set			 fd_read,fd_err;
 	char			 line[1024];
@@ -401,7 +401,7 @@ char *readline(struct con *Con,ctime_t timeout)
 }
 
 
-int read_data(struct con *Con,size_t max)
+OS_API_C_FUNC(int) read_data(struct con *Con, size_t max)
 {
 	fd_set			read_fd_set,err_fd_set;
 	size_t			read;
@@ -443,7 +443,7 @@ int read_data(struct con *Con,size_t max)
 }
 
 
-void add_read_group(struct con *mycon,void *ffile,size_t transfer_len,const struct string *file_name)
+OS_API_C_FUNC(void) add_read_group(struct con *mycon, void *ffile, size_t transfer_len, const struct string *file_name)
 {
 	FILE				*file = (FILE *)ffile;
 	struct read_con		*rcon;
@@ -464,7 +464,7 @@ void add_read_group(struct con *mycon,void *ffile,size_t transfer_len,const stru
 		my_read_group.max_sock=mycon->sock;
 }
 
-void do_read_group()
+OS_API_C_FUNC(void) do_read_group()
 {
 	struct timeval		timeout;
 	struct read_con		*rcon;
@@ -520,7 +520,7 @@ void do_read_group()
 }
 
 
-int send_data (struct con *Con,unsigned char *data,size_t len)
+OS_API_C_FUNC(int) send_data (struct con *Con,unsigned char *data,size_t len)
 {
 	size_t b_sent;
 	int		s;
@@ -536,7 +536,7 @@ int send_data (struct con *Con,unsigned char *data,size_t len)
 	}
 	return b_sent;
 }
-struct con *do_get_incoming(struct con *listen_con,unsigned int time_out)
+OS_API_C_FUNC(struct con *)do_get_incoming(struct con *listen_con, unsigned int time_out)
 {
 	fd_set		    my_listen,error;
 	struct con		*newCon;
@@ -571,7 +571,7 @@ struct con *do_get_incoming(struct con *listen_con,unsigned int time_out)
 	return NULL;
 }
 
-struct con	*open_port(const char *my_addr,unsigned short port)
+OS_API_C_FUNC(struct con	*)open_port(const char *my_addr, unsigned short port)
 {
 	struct con			*newCon;
 	    int reuseaddr = 1; /* True */
@@ -606,13 +606,13 @@ struct con	*open_port(const char *my_addr,unsigned short port)
 }
 
 
-int set_tcp_no_delay(struct con *mycon,int on)
+OS_API_C_FUNC(int) set_tcp_no_delay(struct con *mycon, int on)
 {
 	return 	setsockopt	(mycon->sock,IPPROTO_TCP,TCP_NODELAY,(char *) &on,sizeof(int));
 }
 
 
-int reconnect	(struct con *mycon)
+OS_API_C_FUNC(int) reconnect(struct con *mycon)
 {
 	struct hostent		*iHost;
 	int					iResult;
@@ -652,7 +652,7 @@ int reconnect	(struct con *mycon)
 
 }
 
-struct con	*do_connect	(const struct host_def *host)
+OS_API_C_FUNC(struct con	*)do_connect(const struct host_def *host)
 {
 	struct con			*newCon;
 	struct hostent		*iHost;
@@ -690,7 +690,7 @@ struct con	*do_connect	(const struct host_def *host)
 }
 
 
-struct con	*create_upnp_broadcast(struct host_def *host)
+OS_API_C_FUNC(struct con	*)create_upnp_broadcast(struct host_def *host)
 {
 	struct con			*newCon;
 	struct	sockaddr_in upnpControl;
@@ -724,7 +724,7 @@ struct con	*create_upnp_broadcast(struct host_def *host)
 	return newCon;
 }
 
-int send_upnpbroadcast(struct con *Con,struct string *data)
+OS_API_C_FUNC(int) send_upnpbroadcast(struct con *Con, struct string *data)
 {
 	int				ret,s;
 	time_t			start_time,my_time;

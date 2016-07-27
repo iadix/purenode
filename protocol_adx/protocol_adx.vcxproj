@@ -63,7 +63,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)export\</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libcon_d.lib;kernel32.lib;libbaseimpl_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libcon_d.lib;kernel32.lib;libbase_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>

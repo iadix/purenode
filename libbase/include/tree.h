@@ -276,6 +276,7 @@ LIBBASE_API  int			C_API_FUNC	tree_manager_set_child_value_rhash		(mem_zone_ref_
 LIBBASE_API  int			C_API_FUNC	tree_manager_set_child_value_bhash		(mem_zone_ref_ptr p_node_ref, const char *name, const hash_t str);
 LIBBASE_API  int			C_API_FUNC	tree_manager_set_child_value_vstr		(mem_zone_ref_ptr p_node_ref, const char *name, const struct string *str);
 LIBBASE_API  int			C_API_FUNC	tree_manager_set_child_value_vint		(mem_zone_ref_ptr p_node_ref, const char *name, const_mem_ptr vint);
+
 LIBBASE_API  int			C_API_FUNC	tree_manager_set_child_value_vint32		(mem_zone_ref_ptr p_node_ref, const char *name, unsigned int value);
 LIBBASE_API  void			C_API_FUNC	tree_manager_set_output					(int output);
 LIBBASE_API  void 			C_API_FUNC	tree_manager_dump_node_rec				(mem_zone_ref_const_ptr node_ref,unsigned int rec_level,unsigned int max_rec);

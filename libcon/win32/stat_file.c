@@ -10,12 +10,19 @@
 #include "strs.h"
 #include "fsio.h"
 
+#include <windows.h>
 
 struct string log_file_name = { PTR_NULL };
 
 OS_API_C_FUNC(int) set_mem_exe(mem_zone_ref_ptr zone)
 {
 	unsigned int	old;
+	mem_ptr				ptr;
+	mem_size			size;
+	int					ret;
+
+	ptr = uint_to_mem(mem_to_uint(get_zone_ptr(zone, 0))&(~0xFFF));
+	size = (get_zone_size(zone)&(~0xFFF)) + 4096*2;
 	return VirtualProtect(get_zone_ptr(zone, 0), get_zone_size(zone), PAGE_EXECUTE_READWRITE, &old);
 }
 
@@ -208,6 +215,9 @@ OS_API_C_FUNC(void	*)kernel_memory_map_c(unsigned int size)
 
  OS_API_C_FUNC(int) log_output(const char *data)
  {
-	 append_file(log_file_name.str, data, strlen_c(data));
+	 if (log_file_name.str == PTR_NULL)
+		 console_print(data);
+	 else
+		append_file(log_file_name.str, data, strlen_c(data));
 	 return 1;
  }

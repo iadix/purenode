@@ -13,7 +13,7 @@
 #include <mem_stream.h>
 #include <tpo_mod.h>
 
-#include <sys_include.h>
+
 
 mem_zone_ref		self_node  = { PTR_INVALID };
 mem_zone_ref		peer_nodes = { PTR_INVALID };
@@ -145,10 +145,10 @@ C_IMPORT size_t		    C_API_FUNC		file_size(const char *path);
 
 unsigned int			ping_nonce;
 
-IMP_API 	int		C_API_FUNC append_file(const char *path, void *data, size_t data_len);
-IMP_API		time_t	C_API_FUNC get_time_c();
-IMP_API		time_t	C_API_FUNC daemonize();
-IMP_API		int		C_API_FUNC get_file(const char *path, unsigned char **data, size_t *data_len);
+C_IMPORT 	int		C_API_FUNC append_file(const char *path, void *data, size_t data_len);
+C_IMPORT		ctime_t	C_API_FUNC get_time_c();
+C_IMPORT		ctime_t	C_API_FUNC daemonize();
+C_IMPORT		int		C_API_FUNC get_file(const char *path, unsigned char **data, size_t *data_len);
 
 int read_config(const char *file,struct string *port, struct string *node_hostname)
 {
@@ -546,8 +546,8 @@ int process_nodes()
 
 	for (tree_manager_get_first_child(&peer_nodes, &my_list, &node); ((node != NULL) && (node->zone != NULL)); tree_manager_get_next_child(&my_list, &node))
 	{
-		time_t next_check;
-		time_t		 curtime;
+		ctime_t next_check;
+		ctime_t		 curtime;
 		process_node_messages(node);
 		process_node_elements(node);
 

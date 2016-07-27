@@ -90,6 +90,7 @@ LIBC_API int			C_API_FUNC gfx_create_rect_style			(struct obj_array_t *rect_styl
 LIBC_API unsigned int	C_API_FUNC gfx_ctrl_add_item_data			(mem_zone_ref_ptr ctrl_data_node,unsigned int item_id,mem_zone_ref_ptr item_data);
 LIBC_API int			C_API_FUNC gfx_create_set_ctrl_event		(mem_zone_ref_ptr ctrl_data_node,const char *type,const struct gfx_rect *rect,const char *prop,unsigned int prop_val);
 LIBC_API void			C_API_FUNC swap_zone_ref					(mem_zone_ref_ptr dest_zone_ref, mem_zone_ref_ptr src_zone_ref);
+LIBC_API int			C_API_FUNC align_zone_memory				(mem_zone_ref *zone_ref, mem_size align);
 
 static __inline unsigned int mem_to_uint(const_mem_ptr ptr)
 {

@@ -1254,6 +1254,62 @@ OS_API_C_FUNC(unsigned int) allocate_new_zone(unsigned int area_id,mem_size zone
 	return 0;
 }
 
+OS_API_C_FUNC(int) 	align_zone_memory(mem_zone_ref *zone_ref, mem_size align)
+{
+	unsigned int			n, cnt;
+	mem_area				*area_ptr;
+	mem_zone_desc			new_free_zone;
+	size_t					new_size;
+	unsigned int			mask;
+	mem_zone				*src_zone;
+	mem_zone_desc			new_zone;
+	mem_zone_desc			*mem;
+	mem_ptr					aligned_ptr;
+	src_zone = zone_ref->zone;
+	mask	 = align - 1;
+	if ((mem_to_uint(src_zone->mem.ptr) & mask) == 0)return 1;
+
+	new_size = src_zone->mem.size + align;
+
+	if (new_size & mask)
+		new_size = ((new_size & (~mask)) + align);
+
+	area_ptr = get_area(src_zone->area_id);
+	if (area_ptr == PTR_NULL)
+	{
+		return 0;
+	}
+	mem = &src_zone->mem;
+	
+	if (find_free_zone(area_ptr, new_size, &new_zone) == 0)
+	{
+		//task_manager_release_semaphore(area_ptr->lock_sema,0);
+		return -1;
+	}
+
+	if (mem_to_uint(new_zone.ptr) & mask)
+	{
+		aligned_ptr		= uint_to_mem(((mem_to_uint(new_zone.ptr) & (~mask)) + align));
+		new_zone.ptr	= aligned_ptr;
+
+		new_free_zone.size = mem_sub(new_zone.ptr, aligned_ptr);
+		if (new_free_zone.size > 0)
+		{
+			new_zone.size	 -= new_free_zone.size;
+			new_free_zone.ptr = new_zone.ptr;
+			free_zone_area(src_zone->area_id, &new_free_zone);
+		}
+	}
+	memcpy_c		(new_zone.ptr, src_zone->mem.ptr, src_zone->mem.size);
+	free_zone_area	(src_zone->area_id, &src_zone->mem);
+	src_zone->mem.ptr = new_zone.ptr;
+	src_zone->mem.size = new_zone.size;
+
+	return 1;
+
+	
+
+}
 
 
 

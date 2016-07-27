@@ -612,7 +612,7 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 
 		sec_data_ptr	=	get_zone_ptr		(&file_stream->data,file_stream->current_ptr+file_stream->buf_ofs);
 		file_ofset		=	file_stream->current_ptr-file_start;
-		sec_idx			=	tpo_mod_add_section	(tpo_file,file_ofset,sec_data_ptr,sec_data_len,&crc_data);
+ 		sec_idx			=	tpo_mod_add_section	(tpo_file,file_ofset,sec_data_ptr,sec_data_len,&crc_data);
 
 		
 		/*
@@ -848,6 +848,7 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 		tpo_mod_add_section_c	(tpo_file->mod_idx,mem_to_uint(get_zone_ptr(&tpo_file->data_sections,tpo_file->sections[n].section_ptr)),(unsigned int)tpo_file->sections[n].section_size);
 		n++;
 	}
+	
 	set_mem_exe(&tpo_file->data_sections);
 	return 1;
 }

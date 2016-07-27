@@ -5,28 +5,25 @@
 
 #if defined(_M_X64) || defined(__amd64__)
 
-#define KERN_API_FUNC		__attribute__((__stdcall))
+	#define KERN_API_FUNC		ASM_API_FUNC
 
-#define C_API_FUNC			
-#define ASM_API_FUNC		
-#define C_INT_FUNC			
+	#define C_API_FUNC			
+	#define ASM_API_FUNC		
 
-#define	MOD_NAME_DECO		GCC_STDCALL_64
+	#define	MOD_NAME_DECO			GCC_STDCALL_64
 
-typedef long int				int64_t;
-typedef unsigned long int		uint64_t;
+	typedef long int				int64_t;
+	typedef unsigned long int		uint64_t;
 
 
 #else
-#define KERN_API_FUNC		__attribute__((__stdcall))
-
-#define C_API_FUNC			
-#define ASM_API_FUNC		
-#define C_INT_FUNC			
-#define KERN_API_FUNC		
-#define	MOD_NAME_DECO		GCC_STDCALL_32
-typedef long long				int64_t;
-typedef	unsigned long long		uint64_t;
+	
+	#define C_API_FUNC				__attribute__((stdcall)) 
+	#define ASM_API_FUNC			__attribute__((cdecl)) 	
+	#define KERN_API_FUNC			ASM_API_FUNC
+	#define	MOD_NAME_DECO			GCC_STDCALL_32
+	typedef long long				int64_t;
+	typedef	unsigned long long		uint64_t;
 
 #endif
 
@@ -45,7 +42,6 @@ typedef	unsigned long long		uint64_t;
 	#else
 		#define C_API_FUNC			__stdcall
 		#define ASM_API_FUNC		__cdecl
-		#define C_INT_FUNC			__cdecl
 		#define KERN_API_FUNC		ASM_API_FUNC
 		#define	MOD_NAME_DECO		MSVC_STDCALL_32
 	#endif	

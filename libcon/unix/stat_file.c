@@ -20,7 +20,16 @@ FILE			 *log_file	=PTR_NULL;
 
 OS_API_C_FUNC(int) set_mem_exe(mem_zone_ref_ptr zone)
 {
-	mprotect(get_zone_ptr(zone, 0), get_zone_size(zone), PROT_READ | PROT_EXEC|PROT_WRITE);
+	mem_ptr				ptr;
+	mem_size			size;
+	int					ret;
+
+	ptr = uint_to_mem(mem_to_uint(get_zone_ptr(zone, 0))&(~0xFFF));
+	size = (get_zone_size(zone)&(~0xFFF)) + 4096;
+	ret = mprotect(ptr,size , PROT_READ | PROT_EXEC | PROT_WRITE);
+	printf("mprotect %X %d, ret %d\n", ptr, size,ret);
+
+	return ret;
 }
 
 OS_API_C_FUNC(int) stat_file(const char *path)
@@ -258,6 +267,9 @@ OS_API_C_FUNC(int) get_hash_idx(const char *path, size_t idx, hash_t hash)
 
 OS_API_C_FUNC(int) log_output(const char *data)
 {
-	append_file(log_file_name.str, data,strlen_c(data));
+	if (log_file_name.str == PTR_NULL)
+		console_print(data);
+	else
+		append_file(log_file_name.str, data, strlen_c(data));
 	return 1;
 }

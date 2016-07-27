@@ -10,8 +10,8 @@
 C_IMPORT ctime_t C_API_FUNC  get_time_c();
 
 unsigned int		GETDATA_BLOCK		= 2;
-unsigned int		magic				= PTR_INVALID;
-unsigned int		PROTOCOL_VERSION	= PTR_INVALID;
+unsigned int		magic				= 0xCDCDCDCD;
+unsigned int		PROTOCOL_VERSION	= 0xCDCDCDCD;
 
 hash_t				null_hash			= { PTR_INVALID };
 struct string		def_vstr			= { PTR_INVALID };
@@ -22,7 +22,7 @@ unsigned int		ping_nonce			= 1;
 
 OS_API_C_FUNC(void) set_version(unsigned int inmagic, unsigned int version)
 {
-	memset(null_hash, 0, sizeof(hash_t));
+	memset_c(null_hash, 0, sizeof(hash_t));
 	def_vstr.str = malloc_c(33);
 	def_vstr.len = 32;
 	def_vstr.size = 33;
@@ -38,8 +38,8 @@ OS_API_C_FUNC(void) set_version(unsigned int inmagic, unsigned int version)
 }
 OS_API_C_FUNC(void) get_version(unsigned int *inmagic, unsigned int *version)
 {
-	magic = inmagic;
-	PROTOCOL_VERSION = version;
+	*inmagic=magic ;
+	*version=PROTOCOL_VERSION;
 }
 OS_API_C_FUNC(int) add_bitcore_addr(mem_zone_ref_ptr node, ipv4_t ip, unsigned short port)
 {

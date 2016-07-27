@@ -169,14 +169,14 @@ size_t saltlen, uint64_t c, uint8_t * buf, size_t dkLen)
 	memset_c(&PShctx, 0, sizeof(HMAC_SHA256_CTX));
 }
 
-
-
+/*
 #if defined (OPTIMIZED_SALSA) && ( defined (__x86_64__) || defined (__i386__) || defined(__arm__) )
 extern "C" void scrypt_core(unsigned int *X, unsigned int *V);
 #else
+*/
 // Generic scrypt_core implementation
 
-void __inline xor_salsa8(unsigned int B[16], const unsigned int Bx[16])
+void xor_salsa8(unsigned int B[16], const unsigned int Bx[16])
 {
 	unsigned int x00, x01, x02, x03, x04, x05, x06, x07, x08, x09, x10, x11, x12, x13, x14, x15;
 	int i;
@@ -244,7 +244,7 @@ void __inline xor_salsa8(unsigned int B[16], const unsigned int Bx[16])
 	B[15] += x15;
 }
 
-static __inline void scrypt_core(unsigned int *X, unsigned int *V)
+void scrypt_core(unsigned int *X, unsigned int *V)
 {
 	unsigned int i, j, k;
 
@@ -262,7 +262,7 @@ static __inline void scrypt_core(unsigned int *X, unsigned int *V)
 	}
 }
 
-#endif
+//#endif
 
 /* cpu and memory intensive function to transform a 80 byte buffer into a 32 byte output
 scratchpad size needs to be at least 63 + (128 * r * p) + (256 * r + 64) + (128 * r * N) bytes

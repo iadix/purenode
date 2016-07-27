@@ -34,9 +34,14 @@ int load_module(const char *file, const char *mod_name, tpo_mod_file *mod)
 	if (get_file(file, &data, &data_len)<=0)return 0;
 	
 	allocate_new_zone(0, data_len, &tpo_file_data);
-	memcpy_c(get_zone_ptr(&tpo_file_data, 0), data, data_len);
-	memset_c(&mod_file, 0, sizeof(mem_stream));
-	mem_stream_init(&mod_file, &tpo_file_data, 0);
+	
+
+	memcpy_c		(get_zone_ptr(&tpo_file_data, 0), data, data_len);
+
+	mod_file.data.zone = PTR_NULL;
+	mod_file.current_ptr = 0;
+
+	mem_stream_init (&mod_file, &tpo_file_data, 0);
 	tpo_mod_init(mod);
 	tpo_mod_load_tpo(&mod_file, mod, 0);
 	register_tpo_exports(mod, mod_name);
@@ -67,8 +72,14 @@ int main(int argc, char **argv)
 	app_loop = get_tpo_mod_exp_addr_name(&iadix_mod, "app_loop", iadix_mod.deco_type);
 	app_stop = get_tpo_mod_exp_addr_name(&iadix_mod, "app_stop", iadix_mod.deco_type);
 #endif
-	app_init	(PTR_NULL);
-	daemonize	("iadixcoin");
+	if (!app_init(PTR_NULL))
+	{
+		console_print("could not initialize app ");
+		console_print(iadix_mod.name);
+		console_print("\n");
+		return 0;
+	}
+//	daemonize	("iadixcoin");
 	app_start	(PTR_NULL);
 
 	while (!done)
