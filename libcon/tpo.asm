@@ -353,27 +353,28 @@ calc_import_hash:
 
 		
 			tpo_module_src_no_deco_dst_gcc_stdcall_32:
-				inc esi	
-				xor ecx			,	ecx
-				loop_src_no_deco_dst_gcc_stdcall_32:
-					lodsb
-					cmp al,0
-					je end_loop_src_no_deco_dst_gcc_stdcall_32
-					
-					cmp al,'@'
-					je end_loop_src_no_deco_dst_gcc_stdcall_32
-					
-					mov [esp+ecx],al
-					inc ecx
-				jmp loop_src_no_deco_dst_gcc_stdcall_32
 				
-				end_loop_src_no_deco_dst_gcc_stdcall_32:
+				;inc esi	
+				;xor ecx			,	ecx
+				;loop_src_no_deco_dst_gcc_stdcall_32:
+				;	lodsb
+				;	cmp al,0
+				;	je end_loop_src_no_deco_dst_gcc_stdcall_32
+					
+				;	cmp al,'@'
+				;	je end_loop_src_no_deco_dst_gcc_stdcall_32
+					
+				;	mov [esp+ecx],al
+				;	inc ecx
+				;jmp loop_src_no_deco_dst_gcc_stdcall_32
 				
-				mov byte [esp+ecx],0				
+				;end_loop_src_no_deco_dst_gcc_stdcall_32:
+				
+				;mov byte [esp+ecx],0				
 
-				;mov edi			,	[sys_tpo_fn_name_ptr]
-				;mov ecx			,	256
-				;rep movsb			
+				mov edi			,	[sys_tpo_fn_name_ptr]
+				mov ecx			,	256
+				rep movsb			
 			jmp tpo_module_src_no_deco_end
 		tpo_module_src_no_deco_end:
 	
