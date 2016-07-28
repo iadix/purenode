@@ -410,10 +410,12 @@ OS_API_C_FUNC(mem_ptr)	get_tpo_mod_exp_addr_name(const tpo_mod_file *tpo_mod,con
 			strcpy_cs(func_name,256,"_");
 			strcat_cs(func_name,256,name);
 		break;
+		/*
 		case GCC_STDCALL_32:
 			strcpy_cs(func_name,256,"_");
 			strcat_cs(func_name,256,name);
 		break;
+		*/
 		default:
 			strcpy_cs(func_name,256,name);
 		break;
@@ -522,7 +524,12 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 	mem_stream_read	(file_stream,mod_name,128);
 	
 
-	strcpy_cs(tpo_file->name,64,mod_name);
+	
+	if ((!strncmp_c(mod_name, "libblock", 8)) || (!strncmp_c(mod_name, "libprotocol", 11)))
+		strcpy_cs(tpo_file->name, 64, &mod_name[3]);
+	else
+		strcpy_cs(tpo_file->name, 64, mod_name);
+
 	
 	tpo_file->string_buffer_len			=	mem_stream_read_32(file_stream);
 	tpo_file->string_buffer_ref.zone	= PTR_NULL;
@@ -554,7 +561,7 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 	tpo_file->deco_type	=	mem_stream_read_32(file_stream);
 	
 
-	tpo_file->name_hash	=	MOD_HASH(mod_name);
+	tpo_file->name_hash	=	MOD_HASH(tpo_file->name);
 	tpo_file->mod_idx	=	tpo_add_mod_c(tpo_file->name_hash,tpo_file->deco_type,mem_to_uint(get_zone_ptr(&tpo_file->string_buffer_ref,0)));
 	
 	/*
@@ -713,6 +720,11 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 						imp_ofs++;
 					}
 					dll_imp_name[str_n]	=	0;
+
+					if ((!strncmp_c(dll_imp_name, "libblock", 8)) || (!strncmp_c(dll_imp_name, "libprotocol", 11)))
+						strcpy_cs(dll_imp_name, 64, &dll_imp_name[3]);
+					else
+						strcpy_cs(dll_imp_name, 64, dll_imp_name);
 
 					dll_crc		=	calc_crc32_c(dll_imp_name,64);
 					func_ptr = tpo_get_fn_entry_name_c(tpo_file->mod_idx, dll_crc, ofset, tpo_file->deco_type);
