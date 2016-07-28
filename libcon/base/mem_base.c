@@ -330,7 +330,7 @@ int check_zone	(const mem_zone *zone)
 
 
 
-OS_API_C_FUNC(mem_ptr)	get_zone_ptr	(const mem_zone_ref *ref,mem_size ofset)
+OS_API_C_FUNC(mem_ptr)	get_zone_ptr(mem_zone_ref_const_ptr ref, mem_size ofset)
 {
 	if(ref==PTR_NULL) return PTR_INVALID;
 	if(ref->zone==PTR_NULL)return PTR_INVALID;

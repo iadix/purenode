@@ -4,6 +4,7 @@
 #include <base/std_mem.h>
 #include <base/mem_base.h>
 #include <base/std_str.h>
+#include <fsio.h>
 
 #include <strs.h>
 #include <tree.h>
@@ -136,19 +137,7 @@ queue_emitted_element_func_ptr				queue_emitted_element = PTR_INVALID;
 queue_emitted_message_func_ptr				queue_emitted_message = PTR_INVALID;
 #endif
 
-
-
-C_IMPORT int			C_API_FUNC		get_hash_list(mem_zone_ref_ptr hdr_list, mem_zone_ref_ptr hash_list);
-C_IMPORT int			C_API_FUNC		last_block_locator_index(mem_zone_ref_ptr node, mem_zone_ref_ptr hash_list);
-C_IMPORT int			C_API_FUNC		block_locator_indexes(mem_zone_ref_ptr node, size_t top_height, mem_zone_ref_ptr hash_list);
-C_IMPORT size_t		    C_API_FUNC		file_size(const char *path);
-
-unsigned int			ping_nonce;
-
-C_IMPORT 	int		C_API_FUNC append_file(const char *path, void *data, size_t data_len);
-C_IMPORT		ctime_t	C_API_FUNC get_time_c();
-C_IMPORT		ctime_t	C_API_FUNC daemonize();
-C_IMPORT		int		C_API_FUNC get_file(const char *path, unsigned char **data, size_t *data_len);
+unsigned int			ping_nonce=0x01;
 
 int read_config(const char *file,struct string *port, struct string *node_hostname)
 {
@@ -679,7 +668,11 @@ OS_API_C_FUNC(int) app_init(mem_zone_ref_ptr params)
 	self_node.zone = PTR_NULL;
 
 	node_port = strtoul_c(node_port_str.str, PTR_NULL, 10);
-	node_init_self(&self_node, node_port, &node_config);
+	if (!node_init_self(&self_node, node_port, &node_config))
+	{
+		console_print("unable to init self node \n");
+		return 0;
+	}
 
 	tree_manager_get_child_value_istr(&node_config, NODE_HASH("seed_node_host"), &node_hostname, 0);
 	tree_manager_get_child_value_i32(&node_config, NODE_HASH("seed_node_port"), &seed_port);

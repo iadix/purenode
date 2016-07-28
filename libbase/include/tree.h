@@ -144,8 +144,8 @@ struct node_hash_val_t
 
 LIBBASE_API  void			C_API_FUNC	tree_manager_dump_mem					(unsigned int time);
 
-LIBBASE_API  int  			C_API_FUNC	tree_manager_create_node				(const char *name,unsigned int type,mem_zone_ref *ref_ptr);
-LIBBASE_API  int			C_API_FUNC	tree_manager_create_node_childs			(const char *name,unsigned int type,mem_zone_ref *ref_ptr,const char *params);
+LIBBASE_API  int  			C_API_FUNC	tree_manager_create_node				(const char *name,unsigned int type,mem_zone_ref_ptr ref_ptr);
+LIBBASE_API  int			C_API_FUNC	tree_manager_create_node_childs			(const char *name,unsigned int type,mem_zone_ref_ptr ref_ptr,const char *params);
 LIBBASE_API  int			C_API_FUNC	tree_manager_create_node_params			(mem_zone_ref_ptr ref_ptr,const char *params);
 LIBBASE_API  int			C_API_FUNC	tree_manager_add_node_childs			(mem_zone_ref_ptr p_node_ref,const char *params,unsigned int merge);
 LIBBASE_API  void			C_API_FUNC	tree_manager_sort_childs				(mem_zone_ref_ptr parent_ref_ptr,const char *name,unsigned int dir);

@@ -68,7 +68,7 @@ LIBC_API void			C_API_FUNC init_mem_system			();
 LIBC_API void			C_API_FUNC dump_mem_used			(unsigned int area_id);
 LIBC_API void			C_API_FUNC dump_mem_used_after		(unsigned int area_id,unsigned int time);
 
-LIBC_API mem_ptr		C_API_FUNC get_zone_ptr				(const mem_zone_ref *ref,mem_size ofset);
+LIBC_API mem_ptr		C_API_FUNC get_zone_ptr				(mem_zone_ref_const_ptr ref,mem_size ofset);
 LIBC_API mem_size		C_API_FUNC get_zone_size			(mem_zone_ref_const_ptr ref);
 
 LIBC_API unsigned int	C_API_FUNC find_zones_used			(unsigned int area_id);

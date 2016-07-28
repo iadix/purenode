@@ -682,7 +682,7 @@ OS_API_C_FUNC(int) block_locator_indexes(mem_zone_ref_ptr node, size_t top_heigh
 	int64_t step = 1;
 	int	cn = 0;
 
-	tree_manager_create_node("locator", NODE_BITCORE_LOCATOR, hash_list);
+	if (!tree_manager_create_node("locator", NODE_BITCORE_LOCATOR, hash_list))return 0;
 	// Start at the top of the chain and work backwards.
 	for (cn=0,index = (int64_t)top_height; index > 0; cn++, index -= step)
 	{
