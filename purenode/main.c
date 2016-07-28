@@ -593,41 +593,41 @@ void load_node_module()
 {
 	load_module("modz/node_adx.tpo", "node_adx", &node_mod);
 #ifdef _DEBUG
-	_node_init_self = get_tpo_mod_exp_addr_name(&node_mod, "node_init_self",node_mod.deco_type);
-	_new_peer_node = get_tpo_mod_exp_addr_name(&node_mod, "new_peer_node",node_mod.deco_type);
-	_node_add_block = get_tpo_mod_exp_addr_name(&node_mod, "node_add_block",node_mod.deco_type);
-	_read_node_msg = get_tpo_mod_exp_addr_name(&node_mod, "read_node_msg",node_mod.deco_type);
-	_send_node_messages = get_tpo_mod_exp_addr_name(&node_mod, "send_node_messages",node_mod.deco_type);
-	_node_add_block_header = get_tpo_mod_exp_addr_name(&node_mod, "node_add_block_header",node_mod.deco_type);
-	_queue_version_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_version_message",node_mod.deco_type);
-	_queue_verack_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_verack_message",node_mod.deco_type);
-	_queue_ping_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_ping_message",node_mod.deco_type);
-	_queue_pong_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_pong_message",node_mod.deco_type);
-	_queue_getaddr_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_getaddr_message",node_mod.deco_type);
-	_queue_getdata_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_getdata_message",node_mod.deco_type);
-	_queue_getblocks_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_getblocks_message",node_mod.deco_type);
-	_queue_getblock_hdrs_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_getblock_hdrs_message",node_mod.deco_type);
-	_queue_send_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_send_message",node_mod.deco_type);
-	_queue_emitted_element = get_tpo_mod_exp_addr_name(&node_mod, "queue_emitted_element",node_mod.deco_type);
-	_queue_emitted_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_emitted_message",node_mod.deco_type);
+	_node_init_self = get_tpo_mod_exp_addr_name(&node_mod, "node_init_self", 0);
+	_new_peer_node = get_tpo_mod_exp_addr_name(&node_mod, "new_peer_node", 0);
+	_node_add_block = get_tpo_mod_exp_addr_name(&node_mod, "node_add_block", 0);
+	_read_node_msg = get_tpo_mod_exp_addr_name(&node_mod, "read_node_msg", 0);
+	_send_node_messages = get_tpo_mod_exp_addr_name(&node_mod, "send_node_messages", 0);
+	_node_add_block_header = get_tpo_mod_exp_addr_name(&node_mod, "node_add_block_header", 0);
+	_queue_version_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_version_message", 0);
+	_queue_verack_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_verack_message", 0);
+	_queue_ping_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_ping_message", 0);
+	_queue_pong_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_pong_message", 0);
+	_queue_getaddr_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_getaddr_message", 0);
+	_queue_getdata_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_getdata_message",0);
+	_queue_getblocks_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_getblocks_message", 0);
+	_queue_getblock_hdrs_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_getblock_hdrs_message", 0);
+	_queue_send_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_send_message", 0);
+	_queue_emitted_element = get_tpo_mod_exp_addr_name(&node_mod, "queue_emitted_element", 0);
+	_queue_emitted_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_emitted_message", 0);
 #else
-	node_init_self = get_tpo_mod_exp_addr_name(&node_mod, "node_init_self", node_mod.deco_type);
-	new_peer_node = get_tpo_mod_exp_addr_name(&node_mod, "new_peer_node", node_mod.deco_type);
-	node_add_block = get_tpo_mod_exp_addr_name(&node_mod, "node_add_block", node_mod.deco_type);
-	read_node_msg = get_tpo_mod_exp_addr_name(&node_mod, "read_node_msg", node_mod.deco_type);
-	send_node_messages = get_tpo_mod_exp_addr_name(&node_mod, "send_node_messages", node_mod.deco_type);
-	node_add_block_header = get_tpo_mod_exp_addr_name(&node_mod, "node_add_block_header", node_mod.deco_type);
-	queue_version_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_version_message", node_mod.deco_type);
-	queue_verack_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_verack_message", node_mod.deco_type);
-	queue_ping_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_ping_message", node_mod.deco_type);
-	queue_pong_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_pong_message", node_mod.deco_type);
-	queue_getaddr_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_getaddr_message", node_mod.deco_type);
-	queue_getdata_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_getdata_message", node_mod.deco_type);
-	queue_getblocks_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_getblocks_message", node_mod.deco_type);
-	queue_getblock_hdrs_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_getblock_hdrs_message", node_mod.deco_type);
-	queue_send_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_send_message", node_mod.deco_type);
-	queue_emitted_element = get_tpo_mod_exp_addr_name(&node_mod, "queue_emitted_element", node_mod.deco_type);
-	queue_emitted_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_emitted_message", node_mod.deco_type);
+	node_init_self = get_tpo_mod_exp_addr_name(&node_mod, "node_init_self", 0);
+	new_peer_node = get_tpo_mod_exp_addr_name(&node_mod, "new_peer_node", 0);
+	node_add_block = get_tpo_mod_exp_addr_name(&node_mod, "node_add_block", 0);
+	read_node_msg = get_tpo_mod_exp_addr_name(&node_mod, "read_node_msg", 0);
+	send_node_messages = get_tpo_mod_exp_addr_name(&node_mod, "send_node_messages", 0);
+	node_add_block_header = get_tpo_mod_exp_addr_name(&node_mod, "node_add_block_header", 0);
+	queue_version_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_version_message", 0);
+	queue_verack_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_verack_message", 0);
+	queue_ping_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_ping_message", 0);
+	queue_pong_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_pong_message", 0);
+	queue_getaddr_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_getaddr_message", 0);
+	queue_getdata_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_getdata_message",0);
+	queue_getblocks_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_getblocks_message", 0);
+	queue_getblock_hdrs_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_getblock_hdrs_message", 0);
+	queue_send_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_send_message", 0);
+	queue_emitted_element = get_tpo_mod_exp_addr_name(&node_mod, "queue_emitted_element", 0);
+	queue_emitted_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_emitted_message", 0);
 #endif
 }
 

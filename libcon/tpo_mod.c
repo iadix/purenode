@@ -404,7 +404,7 @@ OS_API_C_FUNC(mem_ptr)	get_tpo_mod_exp_addr_name(const tpo_mod_file *tpo_mod,con
 
 	
 	char				func_name[256];
-	switch (deco_type)
+	switch (tpo_mod->deco_type)
 	{
 		case MSVC_STDCALL_32:
 			strcpy_cs(func_name,256,"_");
