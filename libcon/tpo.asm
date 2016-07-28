@@ -291,6 +291,10 @@ calc_import_hash:
 	sub esp							,	256
 	mov esi							,	[sys_tpo_fn_name_ptr]
 	mov [sys_tpo_fn_name_ptr]		,	esp
+	mov edi							,	esp
+	mov al							,	0
+	mov ecx							,	256
+	rep stosb
 
 	cmp dword [tpo_module_src_deco_type]	, 0
 	je	tpo_module_src_no_deco
@@ -328,7 +332,12 @@ calc_import_hash:
 			jmp tpo_module_src_no_deco_end
 	
 			tpo_module_src_no_deco_dst_msvc_stdcall_32:
-				inc esi	
+				
+				cmp byte [esi],'_'
+				jne src_no_deco_dst_msvc_stdcall_32_skip
+					inc esi	
+				src_no_deco_dst_msvc_stdcall_32_skip:
+
 				xor ecx			,	ecx
 				loop_src_no_deco_dst_msvc_stdcall_32:
 					lodsb
@@ -353,28 +362,26 @@ calc_import_hash:
 
 		
 			tpo_module_src_no_deco_dst_gcc_stdcall_32:
-				
-				;inc esi	
-				;xor ecx			,	ecx
-				;loop_src_no_deco_dst_gcc_stdcall_32:
-				;	lodsb
-				;	cmp al,0
-				;	je end_loop_src_no_deco_dst_gcc_stdcall_32
+				xor ecx			,	ecx
+				loop_src_no_deco_dst_gcc_stdcall_32:
+					lodsb
+					cmp al,0
+					je end_loop_src_no_deco_dst_gcc_stdcall_32
 					
-				;	cmp al,'@'
-				;	je end_loop_src_no_deco_dst_gcc_stdcall_32
+					cmp al,'@'
+					je end_loop_src_no_deco_dst_gcc_stdcall_32
 					
-				;	mov [esp+ecx],al
-				;	inc ecx
-				;jmp loop_src_no_deco_dst_gcc_stdcall_32
+					mov [esp+ecx],al
+					inc ecx
+				jmp loop_src_no_deco_dst_gcc_stdcall_32
 				
-				;end_loop_src_no_deco_dst_gcc_stdcall_32:
+				end_loop_src_no_deco_dst_gcc_stdcall_32:
 				
-				;mov byte [esp+ecx],0				
+				mov byte [esp+ecx],0				
 
-				mov edi			,	[sys_tpo_fn_name_ptr]
-				mov ecx			,	256
-				rep movsb			
+				;mov edi			,	[sys_tpo_fn_name_ptr]
+				;mov ecx			,	256
+				;rep movsb			
 			jmp tpo_module_src_no_deco_end
 		tpo_module_src_no_deco_end:
 	
@@ -475,11 +482,31 @@ calc_import_hash:
 				;client module use msvc_stdcall_32 decoration
 				;remove leading trail ? 
 				
-	
-				mov edi			,	[sys_tpo_fn_name_ptr]
-				add esi			,	1
-				mov ecx			,	255
-				rep movsb				
+				cmp byte [esi],'_'
+				jne src_deco_gcc_stdcall_32_dst_msvc_stdcall_32_skip
+					inc esi	
+				src_deco_gcc_stdcall_32_dst_msvc_stdcall_32_skip:
+
+				xor ecx			,	ecx
+				loop_src_deco_gcc_stdcall_32_dst_msvc_stdcall_32:
+					lodsb
+					cmp al,0
+					je end_loop_src_deco_gcc_stdcall_32_dst_msvc_stdcall_32
+					
+					cmp al,'@'
+					je end_loop_src_deco_gcc_stdcall_32_dst_msvc_stdcall_32
+					
+					mov [esp+ecx],al
+					inc ecx
+				jmp loop_src_deco_gcc_stdcall_32_dst_msvc_stdcall_32
+				
+				end_loop_src_deco_gcc_stdcall_32_dst_msvc_stdcall_32:
+				mov byte [esp+ecx],0	
+
+				;mov edi			,	[sys_tpo_fn_name_ptr]
+				;add esi			,	1
+				;mov ecx			,	255
+				;rep movsb				
 				
 			jmp tpo_module_src_deco_gcc_stdcall_32_end
 				
@@ -488,9 +515,25 @@ calc_import_hash:
 				;client module use gcc_stdcall_32 decoration
 				;do nothing
 				
-				mov edi			,	[sys_tpo_fn_name_ptr]
-				mov ecx			,	256
-				rep movsb								
+				xor ecx			,	ecx
+				loop_src_deco_gcc_stdcall_32_dst_gcc_stdcall_32:
+					lodsb
+					cmp al,0
+					je end_loop_src_deco_gcc_stdcall_32_dst_gcc_stdcall_32
+					
+					cmp al,'@'
+					je end_loop_src_deco_gcc_stdcall_32_dst_gcc_stdcall_32
+					
+					mov [esp+ecx],al
+					inc ecx
+				jmp loop_src_deco_gcc_stdcall_32_dst_gcc_stdcall_32
+				
+				end_loop_src_deco_gcc_stdcall_32_dst_gcc_stdcall_32:
+				mov byte [esp+ecx],0
+
+				;mov edi			,	[sys_tpo_fn_name_ptr]
+				;mov ecx			,	256
+				;rep movsb								
 				
 			jmp tpo_module_src_deco_gcc_stdcall_32_end
 			

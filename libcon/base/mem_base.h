@@ -92,6 +92,9 @@ LIBC_API int			C_API_FUNC gfx_create_set_ctrl_event		(mem_zone_ref_ptr ctrl_data
 LIBC_API void			C_API_FUNC swap_zone_ref					(mem_zone_ref_ptr dest_zone_ref, mem_zone_ref_ptr src_zone_ref);
 LIBC_API int			C_API_FUNC align_zone_memory				(mem_zone_ref *zone_ref, mem_size align);
 
+
+
+
 static __inline unsigned int mem_to_uint(const_mem_ptr ptr)
 {
 	return *((unsigned int *)&ptr);

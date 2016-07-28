@@ -63,6 +63,5 @@ typedef enum
 }mod_name_decoration_t;
 
 #define OS_API_C_FUNC(return_type) C_EXPORT return_type C_API_FUNC 
-#define OS_INT_C_FUNC(return_type) return_type C_INT_FUNC 
 #define OS_API_XTRN_ASM_FUNC(return_type) extern return_type ASM_API_FUNC
 

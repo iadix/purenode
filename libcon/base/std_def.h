@@ -60,9 +60,6 @@ typedef union
 	}uint32;
 }large_uint_t;
 
-OS_API_XTRN_ASM_FUNC(unsigned int)		compare_z_exchange_c(unsigned int *data, unsigned int new_value);
-OS_API_XTRN_ASM_FUNC(unsigned int)		fetch_add_c(unsigned int *data, int new_value);
-OS_API_XTRN_ASM_FUNC(unsigned int)		calc_crc32_c(const char *, size_t);
 
 #endif
 

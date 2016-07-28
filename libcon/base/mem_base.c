@@ -520,7 +520,10 @@ OS_API_C_FUNC(void) init_mem_system()
 	sys_add_tpo_mod_func_name("libcon", "isalpha_c", isalpha_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "isdigit_c", isdigit_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "dtoa_c", dtoa_c, 0);
+
 	sys_add_tpo_mod_func_name("libcon", "calc_crc32_c", calc_crc32_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "compare_z_exchange_c", compare_z_exchange_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "fetch_add_c", fetch_add_c, 0);
 
 
 	sys_add_tpo_mod_func_name("libcon", "init_string", init_string, 0);

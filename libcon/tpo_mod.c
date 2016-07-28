@@ -704,7 +704,6 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 
 				while(func_ptr	== uint_to_mem(0xFFFFFFFF))
 				{
-					unsigned int deco_type;
 					str_n		=	0;
 
 					while((dll_name[imp_ofs]!=';')&&(dll_name[imp_ofs]!=0))
@@ -715,27 +714,21 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 					}
 					dll_imp_name[str_n]	=	0;
 
-					if (!strcmp_c(sym_name, "calc_crc32_c"))
-						strcpy_c(dll_imp_name, "libbase");
-
-					if (!strcmp_c(sym_name, "log_file_name"))
-						deco_type = 0;
-					else
-						deco_type = tpo_file->deco_type;
-
 					dll_crc		=	calc_crc32_c(dll_imp_name,64);
-					func_ptr = tpo_get_fn_entry_name_c(tpo_file->mod_idx, dll_crc, ofset, deco_type);
-					if (func_ptr == PTR_FF)
-					{
-						console_print("import symbol not found ");
-						console_print(sym_name);
-						console_print(" ");
-						console_print(dll_imp_name);
-						console_print("\n");
-
-					}
+					func_ptr = tpo_get_fn_entry_name_c(tpo_file->mod_idx, dll_crc, ofset, tpo_file->deco_type);
 					if(dll_name[imp_ofs]==0)break;
 					imp_ofs++;
+				}
+				if (func_ptr == PTR_FF)
+				{
+					console_print("import symbol not found ");
+					console_print(sym_name);
+					console_print(" ");
+					console_print(dll_name);
+					console_print(" in ");
+					console_print(tpo_file->name);
+					console_print("\n");
+
 				}
 			}
 
