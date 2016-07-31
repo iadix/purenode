@@ -89,7 +89,7 @@
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
     </Link>
     <PostBuildEvent>
-      <Command>$(SolutionDir)export\mod_maker.exe $(SolutionDir)export\$(TargetFileName)  $(SolutionDir)export\modz\</Command>
+      <Command>"$(SolutionDir)export\mod_maker.exe" "$(SolutionDir)export\$(TargetFileName)"  "$(SolutionDir)export\modz\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -102,7 +102,7 @@
     <None Include="..\..\export\iadix.conf" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\libbase\vc2010\libbase.vcxproj">
+    <ProjectReference Include="..\..\libbaseimpl\vc2010\libbase.vcxproj">
       <Project>{5fda59aa-07b6-492d-a296-6655695283c2}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
