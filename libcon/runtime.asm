@@ -85,3 +85,5 @@ fetch_add_c:
 	lock xadd [edi]	, eax
 	pop edi
 ret
+
+

@@ -16,3 +16,7 @@ LIBC_API ctime_t		C_API_FUNC get_time_c(void);
 LIBC_API void			C_API_FUNC console_print(const char *msg);
 LIBC_API int			C_API_FUNC log_output(const char *data);
 LIBC_API int			C_API_FUNC set_mem_exe(mem_zone_ref_ptr zone);
+LIBC_API int			C_API_FUNC move_file(const char *ipath,const char *opath);
+LIBC_API int			C_API_FUNC del_file(const char *path);
+LIBC_API int			C_API_FUNC set_ftime(const char *path, ctime_t time);
+LIBC_API int			C_API_FUNC get_ftime(const char *path, ctime_t *time);

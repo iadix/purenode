@@ -106,7 +106,9 @@ OS_API_C_FUNC(int) put_file(const char *path, void *data, size_t data_len)
 	
 	f	=	fopen	(path,"wb");
 	if(f==NULL)return 0;
-	len	=	fwrite(data,data_len,1,f);
+	if (data_len > 0)
+		len = fwrite(data, data_len, 1, f);
+
 	fclose(f);
 	return 1;
 

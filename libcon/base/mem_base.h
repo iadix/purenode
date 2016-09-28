@@ -92,7 +92,10 @@ LIBC_API int			C_API_FUNC gfx_create_set_ctrl_event		(mem_zone_ref_ptr ctrl_data
 LIBC_API void			C_API_FUNC swap_zone_ref					(mem_zone_ref_ptr dest_zone_ref, mem_zone_ref_ptr src_zone_ref);
 LIBC_API int			C_API_FUNC align_zone_memory				(mem_zone_ref *zone_ref, mem_size align);
 
+extern mem_ptr			ASM_API_FUNC memset							(mem_ptr ptr, unsigned int value, unsigned int size);
 
+LIBC_API uint64_t		C_API_FUNC mul64							(uint64_t a, uint64_t b);
+LIBC_API uint64_t		C_API_FUNC muldiv64							(uint64_t a, uint64_t b, uint64_t c);
 
 
 static __inline unsigned int mem_to_uint(const_mem_ptr ptr)

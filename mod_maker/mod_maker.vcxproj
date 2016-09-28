@@ -105,6 +105,12 @@
   <ItemGroup>
     <ClInclude Include="coff.h" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\libcon\libcon.vcxproj">
+      <Project>{1bf22e35-0c64-47d5-8729-98b771920d12}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

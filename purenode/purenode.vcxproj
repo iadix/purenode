@@ -63,7 +63,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)export\</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libcon_d.lib;libbase_d.lib;node_adx_d.lib;kernel32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libcon_d.lib;libbase_d.lib;block_adx_d.lib;node_adx_d.lib;stake_pos3_d.lib;kernel32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
@@ -86,7 +86,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>Ws2_32.lib;Iphlpapi.lib;libcon.lib;libbase.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libcon.lib;libbase.lib;block_adx.lib;node_adx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)export;</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
     </Link>
@@ -102,6 +102,16 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\export\iadix.conf" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\libbase\libbase.vcxproj">
+      <Project>{5fda59aa-07b6-492d-a296-6655695283c2}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\libcon\libcon.vcxproj">
+      <Project>{1bf22e35-0c64-47d5-8729-98b771920d12}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

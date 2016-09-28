@@ -27,11 +27,15 @@ void init_funcs()
 	sys_add_tpo_mod_func_name("libcon", "create_dir", create_dir, 0);
 	sys_add_tpo_mod_func_name("libcon", "put_file", put_file, 0);
 	sys_add_tpo_mod_func_name("libcon", "get_file", get_file, 0);
+	sys_add_tpo_mod_func_name("libcon", "del_file", del_file, 0);
+	sys_add_tpo_mod_func_name("libcon", "move_file", move_file, 0);
 	sys_add_tpo_mod_func_name("libcon", "file_size", file_size, 0);
 	sys_add_tpo_mod_func_name("libcon", "get_hash_idx", get_hash_idx, 0);
 	sys_add_tpo_mod_func_name("libcon", "get_sub_dirs", get_sub_dirs, 0);
 	sys_add_tpo_mod_func_name("libcon", "get_sub_files", get_sub_files, 0);
 	sys_add_tpo_mod_func_name("libcon", "log_output", log_output, 0);
+	sys_add_tpo_mod_func_name("libcon", "set_ftime", set_ftime, 0);
+	sys_add_tpo_mod_func_name("libcon", "get_ftime", get_ftime, 0);
 
 
 	sys_add_tpo_mod_func_name("libcon", "daemonize", daemonize, 0);

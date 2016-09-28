@@ -175,7 +175,7 @@
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"C:\Program Files (x86)\NASM\nasm" -f win32  -DPREFIX -DASM_EXPORT "%(FullPath)" -o "$(SolutionDir)\debug\%(Filename).obj"</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)\debug\%(Filename).obj;</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"C:\Program Files (x86)\NASM\nasm" -f win32  -DPREFIX= "%(FullPath)" -o "$(SolutionDir)\release\%(Filename).obj"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"C:\Program Files (x86)\NASM\nasm" -f win32  -DPREFIX= -DASM_EXPORT  "%(FullPath)" -o "$(SolutionDir)\release\%(Filename).obj"</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)\release\%(Filename).obj;</Outputs>
     </CustomBuild>
     <CustomBuild Include="tpo.asm">

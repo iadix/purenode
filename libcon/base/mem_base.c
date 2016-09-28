@@ -481,7 +481,9 @@ OS_API_C_FUNC(void) init_mem_system()
 	sys_add_tpo_mod_func_name("libcon", "malloc_c", malloc_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "calloc_c", calloc_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "memset_c", memset_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "memset", memset, 0);
 	sys_add_tpo_mod_func_name("libcon", "memcpy_c", memcpy_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "memcmp_c", memcmp_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "memmove_c", memmove_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "memchr_c", memchr_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "memchr_32_c", memchr_32_c, 0);
@@ -495,6 +497,7 @@ OS_API_C_FUNC(void) init_mem_system()
 	sys_add_tpo_mod_func_name("libcon", "dump_mem_used_after", dump_mem_used_after, 0);
 	sys_add_tpo_mod_func_name("libcon", "set_zone_free", set_zone_free, 0);
 	sys_add_tpo_mod_func_name("libcon", "free_c", free_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "find_zones_used", find_zones_used, 0);
 
 	sys_add_tpo_mod_func_name("libcon", "dec_zone_ref", dec_zone_ref, 0);
 	sys_add_tpo_mod_func_name("libcon", "copy_zone_ref", copy_zone_ref, 0);
@@ -520,6 +523,11 @@ OS_API_C_FUNC(void) init_mem_system()
 	sys_add_tpo_mod_func_name("libcon", "isalpha_c", isalpha_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "isdigit_c", isdigit_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "dtoa_c", dtoa_c, 0);
+
+	sys_add_tpo_mod_func_name("libcon", "muldiv64", muldiv64, 0);
+	sys_add_tpo_mod_func_name("libcon", "mul64", mul64, 0);
+
+	
 
 	sys_add_tpo_mod_func_name("libcon", "calc_crc32_c", calc_crc32_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "compare_z_exchange_c", compare_z_exchange_c, 0);
@@ -563,6 +571,7 @@ OS_API_C_FUNC(void) init_mem_system()
 
 	sys_add_tpo_mod_func_name("libcon", "tpo_mod_load_tpo", tpo_mod_load_tpo, 0);
 	sys_add_tpo_mod_func_name("libcon", "tpo_mod_init", tpo_mod_init, 0);
+	sys_add_tpo_mod_func_name("libcon", "load_module", load_module, 0);
 	sys_add_tpo_mod_func_name("libcon", "register_tpo_exports", register_tpo_exports, 0);
 	sys_add_tpo_mod_func_name("libcon", "get_tpo_mod_exp_addr_name", get_tpo_mod_exp_addr_name, 0);
 	
@@ -719,7 +728,30 @@ OS_API_C_FUNC(void) dump_mem_used_after	(unsigned int area_id,unsigned int time)
 	}
 
 }
+OS_API_C_FUNC(unsigned int) find_zones_used(unsigned int area_id)
+{
+	unsigned int n, nfree;
+	mem_area	*area_ptr;
 
+	area_ptr = get_area(area_id);
+	if (area_ptr == PTR_NULL)
+	{
+		return 0;
+	}
+
+	nfree = 0;
+	n = 0;
+	while (n<MAX_MEM_ZONES)
+	{
+		if (area_ptr->zones_buffer[n].mem.ptr == PTR_NULL)
+		{
+			nfree++;
+		}
+		n++;
+	}
+
+	return (MAX_MEM_ZONES-nfree);
+}
 OS_API_C_FUNC(void) dump_mem_used	(unsigned int area_id)
 {
 	int						n;
@@ -1154,30 +1186,7 @@ OS_API_C_FUNC(unsigned int) allocate_new_empty_zone(unsigned int area_id,mem_zon
 extern unsigned int tree_output;
 		
 
-OS_API_C_FUNC(unsigned int) find_zones_used(unsigned int area_id)
-{
-	unsigned int n,nfree;
-	mem_area	*area_ptr;
 
-	area_ptr		=	get_area(area_id);
-	if(area_ptr==PTR_NULL)
-	{
-		return 0;
-	}
-
-	nfree			=  0; 	
-	n				=  0;
-	while(n<MAX_MEM_ZONES)
-	{
-		if(area_ptr->zones_buffer[n].mem.ptr == PTR_NULL)
-		{
-			nfree++;
-		}
-		n++;
-	}
-
-	return nfree;
-}
 
 OS_API_C_FUNC(unsigned int) allocate_new_zone(unsigned int area_id,mem_size zone_size,mem_zone_ref *zone_ref)
 {
@@ -1527,4 +1536,18 @@ OS_API_C_FUNC(void) free_c(mem_ptr ptr)
 OS_API_C_FUNC(mem_ptr) calloc_c(mem_size sz,mem_size blk)
 {
 	return malloc_c(sz*blk);
+}
+
+
+OS_API_C_FUNC(uint64_t) mul64(uint64_t a, uint64_t b)
+{
+	return a * b;
+}
+
+OS_API_C_FUNC(uint64_t) muldiv64(uint64_t a, uint64_t b, uint64_t c)
+{
+	uint64_t tmp;
+	tmp = a	* b;
+	tmp = tmp / c;
+	return tmp;
 }

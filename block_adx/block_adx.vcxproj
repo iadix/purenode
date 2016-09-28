@@ -100,6 +100,24 @@
     <ClCompile Include="main.c" />
     <ClCompile Include="scrypt.c" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\libbase\libbase.vcxproj">
+      <Project>{5fda59aa-07b6-492d-a296-6655695283c2}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\libcon\libcon.vcxproj">
+      <Project>{1bf22e35-0c64-47d5-8729-98b771920d12}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\mod_maker\mod_maker.vcxproj">
+      <Project>{17211b72-39d1-41e6-9515-f597a18cadc3}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\protocol_adx\protocol_adx.vcxproj">
+      <Project>{4ce634cb-a31b-4543-b91c-10c524ae131c}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

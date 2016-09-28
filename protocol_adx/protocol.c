@@ -237,7 +237,9 @@ OS_API_C_FUNC(size_t)	get_node_size(mem_zone_ref_ptr key)
 	case NODE_BITCORE_TXOUT:
 		szData += 8;
 		data = tree_manager_get_child_data(key, NODE_HASH("script"), 0);
-		if (*data < 0xFD)
+		if (data==PTR_NULL)
+			szData += 0;
+		else if (*data < 0xFD)
 			szData += 1 + *data;
 		else if ((*data) == 0xFD)
 			szData += 3 + (*((unsigned short *)(data + 1)));
@@ -574,7 +576,7 @@ OS_API_C_FUNC(char *) write_node(mem_zone_ref_const_ptr key, unsigned char *payl
 }
 
 
-OS_API_C_FUNC(const char *)read_node(mem_zone_ref_ptr key, const unsigned char *payload)
+OS_API_C_FUNC(const unsigned char *)read_node(mem_zone_ref_ptr key, const unsigned char *payload)
 {
 	unsigned int		n, nc;
 	mem_zone_ref		txin_list = { PTR_NULL }, my_list = { PTR_NULL };
@@ -781,7 +783,12 @@ OS_API_C_FUNC(const char *)read_node(mem_zone_ref_ptr key, const unsigned char *
 			sz = 9;
 		}
 		str.size = str.len + 1;
-		str.str = mem_add(payload, sz);
+
+		if (str.len > 0)
+			str.str = mem_add(payload, sz);
+		else
+			str.str = PTR_NULL;
+
 		tree_manager_set_child_value_vstr(key, "script", &str);
 		payload = mem_add(payload, str.len + sz);
 		
@@ -818,7 +825,14 @@ OS_API_C_FUNC(const char *)read_node(mem_zone_ref_ptr key, const unsigned char *
 			tree_manager_set_child_value_vstr(key, "script", &str);
 		}
 		else
-			tree_manager_set_child_value_vstr(key, "script", &def_vstr);
+		{
+			struct string null_str;
+			null_str.str = PTR_NULL;
+			null_str.len = 0;
+			null_str.size = 0;
+			
+			tree_manager_set_child_value_vstr(key, "script", &null_str);
+		}
 		payload = mem_add(payload, str.len + sz);
 		break;
 	case NODE_BITCORE_VINLIST:
@@ -1015,6 +1029,7 @@ OS_API_C_FUNC(char *) serialize_message(mem_zone_ref_ptr msg)
 		mbedtls_sha256(payload, szData, checksum1, 0);
 		mbedtls_sha256(checksum1, 32, checksum, 0);
 		memcpy_c(&buffer[20], checksum, 4);
+		release_zone_ref(&payload_node);
 	}
 	else
 	{
@@ -1100,39 +1115,26 @@ OS_API_C_FUNC(int) create_getheaders_message(mem_zone_ref_ptr node, mem_zone_ref
 	return 1;
 
 }
-OS_API_C_FUNC(int) create_getblocks_message(mem_zone_ref_ptr node, mem_zone_ref_ptr blk_locator, mem_zone_ref_ptr blk_pack)
+OS_API_C_FUNC(int) create_getblocks_message(mem_zone_ref_ptr node, mem_zone_ref_ptr blk_locator, mem_zone_ref_ptr getblk_pack)
 {
-	mem_zone_ref		payload = { PTR_NULL }, locator = { PTR_NULL };
+	mem_zone_ref		payload = { PTR_NULL };
 	size_t				pl_size;
 	int					cnt;
 
-	if (!tree_manager_create_node("message", NODE_BITCORE_MSG, blk_pack))return 0;
-	tree_manager_set_child_value_str(blk_pack, "cmd", "getblocks");
+	if (!tree_manager_create_node("message", NODE_BITCORE_MSG, getblk_pack))return 0;
+	tree_manager_set_child_value_str(getblk_pack, "cmd", "getblocks");
 
 	cnt = tree_manager_get_node_num_children(blk_locator);
 
-	tree_manager_add_child_node(blk_pack, "payload", NODE_BITCORE_PAYLOAD, &payload);
+	tree_manager_add_child_node(getblk_pack, "payload", NODE_BITCORE_PAYLOAD, &payload);
 	tree_manager_set_child_value_i32(&payload, "version", PROTOCOL_VERSION);
 	tree_manager_node_add_child(&payload, blk_locator);
-	/*
-	for (n = 0; n < cnt; n++)
-	{
-		mem_zone_ref hash_node = { PTR_NULL }, loc = { PTR_NULL };
-		if (tree_manager_get_child_at(blk_locator, n, &hash_node))
-		{
-			tree_manager_node_dup(&locator, &hash_node, &loc);
-			release_zone_ref(&loc);
-			release_zone_ref(&hash_node);
-		}
-	}
-	*/
 	tree_manager_set_child_value_hash(&payload, "hashstop", null_hash);
-
 	pl_size = compute_payload_size(&payload);
 	release_zone_ref(&payload);
 
-	tree_manager_set_child_value_i32(blk_pack, "size", pl_size);
-	tree_manager_set_child_value_i32(blk_pack, "sent", 0);
+	tree_manager_set_child_value_i32(getblk_pack, "size", pl_size);
+	tree_manager_set_child_value_i32(getblk_pack, "sent", 0);
 
 	return 1;
 

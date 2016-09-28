@@ -39,6 +39,7 @@ LIBC_API unsigned int	ASM_API_FUNC		compare_z_exchange_c(unsigned int *data, uns
 LIBC_API unsigned int	ASM_API_FUNC		fetch_add_c(unsigned int *data, int new_value);
 LIBC_API unsigned int	ASM_API_FUNC		calc_crc32_c(const char *, size_t);
 
+
 #ifdef __cplusplus
 	}
 #endif

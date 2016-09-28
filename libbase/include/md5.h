@@ -62,3 +62,5 @@ LIBBASE_API void C_API_FUNC MD5Final();
  ******************************* (cut) ********************************
  */
 
+typedef unsigned char md5_hash_t[16];
+LIBBASE_API void C_API_FUNC MDData(mem_ptr data, size_t len, md5_hash_t diggest);

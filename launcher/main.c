@@ -23,37 +23,6 @@ app_func_ptr app_init, app_start, app_loop, app_stop;
 #endif
 tpo_mod_file protocol_mod = { 0 }, block_mod = { 0 }, libbase_mod = { 0 }, iadix_mod = { 0 };
 
-
-int load_module(const char *file, const char *mod_name, tpo_mod_file *mod)
-{
-	mem_stream			mod_file;
-	mem_zone_ref		tpo_file_data = { PTR_NULL };
-	unsigned char		*data;
-	size_t				data_len;
-
-	if (get_file(file, &data, &data_len)<=0)return 0;
-	
-	allocate_new_zone(0, data_len, &tpo_file_data);
-	
-
-	memcpy_c		(get_zone_ptr(&tpo_file_data, 0), data, data_len);
-
-	mod_file.data.zone = PTR_NULL;
-	mod_file.current_ptr = 0;
-
-	mem_stream_init (&mod_file, &tpo_file_data, 0);
-	tpo_mod_init(mod);
-	tpo_mod_load_tpo(&mod_file, mod, 0);
-	register_tpo_exports(mod, mod_name);
-	release_zone_ref(&tpo_file_data);
-	free_c(data);
-	
-	return 1;
-
-}
-
-
-
 int main(int argc, char **argv)
 {
 	int done = 0;
@@ -79,7 +48,7 @@ int main(int argc, char **argv)
 		console_print("\n");
 		return 0;
 	}
-//	daemonize	("iadixcoin");
+	daemonize	("iadixcoin");
 	app_start	(PTR_NULL);
 
 	while (!done)

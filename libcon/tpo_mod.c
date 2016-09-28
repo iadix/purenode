@@ -1019,3 +1019,26 @@ OS_API_C_FUNC(mem_ptr) tpo_mod_get_exp_addr(mem_stream *file_stream,const char *
 }
 
 
+
+OS_API_C_FUNC(int) load_module(const char *file, const char *mod_name, tpo_mod_file *mod)
+{
+	mem_stream			mod_file;
+	mem_zone_ref		tpo_file_data = { PTR_NULL };
+	unsigned char		*data;
+	size_t				data_len;
+
+	if (get_file(file, &data, &data_len) <= 0)return 0;
+
+	allocate_new_zone(0, data_len, &tpo_file_data);
+	memcpy_c(get_zone_ptr(&tpo_file_data, 0), data, data_len);
+	memset_c(&mod_file, 0, sizeof(mem_stream));
+	mem_stream_init(&mod_file, &tpo_file_data, 0);
+	tpo_mod_init(mod);
+	tpo_mod_load_tpo(&mod_file, mod, 0);
+	register_tpo_exports(mod, mod_name);
+	release_zone_ref(&tpo_file_data);
+	free_c(data);
+
+	return 1;
+
+}
