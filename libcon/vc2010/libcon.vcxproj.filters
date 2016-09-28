@@ -1,0 +1,152 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Fichiers sources">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Fichiers sources\win32">
+      <UniqueIdentifier>{c9133a6b-5d0a-4920-ace1-ef52384fbfac}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Fichiers sources\win32\inc">
+      <UniqueIdentifier>{9cfafde4-c2e0-40d3-9f9b-73342e90df1e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Fichiers sources\linux">
+      <UniqueIdentifier>{28f65108-1264-4ce0-830c-2b08fcc37db3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Fichiers sources\linux\inc">
+      <UniqueIdentifier>{51d03998-8462-4c4f-9476-782d7b3b254a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Fichiers sources\zlib">
+      <UniqueIdentifier>{8fe1cbd5-9d34-490a-849a-1ed646755331}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Fichiers sources\expat">
+      <UniqueIdentifier>{6f5b5b89-9b2f-4d7a-b8f6-ea3ed1debd80}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Fichiers sources\base">
+      <UniqueIdentifier>{eae7997a-18de-4ef5-8183-4f5656d36aa2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Fichiers d%27en-tête">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Fichiers de ressources">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\strs.c">
+      <Filter>Fichiers sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\win32\connect.c">
+      <Filter>Fichiers sources\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\win32\stat_file.c">
+      <Filter>Fichiers sources\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\unix\connect.c">
+      <Filter>Fichiers sources\linux</Filter>
+    </ClCompile>
+    <ClCompile Include="..\unix\stat_file.c">
+      <Filter>Fichiers sources\linux</Filter>
+    </ClCompile>
+    <ClCompile Include="..\zlib-1.2.8\adler32.c">
+      <Filter>Fichiers sources\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\zlib-1.2.8\compress.c">
+      <Filter>Fichiers sources\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\zlib-1.2.8\crc32.c">
+      <Filter>Fichiers sources\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\zlib-1.2.8\deflate.c">
+      <Filter>Fichiers sources\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\zlib-1.2.8\infback.c">
+      <Filter>Fichiers sources\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\zlib-1.2.8\inffast.c">
+      <Filter>Fichiers sources\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\zlib-1.2.8\inflate.c">
+      <Filter>Fichiers sources\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\zlib-1.2.8\inftrees.c">
+      <Filter>Fichiers sources\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\zlib-1.2.8\trees.c">
+      <Filter>Fichiers sources\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\zlib-1.2.8\uncompr.c">
+      <Filter>Fichiers sources\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\zlib-1.2.8\zutil.c">
+      <Filter>Fichiers sources\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\expat\xmlparse\xmlparse.c">
+      <Filter>Fichiers sources\expat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\expat\xmltok\xmlrole.c">
+      <Filter>Fichiers sources\expat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\expat\xmltok\xmltok.c">
+      <Filter>Fichiers sources\expat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\base\mem_base.c">
+      <Filter>Fichiers sources\base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\base\string.c">
+      <Filter>Fichiers sources\base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\base\utf.c">
+      <Filter>Fichiers sources\base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tpo_mod.c">
+      <Filter>Fichiers sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mem_stream.c">
+      <Filter>Fichiers sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\exp.c">
+      <Filter>Fichiers sources\base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\zlibexp.c">
+      <Filter>Fichiers sources\base</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\win32\include\sys_include.h">
+      <Filter>Fichiers sources\win32\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\unix\include\sys_include.h">
+      <Filter>Fichiers sources\linux\inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\connect.h">
+      <Filter>Fichiers d%27en-tête</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\http.h">
+      <Filter>Fichiers d%27en-tête</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\strs.h">
+      <Filter>Fichiers d%27en-tête</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\upnp.h">
+      <Filter>Fichiers d%27en-tête</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\io.h">
+      <Filter>Fichiers d%27en-tête</Filter>
+    </ClInclude>
+    <ClInclude Include="..\std_base.h">
+      <Filter>Fichiers d%27en-tête</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\runtime.asm">
+      <Filter>Fichiers sources</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\tpo.asm">
+      <Filter>Fichiers sources</Filter>
+    </CustomBuild>
+  </ItemGroup>
+</Project>
