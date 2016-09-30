@@ -14,7 +14,7 @@ static  unsigned int nModifierInterval = 0xFFFFFFFF;
 // ratio of group interval length between the last group and the first group
 static  int			MODIFIER_INTERVAL_RATIO = 3;
 hash_t				nullhash = { 0xCD };
-int64_t				TargetSpacing;
+unsigned int		TargetSpacing;
 
 C_IMPORT int C_API_FUNC load_blk_hdr			(mem_zone_ref_ptr hdr, const char *blk_hash);
 C_IMPORT int C_API_FUNC get_tx_output			(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr vout);
@@ -34,7 +34,7 @@ OS_API_C_FUNC(int) init_pos(mem_zone_ref_ptr stake_conf)
 	memset_c(nullhash, 0, 32);
 	tree_manager_get_child_value_i32(stake_conf, NODE_HASH("ModifierInterval"), &nModifierInterval);
 	tree_manager_get_child_value_si32(stake_conf, NODE_HASH("IntervalRatio"), &MODIFIER_INTERVAL_RATIO);
-	if (!tree_manager_get_child_value_i32(stake_conf, "target spacing", &TargetSpacing))
+	if (!tree_manager_get_child_value_i32(stake_conf, NODE_HASH("target spacing"), &TargetSpacing))
 		TargetSpacing = 60;
 
 

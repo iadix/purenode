@@ -476,6 +476,8 @@ OS_API_C_FUNC(void) init_mem_system()
 	n_mapped_zones			=	0;
 	out_debug				=	0;
 
+
+
 	sys_add_tpo_mod_func_name("libcon", "init_new_mem_area", init_new_mem_area, 0);
 	sys_add_tpo_mod_func_name("libcon", "realloc_zone", realloc_zone, 0);
 	sys_add_tpo_mod_func_name("libcon", "malloc_c", malloc_c, 0);
@@ -541,6 +543,8 @@ OS_API_C_FUNC(void) init_mem_system()
 	sys_add_tpo_mod_func_name("libcon", "strcat_int", strcat_int, 0);
 	sys_add_tpo_mod_func_name("libcon", "cat_cstring", cat_cstring, 0);
 	sys_add_tpo_mod_func_name("libcon", "cat_ncstring", cat_ncstring, 0);
+	sys_add_tpo_mod_func_name("libcon", "cat_cstring_p", cat_cstring_p, 0);
+	sys_add_tpo_mod_func_name("libcon", "cat_ncstring_p", cat_ncstring_p, 0);
 	sys_add_tpo_mod_func_name("libcon", "make_cstring", make_cstring, 0);
 	sys_add_tpo_mod_func_name("libcon", "make_string_l", make_string_l, 0);
 	sys_add_tpo_mod_func_name("libcon", "make_string_url", make_string_url, 0);
@@ -1268,7 +1272,6 @@ OS_API_C_FUNC(unsigned int) allocate_new_zone(unsigned int area_id,mem_size zone
 
 OS_API_C_FUNC(int) 	align_zone_memory(mem_zone_ref *zone_ref, mem_size align)
 {
-	unsigned int			n, cnt;
 	mem_area				*area_ptr;
 	mem_zone_desc			new_free_zone;
 	size_t					new_size;

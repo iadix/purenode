@@ -26,9 +26,11 @@ tpo_mod_file protocol_mod = { 0 }, block_mod = { 0 }, libbase_mod = { 0 }, iadix
 int main(int argc, char **argv)
 {
 	int done = 0;
-	init_mem_system();
-	init_default_mem_area(8 * 1024 * 1024);
-	network_init();
+	init_mem_system			();
+	init_default_mem_area	(8 * 1024 * 1024);
+	network_init			();
+
+	set_home_path			("purenode");
 
 	load_module("modz/libbase.tpo", "libbase", &libbase_mod);
 	load_module("modz/protocol_adx.tpo", "protocol_adx", &protocol_mod);
@@ -48,7 +50,7 @@ int main(int argc, char **argv)
 		console_print("\n");
 		return 0;
 	}
-	daemonize	("iadixcoin");
+	daemonize	("purenode");
 	app_start	(PTR_NULL);
 
 	while (!done)

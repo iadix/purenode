@@ -5,6 +5,8 @@
 #include "base/std_str.h"
 #include "strs.h"
 
+extern char path_sep;
+
 OS_API_C_FUNC(char *) my_strrev(char *str)
 {
     size_t i = strlen_c(str)-1,j=0;
@@ -81,6 +83,32 @@ OS_API_C_FUNC(int) cat_cstring(struct string *str, const char *src)
 	str->len = new_len;
 	return (int)str->len;
 }
+
+
+OS_API_C_FUNC(int) cat_cstring_p(struct string *str, const char *src)
+{
+	size_t		new_len, src_len;
+
+	src_len = strlen_c(src);
+	if (src_len == 0)return (int)str->len;
+
+	new_len = str->len + src_len+1;
+	str->size = new_len + 1;
+
+	if (str->str != NULL)
+		str->str = realloc_c(str->str, str->size);
+	else
+	{
+		str->len = 0;
+		str->str = malloc_c(str->size);
+	}
+
+	str->str[str->len] = path_sep;
+	memcpy_c(&str->str[str->len+1], src, src_len + 1);
+	str->len = new_len;
+	return (int)str->len;
+}
+
 OS_API_C_FUNC(int) cat_ncstring(struct string *str, const char *src, size_t src_len)
 {
 	size_t		new_len;
@@ -95,6 +123,24 @@ OS_API_C_FUNC(int) cat_ncstring(struct string *str, const char *src, size_t src_
 	memcpy_c	(&str->str[str->len],src,src_len);
 	str->len = new_len;
 	str->str[str->len]=0;
+	return (int)str->len;
+}
+
+OS_API_C_FUNC(int) cat_ncstring_p(struct string *str, const char *src, size_t src_len)
+{
+	size_t		new_len;
+
+	new_len = str->len + 1+src_len;
+	str->size = new_len + 1;
+	if (str->str != NULL)
+		str->str = realloc_c(str->str, str->size);
+	else
+		str->str = malloc_c(str->size);
+
+	str->str[str->len] = path_sep;
+	memcpy_c(&str->str[str->len+1], src, src_len);
+	str->len = new_len;
+	str->str[str->len] = 0;
 	return (int)str->len;
 }
 

@@ -22,6 +22,9 @@ LIBC_API		int					C_API_FUNC strcat_float(struct string *str, double f);
 LIBC_API		int 				C_API_FUNC strcat_int(struct string *str, int i);
 LIBC_API		int 				C_API_FUNC cat_cstring(struct string *str, const char *src);
 LIBC_API		int 				C_API_FUNC cat_ncstring(struct string *str, const char *src, size_t src_len);
+LIBC_API		int					C_API_FUNC cat_ncstring_p(struct string *str, const char *src, size_t src_len);
+LIBC_API		int					C_API_FUNC cat_cstring_p(struct string *str, const char *src);
+
 LIBC_API		int 				C_API_FUNC make_cstring(const struct string *str, char *toto, size_t len);
 LIBC_API		int 				C_API_FUNC make_string_l(struct string *str, const char *toto, size_t len);
 LIBC_API		int 				C_API_FUNC make_string_url(struct string *str, const char *toto, size_t len);

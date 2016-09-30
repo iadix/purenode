@@ -19,7 +19,7 @@ unsigned char		def_vint[5]			= { PTR_INVALID };
 unsigned char		null_vint			= 0xAB;
 unsigned int		ping_nonce			= 1;
 
-
+unsigned int NODE_HASH_txsout = 0xCDCDCDCD, NODE_HASH_script = 0xCDCDCDCD, NODE_HASH_txsin = 0xCDCDCDCD, NODE_HASH_version = 0xCDCDCDCD, NODE_HASH_prev = 0xCDCDCDCD, NODE_HASH_merkle_root = 0xCDCDCDCD, NODE_HASH_time = 0xCDCDCDCD, NODE_HASH_bits, NODE_HASH_nonce = 0xCDCDCDCD, NODE_HASH_services = 0xCDCDCDCD, NODE_HASH_addr = 0xCDCDCDCD, NODE_HASH_port = 0xCDCDCDCD, NODE_HASH_p2p_addr = 0xCDCDCDCD, NODE_HASH_locktime = 0xCDCDCDCD, NODE_HASH_tx_hash = 0xCDCDCDCD, NODE_HASH_value = 0xCDCDCDCD, NODE_HASH_sequence = 0xCDCDCDCD, NODE_HASH_idx = 0xCDCDCDCD, NODE_HASH_size = 0xCDCDCDCD, NODE_HASH_cmd = 0xCDCDCDCD, NODE_HASH_payload = 0xCDCDCDCD;
 OS_API_C_FUNC(void) set_version(unsigned int inmagic, unsigned int version)
 {
 	memset_c(null_hash, 0, sizeof(hash_t));
@@ -33,6 +33,28 @@ OS_API_C_FUNC(void) set_version(unsigned int inmagic, unsigned int version)
 	def_vint[3] = 0;
 	def_vint[4] = 0;
 
+	
+	NODE_HASH_script = NODE_HASH("script");
+	NODE_HASH_txsin = NODE_HASH("txsin");
+	NODE_HASH_txsout = NODE_HASH("txsout");
+	NODE_HASH_version = NODE_HASH("version");
+	NODE_HASH_prev = NODE_HASH("prev");
+	NODE_HASH_merkle_root = NODE_HASH("merkle_root");
+	NODE_HASH_time = NODE_HASH("time");
+	NODE_HASH_bits = NODE_HASH("bits");
+	NODE_HASH_nonce = NODE_HASH("nonce");
+	NODE_HASH_services = NODE_HASH("services");
+	NODE_HASH_addr = NODE_HASH("addr");
+	NODE_HASH_port = NODE_HASH("port");
+	NODE_HASH_p2p_addr = NODE_HASH("p2p_addr");
+	NODE_HASH_locktime = NODE_HASH("locktime");
+	NODE_HASH_tx_hash = NODE_HASH("tx hash");
+	NODE_HASH_value = NODE_HASH("value");
+	NODE_HASH_sequence = NODE_HASH("sequence");
+	NODE_HASH_idx = NODE_HASH("idx");
+	NODE_HASH_size	= NODE_HASH("size");
+	NODE_HASH_cmd	= NODE_HASH("cmd");
+	NODE_HASH_payload = NODE_HASH("payload");
 	magic			 = inmagic;
 	PROTOCOL_VERSION = version;
 }
@@ -45,9 +67,9 @@ OS_API_C_FUNC(int) add_bitcore_addr(mem_zone_ref_ptr node, ipv4_t ip, unsigned s
 {
 	uint64_t		services;
 	mem_zone_ref	addr_node = { PTR_NULL };
-	tree_manager_get_child_value_i64(node, NODE_HASH("services"), &services);
+	tree_manager_get_child_value_i64(node, NODE_HASH_services, &services);
 
-	if (!tree_manager_find_child_node(node, NODE_HASH("p2p_addr"), NODE_BITCORE_ADDR, &addr_node))
+	if (!tree_manager_find_child_node(node, NODE_HASH_p2p_addr, NODE_BITCORE_ADDR, &addr_node))
 		tree_manager_add_child_node(node, "p2p_addr", NODE_BITCORE_ADDR, &addr_node);
 
 	tree_manager_set_child_value_i64(&addr_node, "services", services);
@@ -104,7 +126,7 @@ OS_API_C_FUNC(size_t) init_node(mem_zone_ref_ptr key)
 		tree_manager_set_child_value_i32(key, "version", 0);
 		tree_manager_set_child_value_i32(key, "time", 0);
 		
-		if (!tree_manager_find_child_node(key, NODE_HASH("txsin"), NODE_BITCORE_VINLIST, &txin_list))
+		if (!tree_manager_find_child_node(key, NODE_HASH_txsin, NODE_BITCORE_VINLIST, &txin_list))
 			tree_manager_add_child_node(key, "txsin", NODE_BITCORE_VINLIST, &txin_list);
 		
 		tree_manager_add_child_node	(&txin_list, "txin", NODE_BITCORE_TXIN, &vin);
@@ -112,7 +134,7 @@ OS_API_C_FUNC(size_t) init_node(mem_zone_ref_ptr key)
 		release_zone_ref			(&vin);
 		release_zone_ref			(&txin_list);
 
-		if (!tree_manager_find_child_node(key, NODE_HASH("txsout"), NODE_BITCORE_VOUTLIST, &txin_list))
+		if (!tree_manager_find_child_node(key, NODE_HASH_txsout, NODE_BITCORE_VOUTLIST, &txin_list))
 			tree_manager_add_child_node(key, "txsout", NODE_BITCORE_VOUTLIST, &txin_list);
 
 		tree_manager_add_child_node(&txin_list, "txout", NODE_BITCORE_TXOUT, &vin);
@@ -223,7 +245,7 @@ OS_API_C_FUNC(size_t)	get_node_size(mem_zone_ref_ptr key)
 	case NODE_BITCORE_TXIN:
 		szData += 32;
 		szData += 4;
-		data = tree_manager_get_child_data(key, NODE_HASH("script"), 0);
+		data = tree_manager_get_child_data(key, NODE_HASH_script, 0);
 		if (*data < 0xFD)
 			szData += 1 + *data;
 		else if ((*data) == 0xFD)
@@ -236,7 +258,7 @@ OS_API_C_FUNC(size_t)	get_node_size(mem_zone_ref_ptr key)
 		break;
 	case NODE_BITCORE_TXOUT:
 		szData += 8;
-		data = tree_manager_get_child_data(key, NODE_HASH("script"), 0);
+		data = tree_manager_get_child_data(key, NODE_HASH_script, 0);
 		if (data==PTR_NULL)
 			szData += 0;
 		else if (*data < 0xFD)
@@ -278,11 +300,11 @@ OS_API_C_FUNC(size_t)	get_node_size(mem_zone_ref_ptr key)
 		szData += 4;//version
 		szData += 4;//time
 
-		tree_manager_find_child_node(key, NODE_HASH("txsin"), NODE_BITCORE_VINLIST, &txin_list);
+		tree_manager_find_child_node(key, NODE_HASH_txsin, NODE_BITCORE_VINLIST, &txin_list);
 		szData += get_node_size(&txin_list);
 		release_zone_ref(&txin_list);
 
-		tree_manager_find_child_node(key, NODE_HASH("txsout"), NODE_BITCORE_VOUTLIST, &txin_list);
+		tree_manager_find_child_node(key, NODE_HASH_txsout, NODE_BITCORE_VOUTLIST, &txin_list);
 		szData += get_node_size(&txin_list);
 		release_zone_ref(&txin_list);
 
@@ -421,23 +443,25 @@ OS_API_C_FUNC(char *) write_node(mem_zone_ref_const_ptr key, unsigned char *payl
 		}
 	break;
 	case NODE_BITCORE_BLK_HDR:
-		tree_manager_get_child_value_i32(key, NODE_HASH("version")		, (unsigned int *)(payload));
+
+
+		tree_manager_get_child_value_i32(key, NODE_HASH_version		, (unsigned int *)(payload));
 		payload = mem_add(payload, 4);
-		tree_manager_get_child_value_hash(key, NODE_HASH("prev")		, (unsigned char *)(payload));
+		tree_manager_get_child_value_hash(key, NODE_HASH_prev		, (unsigned char *)(payload));
 		payload = mem_add(payload, 32);
-		tree_manager_get_child_value_hash(key, NODE_HASH("merkle_root")	, ((unsigned char *)(payload)));
+		tree_manager_get_child_value_hash(key, NODE_HASH_merkle_root	, ((unsigned char *)(payload)));
 		payload = mem_add(payload, 32);
-		tree_manager_get_child_value_i32(key, NODE_HASH("time")			, ((unsigned int *)(payload)));
+		tree_manager_get_child_value_i32(key, NODE_HASH_time			, ((unsigned int *)(payload)));
 		payload = mem_add(payload, 4);
-		tree_manager_get_child_value_i32(key, NODE_HASH("bits")			, ((unsigned int *)(payload)));
+		tree_manager_get_child_value_i32(key, NODE_HASH_bits			, ((unsigned int *)(payload)));
 		payload = mem_add(payload, 4);
-		tree_manager_get_child_value_i32(key, NODE_HASH("nonce")		, ((unsigned int *)(payload)));
+		tree_manager_get_child_value_i32(key, NODE_HASH_nonce		, ((unsigned int *)(payload)));
 		payload = mem_add(payload, 4);
 	break;
 	case NODE_BITCORE_ADDR:
-		tree_manager_get_child_value_i64(key, NODE_HASH("services"), (uint64_t *)payload);
-		tree_manager_get_child_value_ipv4(key, NODE_HASH("addr"), ip);
-		tree_manager_get_child_value_i16(key, NODE_HASH("port"), &port);
+		tree_manager_get_child_value_i64(key, NODE_HASH_services, (uint64_t *)payload);
+		tree_manager_get_child_value_ipv4(key, NODE_HASH_addr, ip);
+		tree_manager_get_child_value_i16(key, NODE_HASH_port, &port);
 		payload += 8;
 
 		*((uint64_t	*)(payload)) = 0x0;		//(12 bytes 00 00 00 00 00 00 00 00 00 00 FF FF, followed by the 4 bytes of the IPv4 address).
@@ -454,13 +478,13 @@ OS_API_C_FUNC(char *) write_node(mem_zone_ref_const_ptr key, unsigned char *payl
 		payload += 2;
 	break;
 	case NODE_BITCORE_ADDRT:
-		tree_manager_get_child_value_i32(key, NODE_HASH("time"), (unsigned int*)payload);
+		tree_manager_get_child_value_i32(key, NODE_HASH_time, (unsigned int*)payload);
 		payload += 4;
-		tree_manager_get_child_value_i64(key, NODE_HASH("services"), (uint64_t *)payload);
+		tree_manager_get_child_value_i64(key, NODE_HASH_services, (uint64_t *)payload);
 		payload += 8;
 
-		tree_manager_get_child_value_ipv4(key, NODE_HASH("addr"), ip);
-		tree_manager_get_child_value_i16(key, NODE_HASH("port"), &port);
+		tree_manager_get_child_value_ipv4(key, NODE_HASH_addr, ip);
+		tree_manager_get_child_value_i16(key, NODE_HASH_port, &port);
 
 		*((uint64_t	*)(payload)) = 0x0;		//(12 bytes 00 00 00 00 00 00 00 00 00 00 FF FF, followed by the 4 bytes of the IPv4 address).
 		payload += 8;
@@ -476,18 +500,18 @@ OS_API_C_FUNC(char *) write_node(mem_zone_ref_const_ptr key, unsigned char *payl
 		payload += 2;
 		break;
 	case NODE_BITCORE_TXIN:
-		tree_manager_get_child_value_hash			(key, NODE_HASH("tx hash")		, payload);
+		tree_manager_get_child_value_hash			(key, NODE_HASH_tx_hash		, payload);
 		payload += 32;
-		tree_manager_get_child_value_i32			(key, NODE_HASH("idx")			, (unsigned int *)payload);
+		tree_manager_get_child_value_i32			(key, NODE_HASH_idx			, (unsigned int *)payload);
 		payload += 4;
-		payload += tree_manager_get_child_value_vstr(key, NODE_HASH("script")		, payload);
-		tree_manager_get_child_value_i32			(key, NODE_HASH("sequence")		, (unsigned int *)payload);
+		payload += tree_manager_get_child_value_vstr(key, NODE_HASH_script		, payload);
+		tree_manager_get_child_value_i32			(key, NODE_HASH_sequence		, (unsigned int *)payload);
 		payload += 4;
 	break;
 	case NODE_BITCORE_TXOUT:
-		tree_manager_get_child_value_i64			(key, NODE_HASH("value"), (uint64_t *)payload);
+		tree_manager_get_child_value_i64			(key, NODE_HASH_value, (uint64_t *)payload);
 		payload += 8;
-		payload += tree_manager_get_child_value_vstr(key, NODE_HASH("script"), payload);
+		payload += tree_manager_get_child_value_vstr(key, NODE_HASH_script, payload);
 	break;
 	case NODE_BITCORE_VINLIST:
 		nc = tree_manager_get_node_num_children(key);
@@ -537,20 +561,20 @@ OS_API_C_FUNC(char *) write_node(mem_zone_ref_const_ptr key, unsigned char *payl
 		}
 	break;
 		case NODE_BITCORE_TX:
-		tree_manager_get_child_value_i32(key, NODE_HASH("version"), (unsigned int*)payload);
+		tree_manager_get_child_value_i32(key, NODE_HASH_version, (unsigned int*)payload);
 		payload += 4;
-		tree_manager_get_child_value_i32(key, NODE_HASH("time"), (unsigned int *)payload);
+		tree_manager_get_child_value_i32(key, NODE_HASH_time, (unsigned int *)payload);
 		payload += 4;
 
-		tree_manager_find_child_node	(key, NODE_HASH("txsin"), NODE_BITCORE_VINLIST, &txin_list);
+		tree_manager_find_child_node	(key, NODE_HASH_txsin, NODE_BITCORE_VINLIST, &txin_list);
 		payload = write_node(&txin_list,payload);
 		release_zone_ref(&txin_list);
 
-		tree_manager_find_child_node(key, NODE_HASH("txsout"), NODE_BITCORE_VOUTLIST, &txin_list);
+		tree_manager_find_child_node(key, NODE_HASH_txsout, NODE_BITCORE_VOUTLIST, &txin_list);
 		payload = write_node(&txin_list, payload);
 		release_zone_ref(&txin_list);
 
-		tree_manager_get_child_value_i32(key, NODE_HASH("locktime"), (unsigned int *)payload);
+		tree_manager_get_child_value_i32(key, NODE_HASH_locktime, (unsigned int *)payload);
 		payload += 4;
 
 	break;
@@ -909,11 +933,11 @@ OS_API_C_FUNC(const unsigned char *)read_node(mem_zone_ref_ptr key, const unsign
 		tree_manager_set_child_value_i32(key, "time", *((unsigned int *)payload));
 		payload += 4;
 
-		tree_manager_find_child_node(key, NODE_HASH("txsin"), NODE_BITCORE_VINLIST, &txin_list);
+		tree_manager_find_child_node(key, NODE_HASH_txsin, NODE_BITCORE_VINLIST, &txin_list);
 		payload = read_node( &txin_list,payload);
 		release_zone_ref(&txin_list);
 
-		tree_manager_find_child_node(key, NODE_HASH("txsout"), NODE_BITCORE_VOUTLIST, &txin_list);
+		tree_manager_find_child_node(key, NODE_HASH_txsout, NODE_BITCORE_VOUTLIST, &txin_list);
 		payload = read_node(&txin_list, payload);
 		release_zone_ref(&txin_list);
 
@@ -954,10 +978,10 @@ OS_API_C_FUNC(int) unserialize_message(mem_zone_ref_ptr msg, const_mem_ptr paylo
 	int					created=0;
 	
 	if (payload == PTR_NULL)return 0;
-	if (!tree_manager_get_child_value_i32(msg, NODE_HASH("size"), &szData))return 0;
+	if (!tree_manager_get_child_value_i32(msg, NODE_HASH_size, &szData))return 0;
 	if (szData == 0)return 0;
 
-	tree_manager_find_child_node(msg, NODE_HASH("payload"), NODE_BITCORE_PAYLOAD, &payload_node);
+	tree_manager_find_child_node(msg, NODE_HASH_payload, NODE_BITCORE_PAYLOAD, &payload_node);
 
 	if (payload_node.zone == PTR_NULL)
 	{
@@ -1009,8 +1033,8 @@ OS_API_C_FUNC(char *) serialize_message(mem_zone_ref_ptr msg)
 	unsigned char		checksum1[32];
 	unsigned char		checksum[32];
 
-	if (!tree_manager_get_child_value_i32(msg, NODE_HASH("size"), &szData))return PTR_NULL;
-	if (!tree_manager_get_child_value_str(msg, NODE_HASH("cmd"), cmd_node, 12, 16))return PTR_NULL;
+	if (!tree_manager_get_child_value_i32(msg, NODE_HASH_size, &szData))return PTR_NULL;
+	if (!tree_manager_get_child_value_str(msg, NODE_HASH_cmd, cmd_node, 12, 16))return PTR_NULL;
 	
 	buffer = calloc_c(24 + szData, 1);
 	memcpy_c(buffer, &magic, 4);
@@ -1020,7 +1044,7 @@ OS_API_C_FUNC(char *) serialize_message(mem_zone_ref_ptr msg)
 
 	memcpy_c	(&buffer[16], &szData, 4);
 
-	if ((szData > 0) && tree_manager_find_child_node(msg, NODE_HASH("payload"), NODE_BITCORE_PAYLOAD, &payload_node))
+	if ((szData > 0) && tree_manager_find_child_node(msg, NODE_HASH_payload, NODE_BITCORE_PAYLOAD, &payload_node))
 	{
 		payload = buffer + 4 + 12 + 4 + 4;
 
@@ -1122,17 +1146,18 @@ OS_API_C_FUNC(int) create_getblocks_message(mem_zone_ref_ptr node, mem_zone_ref_
 	int					cnt;
 
 	if (!tree_manager_create_node("message", NODE_BITCORE_MSG, getblk_pack))return 0;
-	tree_manager_set_child_value_str(getblk_pack, "cmd", "getblocks");
+
 
 	cnt = tree_manager_get_node_num_children(blk_locator);
 
+	tree_manager_set_child_value_str(getblk_pack, "cmd", "getblocks");
 	tree_manager_add_child_node(getblk_pack, "payload", NODE_BITCORE_PAYLOAD, &payload);
 	tree_manager_set_child_value_i32(&payload, "version", PROTOCOL_VERSION);
 	tree_manager_node_add_child(&payload, blk_locator);
 	tree_manager_set_child_value_hash(&payload, "hashstop", null_hash);
 	pl_size = compute_payload_size(&payload);
 	release_zone_ref(&payload);
-
+	tree_manager_get_node_num_children(blk_locator);
 	tree_manager_set_child_value_i32(getblk_pack, "size", pl_size);
 	tree_manager_set_child_value_i32(getblk_pack, "sent", 0);
 
@@ -1185,10 +1210,10 @@ OS_API_C_FUNC(int) create_version_message(mem_zone_ref_ptr node, struct string *
 	mem_zone_ref		payload = { PTR_NULL };
 	mem_zone_ref		self_addr = { PTR_NULL }, node_addr = { PTR_NULL };
 
-	if (!tree_manager_get_child_value_i32	(node, NODE_HASH("version"), &ver))return 0;
-	if (!tree_manager_get_child_value_i64	(node, NODE_HASH("services"), &services))return 0;
-	if (!tree_manager_find_child_node		(node, NODE_HASH("p2p_addr"), NODE_BITCORE_ADDR, &self_addr))return 0;
-	if (!tree_manager_find_child_node		(node, NODE_HASH("p2p_addr"), NODE_BITCORE_ADDR, &node_addr)){ release_zone_ref(&self_addr); return 0; }
+	if (!tree_manager_get_child_value_i32	(node, NODE_HASH_version, &ver))return 0;
+	if (!tree_manager_get_child_value_i64	(node, NODE_HASH_services, &services))return 0;
+	if (!tree_manager_find_child_node		(node, NODE_HASH_p2p_addr, NODE_BITCORE_ADDR, &self_addr))return 0;
+	if (!tree_manager_find_child_node		(node, NODE_HASH_p2p_addr, NODE_BITCORE_ADDR, &node_addr)){ release_zone_ref(&self_addr); return 0; }
 
 	/*
 	4	magic	uint32_t	Magic value indicating message origin network, and used to seek to next message when stream state is unknown

@@ -15,7 +15,8 @@
 #include "xmlparse.h"
 
 extern int init_zfuncs();
-
+extern struct string home_path;
+extern struct string log_file_name;
 void init_funcs()
 {
 	sys_add_tpo_mod_func_name("libcon", "utf8_encode", utf8_encode, 0);
@@ -36,6 +37,9 @@ void init_funcs()
 	sys_add_tpo_mod_func_name("libcon", "log_output", log_output, 0);
 	sys_add_tpo_mod_func_name("libcon", "set_ftime", set_ftime, 0);
 	sys_add_tpo_mod_func_name("libcon", "get_ftime", get_ftime, 0);
+	sys_add_tpo_mod_func_name("libcon", "get_home_dir", get_home_dir, 0);
+	sys_add_tpo_mod_func_name("libcon", "set_home_path", set_home_path, 0);
+	
 
 
 	sys_add_tpo_mod_func_name("libcon", "daemonize", daemonize, 0);
@@ -47,6 +51,10 @@ void init_funcs()
 	sys_add_tpo_mod_func_name("libcon", "XML_SetUserData", XML_SetUserData, 0);
 	sys_add_tpo_mod_func_name("libcon", "XML_Parse", XML_Parse, 0);
 	sys_add_tpo_mod_func_name("libcon", "XML_ParserFree", XML_ParserFree, 0);
+
+	init_string(&home_path);
+	init_string(&log_file_name);
+	
 
 	init_zfuncs();	
 }

@@ -24,13 +24,13 @@ C_IMPORT int  C_API_FUNC compute_block_pow		(mem_zone_ref_ptr block, hash_t hash
 C_IMPORT int  C_API_FUNC is_tx_null				(mem_zone_ref_const_ptr tx);
 C_IMPORT int  C_API_FUNC is_vout_null			(mem_zone_ref_const_ptr tx, unsigned int idx);
 C_IMPORT int  C_API_FUNC load_tx_input			(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr	vin , mem_zone_ref_ptr tx_out);
-C_IMPORT int  C_API_FUNC load_tx				(mem_zone_ref_ptr tx, const char *tx_hash);
+C_IMPORT int  C_API_FUNC load_tx				(mem_zone_ref_ptr tx,hash_t blk_hash, const char *tx_hash);
 C_IMPORT int  C_API_FUNC SetCompact				(unsigned int bits, hash_t out);
-C_IMPORT int  C_API_FUNC get_tx_output_amount	(const char *tx_hash, unsigned int idx, uint64_t *amount);
+C_IMPORT int  C_API_FUNC get_tx_output_amount	(const hash_t tx_hash, unsigned int idx, uint64_t *amount);
 C_IMPORT void C_API_FUNC mul_compact			(unsigned int nBits, uint64_t op, hash_t hash);
 C_IMPORT int  C_API_FUNC cmp_hashle				(hash_t hash1, hash_t hash2);
 C_IMPORT int  C_API_FUNC check_diff				(unsigned int nActualSpacing, unsigned int TargetSpacing, unsigned int nTargetTimespan,hash_t limit, unsigned int pBits, unsigned int nBits);
-
+C_IMPORT int  C_API_FUNC get_block_height		();
 #define ONE_COIN		100000000ULL
 #define ONE_CENT		1000000ULL
 
@@ -302,7 +302,6 @@ OS_API_C_FUNC(int) compute_blk_staking(mem_zone_ref_ptr prev, mem_zone_ref_ptr h
 	if (ret && is_tx_null(&tx) && is_vout_null(&tx2, 0))
 	{
 		//block is proof of stake
-		char				cphash[65];
 		hash_t				pos_hash, blk_hash = { 0 }, diff_hash = { 0 };
 		unsigned int		pBits,nBits, prevOutIdx, txTime;
 		unsigned int		prevTime, pprevTime;
@@ -367,16 +366,7 @@ OS_API_C_FUNC(int) compute_blk_staking(mem_zone_ref_ptr prev, mem_zone_ref_ptr h
 			//StakeModKernel is prev out hash
 			
 			//get weighted difficulty
-			n = 0;
-			while (n < 32)
-			{
-				cphash[n * 2 + 0] = hex_chars[StakeModKernel[n] >> 0x04];
-				cphash[n * 2 + 1] = hex_chars[StakeModKernel[n] & 0x0F];
-				n++;
-			}
-			cphash[64] = 0;
-
-			get_tx_output_amount(cphash, prevOutIdx, &weight);
+			get_tx_output_amount(StakeModKernel, prevOutIdx, &weight);
 			mul_compact(nBits, weight, diff_hash);
 
 			n = 32;
@@ -409,7 +399,10 @@ OS_API_C_FUNC(int) compute_blk_staking(mem_zone_ref_ptr prev, mem_zone_ref_ptr h
 				tree_manager_set_child_value_hash(&log, "hash", blk_hash);
 				log_message("----------------\nNBAD POS BLOCK\n%diff%\n%pos%\n%hash%\n", &log);
 				release_zone_ref(&log);
-				ret = 0;
+
+				if (get_block_height()>=300)
+					ret = 0;
+
 			}
 		}
 

@@ -34,7 +34,7 @@ C_IMPORT int  C_API_FUNC load_blk_hdr(mem_zone_ref_ptr hdr, const char *blk_hash
 C_IMPORT int  C_API_FUNC get_prev_block_time(mem_zone_ref_ptr header, ctime_t *time);
 C_IMPORT int  C_API_FUNC make_genesis_block(mem_zone_ref_ptr genesis_conf, mem_zone_ref_ptr genesis);
 C_IMPORT int  C_API_FUNC check_diff(unsigned int nActualSpacing, unsigned int TargetSpacing, unsigned int nTargetTimespan, hash_t limit, unsigned int pBits, unsigned int nBits);
-
+C_IMPORT int  C_API_FUNC get_block_height();
 
 typedef int	C_API_FUNC node_init_self_func(mem_zone_ref_ptr out_self_node, unsigned short node_port, mem_zone_ref_ptr node_config);
 typedef int	C_API_FUNC new_peer_node_func(struct host_def *host, mem_zone_ref_ptr peer_nodes);
@@ -317,7 +317,6 @@ int handle_ping(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 int handle_pong(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 {
 	synching = 1;
-	//queue_getblock_hdrs_message	(node);
 	return 1;
 }
 
@@ -492,32 +491,40 @@ int get_last_pow_diff(mem_zone_ref_ptr lastBlk, unsigned int	*pBits,int64_t *spa
 	}
 	return ret;
 }
-#define tree_zone 2
+mem_zone_ref		lastBlk = { PTR_INVALID };
+C_IMPORT int C_API_FUNC compute_block_hash(mem_zone_ref_ptr block, hash_t hash);
+C_IMPORT int C_API_FUNC find_hash(hash_t hash);
 
 int handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 {
-	char				prevHash[65];
-	mem_zone_ref		lastBlk = { PTR_NULL }, header = { PTR_NULL }, tx_list = { PTR_NULL };
+	hash_t				prevHash, lastHash, blk_hash;
+	mem_zone_ref		header = { PTR_NULL }, tx_list = { PTR_NULL };
 	int					ret;
 	uint64_t			staking_reward;
 	int64_t				nActualSpacing;
 	unsigned int		pBits, nBits;
 	
-
-	
-	
 	if (!tree_manager_find_child_node(payload, NODE_HASH("header"), NODE_BITCORE_BLK_HDR, &header))return 0;
-	if (!check_block_hdr(&header)){ release_zone_ref(&header); return 0; }
+	tree_manager_get_child_value_hash(&header, NODE_HASH("prev"), prevHash);
+
+	if (lastBlk.zone != PTR_NULL)
+	{
+		tree_manager_get_child_value_hash(&lastBlk, NODE_HASH("blk hash"), lastHash);
+		if (memcmp_c(lastHash, prevHash, sizeof(hash_t)))
+		{
+			release_zone_ref(&header);
+			return 0;
+		}
+	}
+	compute_block_hash(&header, blk_hash);
+	tree_manager_set_child_value_bhash(&header, "blk hash", blk_hash);
+	if (find_hash(blk_hash))
+	{ 
+		release_zone_ref(&header); 
+		return 1; 
+	}
 	if (!tree_manager_find_child_node(payload, NODE_HASH("txs"), NODE_BITCORE_TX_LIST, &tx_list)){ release_zone_ref(&header); return 0; }
-
-	
-	
-	tree_manager_get_child_value_str(&header, NODE_HASH("prev"), prevHash, 65, 16);
-	load_blk_hdr					(&lastBlk, prevHash);
-
-
 	ret = compute_blk_staking		(&lastBlk, &header, &tx_list, &staking_reward);
-
 	if (ret && (staking_reward == 0))
 	{
 		//compute current block difficulty
@@ -551,13 +558,13 @@ int handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 	if (ret)
 	{
 		mem_zone_ref	log = { PTR_NULL };
-		size_t			size,nz;
+		size_t			size,nz=0;
 
 		if (strlen_c(pos_kernel.name) > 0)
 			store_blk_staking(&header);
-
-		nz = find_zones_used(tree_zone);
-
+#ifdef _DEBUG
+		nz = find_zones_used(2);
+#endif
 		size = file_size("./blk_indexes") / 32;
 		tree_manager_create_node("log", NODE_LOG_PARAMS, &log);
 		tree_manager_set_child_value_i32(&log, "nblocks", size);
@@ -568,7 +575,9 @@ int handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 	}
 
 	
-	release_zone_ref(&lastBlk);
+	if (ret)
+		copy_zone_ref(&lastBlk, &header);
+
 	release_zone_ref(&header);
 	release_zone_ref(&tx_list);
 	
@@ -802,14 +811,14 @@ void load_node_module(mem_zone_ref_ptr node_config)
 
 OS_API_C_FUNC(int) app_init(mem_zone_ref_ptr params)
 {
-	mem_zone_ref		genesis = { PTR_NULL }, genesis_conf = { PTR_NULL }, stake_conf = { PTR_NULL };
+	mem_zone_ref		log = { PTR_NULL };
 	unsigned char		*data;
-	struct host_def		*seed_host;
+
 	size_t				data_len;
 	
 
 	tree_manager_init();
-	
+	lastBlk.zone = PTR_NULL;
 	node_port_str.str = PTR_NULL;
 	node_port_str.len = 0;
 	node_port_str.size = 0;
@@ -819,12 +828,10 @@ OS_API_C_FUNC(int) app_init(mem_zone_ref_ptr params)
 	node_hostname.size = 0;
 
 	node_config.zone = PTR_NULL;
+	init_string(&user_agent);
+	peer_nodes.zone = PTR_NULL;
+	memset_c(null_hash, 0, 32);
 
-	if (!read_config("config.json", &node_port_str, &node_hostname))
-	{
-		log_message("unable to load config\n", PTR_NULL);
-		return 0;
-	}
 
 	if (get_file("iadix.conf", &data, &data_len)<=0)
 	{
@@ -840,6 +847,45 @@ OS_API_C_FUNC(int) app_init(mem_zone_ref_ptr params)
 	}
 	free_c(data);
 	
+	tree_manager_get_child_value_istr(&node_config, NODE_HASH("p2p_port"), &node_port_str, 0);
+	tree_manager_get_child_value_istr(&node_config, NODE_HASH("seed_node_host"), &node_hostname, 0);
+	tree_manager_get_child_value_i32(&node_config, NODE_HASH("seed_node_port"), &seed_port);
+	tree_manager_get_child_value_istr(&node_config, NODE_HASH("name"), &user_agent, 0);
+	
+	self_node.zone = PTR_NULL;
+		
+	create_dir("adrs");
+	create_dir("txs");
+	create_dir("blks");
+
+	load_node_module(&node_config);
+
+	node_port = strtoul_c(node_port_str.str, PTR_NULL, 16);
+	if (!node_init_self(&self_node, node_port, &node_config))
+	{
+		console_print("unable to init self node \n");
+		return 0;
+	}
+
+	tree_manager_create_node("log", NODE_LOG_PARAMS, &log);
+	tree_manager_set_child_value_i32(&log, "port", node_port);
+	tree_manager_set_child_value_str(&log, "hostname", node_hostname.str);
+	log_message("node port %port% open @ '%hostname%'", &log);
+	release_zone_ref(&log);
+
+	return 1;
+}
+
+
+OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
+{
+	hash_t				last_hash;
+	mem_zone_ref		genesis = { PTR_NULL };
+	mem_zone_ref		log = { PTR_NULL };
+	mem_zone_ref		seed_node = { PTR_NULL }, genesis_conf = { PTR_NULL }, stake_conf = { PTR_NULL };
+	struct host_def		*seed_host;
+	int					nc;
+
 
 	if (!tree_manager_find_child_node(&node_config, NODE_HASH("genesis"), 0xFFFFFFFF, &genesis_conf))
 	{
@@ -856,43 +902,39 @@ OS_API_C_FUNC(int) app_init(mem_zone_ref_ptr params)
 
 		if (load_pos_module(staking_kernel, &pos_kernel))
 		{
-			init_pos			(&stake_conf);
-			store_blk_staking	(&genesis);
+			init_pos(&stake_conf);
+			store_blk_staking(&genesis);
 		}
-		release_zone_ref				(&stake_conf);
+		release_zone_ref(&stake_conf);
 	}
 	else
 		memset_c(&pos_kernel, 0, sizeof(tpo_mod_file));
+	
+	nc =get_block_height();
+	if ((nc > 1) && (get_hash_idx("blk_indexes", nc - 1, last_hash)))
+	{
+		char chash[65];
+		int	 n;
 
+		n = 0;
+		while (n<32)
+		{
+			chash[n * 2 + 0] = hex_chars[last_hash[n] >> 4];
+			chash[n * 2 + 1] = hex_chars[last_hash[n] & 0x0F];
+			n++;
+		}
+		chash[64] = 0;
+		load_blk_hdr(&lastBlk, chash);
+	}
+	else
+	{
+		copy_zone_ref(&lastBlk, &genesis);
+	}
 	release_zone_ref(&genesis_conf);
 	release_zone_ref(&genesis);
 
-	load_node_module(&node_config);
-	
-	memset_c(null_hash, 0, 32);
-	self_node.zone = PTR_NULL;
-
-	node_port = strtoul_c(node_port_str.str, PTR_NULL, 10);
-	if (!node_init_self(&self_node, node_port, &node_config))
-	{
-		console_print("unable to init self node \n");
-		return 0;
-	}
-	
-	
-
-
-	tree_manager_get_child_value_istr(&node_config, NODE_HASH("seed_node_host"), &node_hostname, 0);
-	tree_manager_get_child_value_i32(&node_config, NODE_HASH("seed_node_port"), &seed_port);
-
 	seed_host = make_host_def(node_hostname.str, seed_port);
-
-	user_agent.str = PTR_NULL;
-	tree_manager_get_child_value_istr(&node_config, NODE_HASH("name"), &user_agent, 0);
-
-	peer_nodes.zone = PTR_NULL;
 	tree_manager_create_node("peer nodes", NODE_BITCORE_NODE_LIST, &peer_nodes);
-	
 	if (!new_peer_node(seed_host, &peer_nodes))
 	{
 		free_string(&node_port_str);
@@ -901,23 +943,6 @@ OS_API_C_FUNC(int) app_init(mem_zone_ref_ptr params)
 		return 0;
 	}
 	free_host_def(seed_host);
-
-
-
-	return 1;
-}
-
-
-OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
-{
-	mem_zone_ref		log = { PTR_NULL };
-	mem_zone_ref		seed_node = { PTR_NULL };
-
-	tree_manager_create_node("log", NODE_LOG_PARAMS, &log);
-	tree_manager_set_child_value_i32(&log, "port", node_port);
-	tree_manager_set_child_value_str(&log, "hostname", node_hostname.str);
-	log_message("node port %port% open @ '%hostname%'", &log);
-	release_zone_ref(&log);
 	
 	tree_manager_get_child_at(&peer_nodes, 0, &seed_node);
 	queue_version_message(&seed_node, &user_agent);

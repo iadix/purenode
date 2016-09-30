@@ -10,9 +10,12 @@
 #include "strs.h"
 #include "fsio.h"
 
-#include <windows.h>
+#include <shlwapi.h>
+#include "shlobj.h"
 
-struct string log_file_name = { PTR_NULL };
+char path_sep='\\';
+struct string log_file_name = { PTR_INVALID };
+struct string home_path = { PTR_INVALID };
 
 OS_API_C_FUNC(int) set_mem_exe(mem_zone_ref_ptr zone)
 {
@@ -28,8 +31,19 @@ OS_API_C_FUNC(int) set_mem_exe(mem_zone_ref_ptr zone)
 
 OS_API_C_FUNC(int) stat_file(const char *path)
 {
-	struct _stat	buf;
-	return	_stat(path,&buf);
+	struct string t = { 0 };
+	int ret;
+	if (home_path.len>0)
+	{
+		clone_string	(&t, &home_path);
+		cat_cstring_p	(&t, path);
+		ret = PathFileExists(t.str) ? 0 : -1;
+		free_string(&t);
+	}
+	else
+		ret = PathFileExists(path) ? 0 : -1;
+	
+	return ret;
 }
 OS_API_C_FUNC(int) create_dir(const char *path)
 {
@@ -79,7 +93,7 @@ OS_API_C_FUNC(int) get_ftime(const char *path, ctime_t *time)
 	CloseHandle(hFile);
 
 	if (ret)
-		*time = (ft.dwHighDateTime << 32) | (ft.dwLowDateTime);
+		*time = (((uint64_t)(ft.dwHighDateTime)) << 32) | (ft.dwLowDateTime);
 
 	return ret;
 }
@@ -173,7 +187,7 @@ OS_API_C_FUNC(int) put_file(const char *path, void *data, size_t data_len)
 	return (len>0)?1:0;
 
 }
-OS_API_C_FUNC(int) append_file(const char *path, void *data, size_t data_len)
+OS_API_C_FUNC(int) append_file(const char *path, const void *data, size_t data_len)
 {
 	FILE		*f;
 	size_t		len;
@@ -181,6 +195,27 @@ OS_API_C_FUNC(int) append_file(const char *path, void *data, size_t data_len)
 	ret = fopen_s(&f, path, "ab+");
 	if (f == NULL)return 0;
 	fseek(f, 0, SEEK_END);
+	len = fwrite(data, data_len, 1, f);
+	fclose(f);
+	return 1;
+
+}
+
+OS_API_C_FUNC(int) truncate_file(const char *path, unsigned int ofset,const void *data, size_t data_len)
+{
+	FILE		*f;
+	size_t		len;
+	int			ret;
+
+	if ((ofset == 0) && (data_len == 0))
+	{
+		del_file(path);
+		return 1;
+	}
+
+	ret = fopen_s(&f, path, "ab+");
+	if (f == NULL)return 0;
+	fseek(f, ofset, SEEK_SET);
 	len = fwrite(data, data_len, 1, f);
 	fclose(f);
 	return 1;
@@ -235,12 +270,35 @@ OS_API_C_FUNC(ctime_t)	 get_time_c()
 {
 	return time(0);
 }
+OS_API_C_FUNC(int) get_home_dir(struct string *path)
+{
+	char szPath[MAX_PATH];
+	if (SUCCEEDED(SHGetFolderPath(NULL, CSIDL_APPDATA, NULL, 0, szPath)))
+	{
+		// Append product-specific path
+		make_string(path, szPath);
+		return 1;
+	}
+	return 0;
+}
+OS_API_C_FUNC(int) set_home_path(const char *name)
+{
+	get_home_dir (&home_path);
+	cat_cstring_p(&home_path, name);
+	create_dir	 (home_path.str);
+	set_cwd		 (home_path.str);
+	return 1;
 
+}
 OS_API_C_FUNC(int) daemonize(const char *name)
 {
+
+	set_home_path(name);
 	init_string (&log_file_name);
 	make_string	(&log_file_name,name);
 	cat_cstring	(&log_file_name,".log");
+	
+
 	return 0;
 }
 
@@ -258,6 +316,13 @@ OS_API_C_FUNC(void	*)kernel_memory_map_c(unsigned int size)
 {
 	return 0;
 }
+
+ 
+
+ OS_API_C_FUNC(int) set_cwd(const char *path)
+ {
+	 return SetCurrentDirectory(path);
+ }
 
  OS_API_C_FUNC(int) log_output(const char *data)
  {
