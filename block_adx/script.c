@@ -183,21 +183,29 @@ int serialize_script(mem_zone_ref_ptr script_node, struct string *script)
 
 int get_out_script_address(struct string *script, btc_addr_t addr)
 {
+	hash_t			tmp_hash, fhash;
+	char			hash[21];
+	unsigned char	hin[32];
 	unsigned char  *p;
 	p = (unsigned char  *)script->str;
 	if ((p[0] == 33) && (p[34] == 0xAC))
 	{
 		char			pkey[33];
-		memcpy_c		(pkey, script->str + 1, 33);
-		//addr = prefix + ripmdhash + sum
+		mbedtls_sha256(script->str + 1, 33, tmp_hash, 0);
+
+		hin[0] = pubKeyPrefix;
+		ripemd160		(tmp_hash, 32,&hin[1]);
+		
+		mbedtls_sha256  (hin, 21, tmp_hash, 0);
+		mbedtls_sha256  (tmp_hash, 32, fhash, 0);
+				
+		memcpy_c(&hin[21], fhash, 4);
+		base58(hin, addr);
+		
 		return 1;
 	}
 	else if ((p[0] == 0x76) && (p[1] == 0xA9) && (p[24] == 0xAC))
 	{
-		char			hash[21];
-		unsigned char	hin[32];
-		hash_t			tmp_hash, fhash;
-
 		hash[0] = pubKeyPrefix;
 		memcpy_c(&hash[1], script->str + 3, 20);
 

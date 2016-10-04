@@ -120,6 +120,8 @@
 #define		NODE_BITCORE_HASH				0x0B001000
 #define		NODE_BITCORE_HASH_LIST			0x0B003000
 #define		NODE_BITCORE_BLOCK_HASH			0x0B005000
+#define		NODE_BITCORE_WALLET_ADDR_LIST	0x0B008000
+#define		NODE_BITCORE_WALLET_ADDR		0x0B009000
 
 #define		NODE_BITCORE_BLOCK				0x0B002000
 #define		NODE_BITCORE_TX_LIST			0x0B004000
@@ -208,6 +210,7 @@ LIBBASE_API  int	 		C_API_FUNC	tree_manager_cmp_z_xchg_node_dword		(mem_zone_ref
 LIBBASE_API  int			C_API_FUNC	tree_manager_write_node_qword			(mem_zone_ref *node_ref,mem_size ofset,uint64_t value);
 LIBBASE_API  int			C_API_FUNC	tree_manager_write_node_float			(mem_zone_ref *node_ref,mem_size ofset,double value);
 LIBBASE_API  int			C_API_FUNC	tree_manager_write_node_hash			(mem_zone_ref_ptr node_ref, mem_size ofset, const hash_t hash);
+LIBBASE_API  int			C_API_FUNC	tree_manager_write_node_btcaddr			(mem_zone_ref_ptr node_ref, mem_size ofset, const btc_addr_t addr);
 LIBBASE_API  int			C_API_FUNC	tree_manager_write_node_rhash			(mem_zone_ref_ptr node_ref, mem_size ofset, const hash_t hash);
 LIBBASE_API  int			C_API_FUNC	tree_manager_write_node_vstr			(mem_zone_ref_ptr node_ref, mem_size ofset, const struct string *str);
 LIBBASE_API  int			C_API_FUNC	tree_manager_write_node_vint			(mem_zone_ref_ptr node_ref, mem_size ofset, const_mem_ptr vint);
@@ -241,6 +244,7 @@ LIBBASE_API  int			C_API_FUNC	tree_mamanger_get_node_word				(mem_zone_ref_const
 LIBBASE_API  int			C_API_FUNC	tree_mamanger_get_node_signed_word		(mem_zone_ref_const_ptr node_ref,mem_size ofset,short *val);
 LIBBASE_API  int			C_API_FUNC	tree_mamanger_get_node_byte				(mem_zone_ref_const_ptr node_ref,mem_size ofset,unsigned char *val);
 LIBBASE_API  mem_ptr		C_API_FUNC	tree_mamanger_get_node_data_ptr			(mem_zone_ref_const_ptr node_ref,mem_size ofset);
+LIBBASE_API  int			C_API_FUNC	tree_manager_get_child_value_btcaddr	(const mem_zone_ref	*p_node_ref, unsigned int crc_name, btc_addr_t addr);
 LIBBASE_API  unsigned int	C_API_FUNC	tree_manager_compare_node_crc			(mem_zone_ref_ptr node_ref,unsigned int crc);
 LIBBASE_API  int			C_API_FUNC	tree_mamanger_compare_node_dword		(mem_zone_ref_ptr node_ref,mem_size ofset,unsigned int val);
 
@@ -275,6 +279,7 @@ LIBBASE_API  int			C_API_FUNC	tree_manager_set_child_value_str		(mem_zone_ref_pt
 LIBBASE_API  int			C_API_FUNC	tree_manager_set_child_value_si64		(mem_zone_ref_ptr p_node_ref,char *name,int64_t value);
 LIBBASE_API  int			C_API_FUNC	tree_manager_set_child_value_ipv4		(mem_zone_ref_ptr p_node_ref, char *name, ipv4_t value);
 LIBBASE_API  int			C_API_FUNC	tree_manager_set_child_value_hash		(mem_zone_ref_ptr p_node_ref, const char *name, const hash_t str);
+LIBBASE_API  int			C_API_FUNC	tree_manager_set_child_value_btcaddr	(mem_zone_ref_ptr p_node_ref, const char *name, const btc_addr_t str);
 LIBBASE_API  int			C_API_FUNC	tree_manager_set_child_value_rhash		(mem_zone_ref_ptr p_node_ref, const char *name, const hash_t str);
 LIBBASE_API  int			C_API_FUNC	tree_manager_set_child_value_bhash		(mem_zone_ref_ptr p_node_ref, const char *name, const hash_t str);
 LIBBASE_API  int			C_API_FUNC	tree_manager_set_child_value_vstr		(mem_zone_ref_ptr p_node_ref, const char *name, const struct string *str);

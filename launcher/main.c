@@ -16,6 +16,11 @@ C_IMPORT int C_API_FUNC app_init(mem_zone_ref_ptr params);
 C_IMPORT int C_API_FUNC app_start(mem_zone_ref_ptr params);
 C_IMPORT int C_API_FUNC app_loop(mem_zone_ref_ptr params);
 C_IMPORT int C_API_FUNC app_stop(mem_zone_ref_ptr params);
+
+typedef int C_API_FUNC init_func();
+typedef init_func *init_func_ptr;
+
+
 #else
 typedef int C_API_FUNC app_func(mem_zone_ref_ptr params);
 typedef app_func *app_func_ptr;
@@ -36,7 +41,12 @@ int main(int argc, char **argv)
 	load_module("modz/protocol_adx.tpo", "protocol_adx", &protocol_mod);
 	load_module("modz/block_adx.tpo", "block_adx", &block_mod);
 	load_module("modz/iadixcoin.tpo", "iadixcoin", &iadix_mod);
-
+#ifdef _DEBUG
+	init_func_ptr init;
+	init=get_tpo_mod_exp_addr_name(&libbase_mod, "tree_manager_init", 0);
+	if(init)
+		init();
+#endif
 #ifndef _DEBUG
 	app_init = get_tpo_mod_exp_addr_name(&iadix_mod, "app_init", 0);
 	app_start = get_tpo_mod_exp_addr_name(&iadix_mod, "app_start", 0);

@@ -345,12 +345,12 @@ OS_API_C_FUNC(mem_ptr)	get_zone_ptr(mem_zone_ref_const_ptr ref, mem_size ofset)
 		return PTR_INVALID;
 	}
 
-
+	/*
 	if(!check_zone(ref->zone))
 	{
 		return PTR_INVALID;
 	}
-
+	*/
 
 	return mem_add( ((mem_zone *)(ref->zone))->mem.ptr,ofset);
 }
@@ -521,6 +521,7 @@ OS_API_C_FUNC(void) init_mem_system()
 	sys_add_tpo_mod_func_name("libcon", "strtoul_c", strtoul_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "stricmp_c", stricmp_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "uitoa_s", uitoa_s, 0);
+	sys_add_tpo_mod_func_name("libcon", "luitoa_s", luitoa_s, 0);
 	sys_add_tpo_mod_func_name("libcon", "itoa_s", itoa_s, 0);
 	sys_add_tpo_mod_func_name("libcon", "isalpha_c", isalpha_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "isdigit_c", isdigit_c, 0);
@@ -528,6 +529,9 @@ OS_API_C_FUNC(void) init_mem_system()
 
 	sys_add_tpo_mod_func_name("libcon", "muldiv64", muldiv64, 0);
 	sys_add_tpo_mod_func_name("libcon", "mul64", mul64, 0);
+	sys_add_tpo_mod_func_name("libcon", "shl64", shl64, 0);
+	sys_add_tpo_mod_func_name("libcon", "shr64", shr64, 0);
+
 
 	
 
@@ -1547,6 +1551,14 @@ OS_API_C_FUNC(uint64_t) mul64(uint64_t a, uint64_t b)
 	return a * b;
 }
 
+OS_API_C_FUNC(uint64_t) shl64(uint64_t a, unsigned char n)
+{
+	return a << n;
+}
+OS_API_C_FUNC(uint64_t) shr64(uint64_t a, unsigned char n)
+{
+	return a >> n;
+}
 OS_API_C_FUNC(uint64_t) muldiv64(uint64_t a, uint64_t b, uint64_t c)
 {
 	uint64_t tmp;

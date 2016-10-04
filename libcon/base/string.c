@@ -107,6 +107,37 @@ OS_API_C_FUNC(char * ) uitoa_s(size_t value, char *string,size_t len, int radix)
 	return string;
 }
 
+OS_API_C_FUNC(char *) luitoa_s(uint64_t value, char *string, size_t len, int radix)
+{
+	char		tmp[65];
+	char		*tp = tmp;
+	uint64_t	i;
+	uint64_t	v;
+	char		*sp;
+
+	if (radix > 36 || radix <= 1)return 0;
+
+	v = (uint64_t)value;
+
+	while (v || tp == tmp)
+	{
+		i = v % radix;
+		v = v / radix;
+		if (i < 10)
+			*tp++ = i + '0';
+		else
+			*tp++ = i + 'a' - 10;
+	}
+
+	sp = string;
+
+	while (tp > tmp)
+		*sp++ = *--tp;
+	*sp = 0;
+	return string;
+}
+
+
 OS_API_C_FUNC(char *)strncpy_c(char *string,const char *src_string,size_t		 cnt)
 {
 	unsigned int n;
@@ -413,6 +444,7 @@ OS_API_C_FUNC(int)  strncat_c(char *string,const char *src_string,size_t max)
 OS_API_C_FUNC(size_t) strlen_c(const char *string)
 {
 	int n=0;
+	if (string == PTR_NULL)return 0;
 	
 	while(string[n]!=0){n++;}
 

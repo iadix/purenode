@@ -9,6 +9,7 @@
 #include <strs.h>
 #include <tree.h>
 #include <connect.h>
+#include <sha256.h>
 #include <http.h>
 #include <upnp.h>
 #include <mem_stream.h>
@@ -29,16 +30,19 @@ tpo_mod_file		node_mod = { 0xFF };
 tpo_mod_file		pos_kernel = { 0xFF };
 unsigned int		ping_nonce = 0x01;
 
-C_IMPORT int  C_API_FUNC check_block_hdr(mem_zone_ref_ptr hdr);
-C_IMPORT int  C_API_FUNC load_blk_hdr(mem_zone_ref_ptr hdr, const char *blk_hash);
-C_IMPORT int  C_API_FUNC get_prev_block_time(mem_zone_ref_ptr header, ctime_t *time);
-C_IMPORT int  C_API_FUNC make_genesis_block(mem_zone_ref_ptr genesis_conf, mem_zone_ref_ptr genesis);
-C_IMPORT int  C_API_FUNC check_diff(unsigned int nActualSpacing, unsigned int TargetSpacing, unsigned int nTargetTimespan, hash_t limit, unsigned int pBits, unsigned int nBits);
-C_IMPORT int  C_API_FUNC get_block_height();
+mem_zone_ref		lastBlk = { PTR_INVALID };
 
-typedef int	C_API_FUNC node_init_self_func(mem_zone_ref_ptr out_self_node, unsigned short node_port, mem_zone_ref_ptr node_config);
+
+C_IMPORT int C_API_FUNC compute_block_hash(mem_zone_ref_ptr block, hash_t hash);
+C_IMPORT int C_API_FUNC find_hash(hash_t hash);
+C_IMPORT int  C_API_FUNC load_blk_hdr(mem_zone_ref_ptr hdr, const char *blk_hash);
+C_IMPORT int  C_API_FUNC make_genesis_block(mem_zone_ref_ptr genesis_conf, mem_zone_ref_ptr genesis);
+C_IMPORT int  C_API_FUNC get_block_height();
+C_IMPORT int  C_API_FUNC remove_block(hash_t blk_hash);
+
+typedef int	C_API_FUNC node_init_self_func(mem_zone_ref_ptr out_self_node, mem_zone_ref_ptr node_config);
 typedef int	C_API_FUNC new_peer_node_func(struct host_def *host, mem_zone_ref_ptr peer_nodes);
-typedef int	C_API_FUNC node_add_block_func(mem_zone_ref_ptr header, mem_zone_ref_ptr txs, uint64_t staking_reward);
+typedef int	C_API_FUNC node_add_block_func(mem_zone_ref_ptr lastBlk, mem_zone_ref_ptr header, mem_zone_ref_ptr txs, uint64_t staking_reward);
 typedef int	C_API_FUNC read_node_msg_func(mem_zone_ref_ptr node);
 typedef int	C_API_FUNC send_node_messages_func(mem_zone_ref_ptr node);
 typedef int	C_API_FUNC node_add_block_header_func(mem_zone_ref_ptr node, mem_zone_ref_ptr hdr);
@@ -53,11 +57,14 @@ typedef int	C_API_FUNC queue_getblock_hdrs_message_func(mem_zone_ref_ptr node);
 typedef int	C_API_FUNC queue_send_message_func(mem_zone_ref_ptr node, mem_zone_ref_ptr msg);
 typedef int	C_API_FUNC queue_emitted_element_func(mem_zone_ref_ptr node, mem_zone_ref_ptr element);
 typedef int	C_API_FUNC queue_emitted_message_func(mem_zone_ref_ptr node, mem_zone_ref_ptr msg);
+typedef int	C_API_FUNC node_init_rpc_func(mem_zone_ref_ptr in_config);
+typedef int	C_API_FUNC check_rpc_request_func();
+
 
 typedef int	C_API_FUNC	init_pos_func(mem_zone_ref_ptr stake_conf);
 typedef int	C_API_FUNC	store_blk_staking_func(mem_zone_ref_ptr header);
 typedef int	C_API_FUNC	compute_blk_staking_func(mem_zone_ref_ptr prev, mem_zone_ref_ptr hdr, mem_zone_ref_ptr tx_list, uint64_t *staking_reward);
-typedef int	C_API_FUNC	is_pos_block_func(const char *blk_hash);
+
 
 
 typedef node_init_self_func					 *node_init_self_func_ptr;
@@ -77,16 +84,18 @@ typedef queue_getblock_hdrs_message_func	 *queue_getblock_hdrs_message_func_ptr;
 typedef queue_send_message_func				 *queue_send_message_func_ptr;
 typedef queue_emitted_element_func			 *queue_emitted_element_func_ptr;
 typedef queue_emitted_message_func			 *queue_emitted_message_func_ptr;
+typedef node_init_rpc_func					 *node_init_rpc_func_ptr;
+typedef check_rpc_request_func				 *check_rpc_request_func_ptr;
 
 typedef init_pos_func						*init_pos_func_ptr;
 typedef store_blk_staking_func				*store_blk_staking_func_ptr;
 typedef compute_blk_staking_func			*compute_blk_staking_func_ptr;
-typedef is_pos_block_func					*is_pos_block_func_ptr;
+
 
 #ifdef _DEBUG
-C_IMPORT int			C_API_FUNC		node_init_self(mem_zone_ref_ptr out_self_node, unsigned short node_port, mem_zone_ref_ptr node_config);
+C_IMPORT int			C_API_FUNC		node_init_self(mem_zone_ref_ptr out_self_node, mem_zone_ref_ptr node_config);
 C_IMPORT int			C_API_FUNC		new_peer_node(struct host_def *host, mem_zone_ref_ptr peer_nodes);
-C_IMPORT int			C_API_FUNC		node_add_block(mem_zone_ref_ptr header, mem_zone_ref_ptr txs,uint64_t staking_reward);
+C_IMPORT int			C_API_FUNC		node_add_block(mem_zone_ref_ptr LastBlk, mem_zone_ref_ptr header, mem_zone_ref_ptr txs, uint64_t staking_reward);
 C_IMPORT int			C_API_FUNC		read_node_msg(mem_zone_ref_ptr node);
 C_IMPORT int			C_API_FUNC		send_node_messages(mem_zone_ref_ptr node);
 C_IMPORT int			C_API_FUNC		node_add_block_header(mem_zone_ref_ptr node, mem_zone_ref_ptr hdr);
@@ -102,10 +111,13 @@ C_IMPORT int			C_API_FUNC		queue_send_message(mem_zone_ref_ptr node, mem_zone_re
 C_IMPORT int			C_API_FUNC		queue_emitted_element(mem_zone_ref_ptr node, mem_zone_ref_ptr element);
 C_IMPORT int			C_API_FUNC		queue_emitted_message(mem_zone_ref_ptr node, mem_zone_ref_ptr msg);
 
+C_IMPORT int			C_API_FUNC		node_init_rpc(mem_zone_ref_ptr in_config);
+C_IMPORT int			C_API_FUNC		check_rpc_request();
+
 C_IMPORT int	C_API_FUNC	init_pos(mem_zone_ref_ptr stake_conf);
 C_IMPORT int	C_API_FUNC	store_blk_staking(mem_zone_ref_ptr header);
 C_IMPORT int	C_API_FUNC	compute_blk_staking(mem_zone_ref_ptr prev, mem_zone_ref_ptr hdr, mem_zone_ref_ptr tx_list, uint64_t *staking_reward);
-C_IMPORT int	C_API_FUNC	is_pos_block(const char *blk_hash);
+
 
 node_init_self_func_ptr						_node_init_self=PTR_INVALID;
 new_peer_node_func_ptr						_new_peer_node=PTR_INVALID;
@@ -124,14 +136,17 @@ queue_getblock_hdrs_message_func_ptr		_queue_getblock_hdrs_message=PTR_INVALID;
 queue_send_message_func_ptr					_queue_send_message=PTR_INVALID;
 queue_emitted_element_func_ptr				_queue_emitted_element=PTR_INVALID;
 queue_emitted_message_func_ptr				_queue_emitted_message=PTR_INVALID;
-
+node_init_rpc_func_ptr						_node_init_rpc = PTR_INVALID;
+check_rpc_request_func_ptr					_check_rpc_request = PTR_INVALID;
 init_pos_func_ptr							_init_pos = PTR_INVALID;
 store_blk_staking_func_ptr					_store_blk_staking = PTR_INVALID;
 compute_blk_staking_func_ptr				_compute_blk_staking = PTR_INVALID;
-is_pos_block_func_ptr						_is_pos_block = PTR_INVALID;
+
 
 #else
 node_init_self_func_ptr						node_init_self = PTR_INVALID;
+node_init_rpc_func_ptr						node_init_rpc = PTR_INVALID;
+check_rpc_request_func_ptr					check_rpc_request = PTR_INVALID;
 new_peer_node_func_ptr						new_peer_node = PTR_INVALID;
 node_add_block_func_ptr						node_add_block = PTR_INVALID;
 read_node_msg_func_ptr						read_node_msg = PTR_INVALID;
@@ -150,7 +165,6 @@ queue_emitted_element_func_ptr				queue_emitted_element = PTR_INVALID;
 queue_emitted_message_func_ptr				queue_emitted_message = PTR_INVALID;
 
 init_pos_func_ptr							init_pos= PTR_INVALID;
-is_pos_block_func_ptr						is_pos_block= PTR_INVALID;
 store_blk_staking_func_ptr					store_blk_staking= PTR_INVALID;
 compute_blk_staking_func_ptr				compute_blk_staking= PTR_INVALID;
 #endif
@@ -437,63 +451,6 @@ unsigned int GetNextTargetRequired(mem_zone_ref_ptr pindexLast, unsigned int bnT
 }*/
 
 // Get the last pow block and its generation time from a given block
-int get_last_pow_block(mem_zone_ref_ptr pindex, unsigned int *block_time)
-{
-	char			chash[65];
-	int				ret = 0;
-	tree_manager_get_child_value_str(pindex, NODE_HASH("blk hash"), chash, 65, 16);
-	while (is_pos_block(chash))
-	{
-		tree_manager_get_child_value_str(pindex, NODE_HASH("prev"), chash, 65, 16);
-		if (!load_blk_hdr(pindex, chash))
-			return 0;
-	}
-	if (!is_pos_block(chash))
-	{
-		tree_manager_get_child_value_i32(pindex, NODE_HASH("time"), block_time);
-		return 1;
-	}
-	return 0;
-}
-int get_last_pow_diff(mem_zone_ref_ptr lastBlk, unsigned int	*pBits,int64_t *spacing)
-{
-	mem_zone_ref		prevPOW = { PTR_NULL };
-	unsigned int		prevTime, pprevTime;
-	int					ret;
-	//get last two pos blocks
-	copy_zone_ref(&prevPOW, lastBlk);
-	ret = get_last_pow_block(&prevPOW, &prevTime);
-	if (ret)
-	{
-		char			cpphash[65];
-		mem_zone_ref	pprev = { PTR_NULL };
-
-		tree_manager_get_child_value_i32(&prevPOW, NODE_HASH("bits"), pBits);
-		tree_manager_get_child_value_str(&prevPOW, NODE_HASH("prev"), cpphash, 65, 16);
-		release_zone_ref(&prevPOW);
-		ret = load_blk_hdr(&pprev, cpphash);
-		if (ret)
-		{
-			hash_t pppp;
-			tree_manager_get_child_value_hash(&pprev, NODE_HASH("prev"), pppp);
-
-			if (!memcmp_c(pppp, null_hash, sizeof(hash_t)))
-				ret = 0;
-
-			if (ret)
-				ret = get_last_pow_block(&pprev, &pprevTime);
-
-			if (ret)
-				*spacing = prevTime - pprevTime;
-
-			release_zone_ref(&pprev);
-		}
-	}
-	return ret;
-}
-mem_zone_ref		lastBlk = { PTR_INVALID };
-C_IMPORT int C_API_FUNC compute_block_hash(mem_zone_ref_ptr block, hash_t hash);
-C_IMPORT int C_API_FUNC find_hash(hash_t hash);
 
 int handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 {
@@ -501,8 +458,6 @@ int handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 	mem_zone_ref		header = { PTR_NULL }, tx_list = { PTR_NULL };
 	int					ret;
 	uint64_t			staking_reward;
-	int64_t				nActualSpacing;
-	unsigned int		pBits, nBits;
 	
 	if (!tree_manager_find_child_node(payload, NODE_HASH("header"), NODE_BITCORE_BLK_HDR, &header))return 0;
 	tree_manager_get_child_value_hash(&header, NODE_HASH("prev"), prevHash);
@@ -516,44 +471,16 @@ int handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 			return 0;
 		}
 	}
-	compute_block_hash(&header, blk_hash);
-	tree_manager_set_child_value_bhash(&header, "blk hash", blk_hash);
+	compute_block_hash					(&header, blk_hash);
+	tree_manager_set_child_value_bhash	(&header, "blk hash", blk_hash);
 	if (find_hash(blk_hash))
-	{ 
-		release_zone_ref(&header); 
-		return 1; 
-	}
+		remove_block(blk_hash);
+
 	if (!tree_manager_find_child_node(payload, NODE_HASH("txs"), NODE_BITCORE_TX_LIST, &tx_list)){ release_zone_ref(&header); return 0; }
 	ret = compute_blk_staking		(&lastBlk, &header, &tx_list, &staking_reward);
-	if (ret && (staking_reward == 0))
-	{
-		//compute current block difficulty
-		if (get_last_pow_diff(&lastBlk, &pBits, &nActualSpacing))
-		{
-			unsigned int	TargetSpacing;
-			unsigned int	nTargetTimespan;
-			hash_t			limit;
-			tree_manager_get_child_value_i32(&header, NODE_HASH("bits"), &nBits);
-
-			if (!tree_manager_get_child_value_i32(&node_config, NODE_HASH("target spacing"), &TargetSpacing))
-				TargetSpacing = 64;
-
-			if (!tree_manager_get_child_value_i32(&node_config, NODE_HASH("target timespan"), &nTargetTimespan))
-				nTargetTimespan = 16 * 60;  // 16 mins
-
-
-			if (nActualSpacing > TargetSpacing * 10)
-				nActualSpacing = TargetSpacing * 10;
-
-			ret = check_diff(nActualSpacing, TargetSpacing, nTargetTimespan, limit,pBits, nBits);
-			if (!ret)
-				log_message("BAD BLOCK DIFF: %bits% at %time%\n%blk hash%\n",&header);
-		}
-	}
-
 	
 	if (ret)
-		ret = node_add_block(&header, &tx_list, staking_reward);
+		ret = node_add_block(&lastBlk,&header, &tx_list, staking_reward);
 
 	if (ret)
 	{
@@ -563,7 +490,7 @@ int handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 		if (strlen_c(pos_kernel.name) > 0)
 			store_blk_staking(&header);
 #ifdef _DEBUG
-		nz = find_zones_used(2);
+		nz = find_zones_used(3);
 #endif
 		size = file_size("./blk_indexes") / 32;
 		tree_manager_create_node("log", NODE_LOG_PARAMS, &log);
@@ -706,6 +633,7 @@ int update_nodes()
 	{
 		send_node_messages	(node);
 		read_node_msg		(node);
+		check_rpc_request	();
 		
 	}
 	return 1;
@@ -752,12 +680,10 @@ int load_pos_module(const char *staking_kernel,tpo_mod_file *tpomod)
 #ifdef _DEBUG
 	_init_pos = get_tpo_mod_exp_addr_name(tpomod, "init_pos", 0);
 	_store_blk_staking = get_tpo_mod_exp_addr_name(tpomod, "store_blk_staking", 0);
-	_is_pos_block = get_tpo_mod_exp_addr_name(tpomod, "is_pos_block", 0);
 	_compute_blk_staking = get_tpo_mod_exp_addr_name(tpomod, "compute_blk_staking", 0);
 #else
 	init_pos = get_tpo_mod_exp_addr_name(tpomod, "init_pos", 0);
 	store_blk_staking = get_tpo_mod_exp_addr_name(tpomod, "store_blk_staking", 0);
-	is_pos_block = get_tpo_mod_exp_addr_name(tpomod, "is_pos_block", 0);
 	compute_blk_staking = get_tpo_mod_exp_addr_name(tpomod, "compute_blk_staking", 0);
 #endif
 	return ret;
@@ -771,6 +697,8 @@ void load_node_module(mem_zone_ref_ptr node_config)
 	load_module("modz/node_adx.tpo", "node_adx", &node_mod);
 #ifdef _DEBUG
 	_node_init_self = get_tpo_mod_exp_addr_name(&node_mod, "node_init_self", 0);
+	_node_init_rpc = get_tpo_mod_exp_addr_name(&node_mod, "node_init_rpc", 0);
+	_check_rpc_request = get_tpo_mod_exp_addr_name(&node_mod, "check_rpc_request", 0);
 	_new_peer_node = get_tpo_mod_exp_addr_name(&node_mod, "new_peer_node", 0);
 	_node_add_block = get_tpo_mod_exp_addr_name(&node_mod, "node_add_block", 0);
 	_read_node_msg = get_tpo_mod_exp_addr_name(&node_mod, "read_node_msg", 0);
@@ -787,8 +715,11 @@ void load_node_module(mem_zone_ref_ptr node_config)
 	_queue_send_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_send_message", 0);
 	_queue_emitted_element = get_tpo_mod_exp_addr_name(&node_mod, "queue_emitted_element", 0);
 	_queue_emitted_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_emitted_message", 0);
+
 #else
 	node_init_self = get_tpo_mod_exp_addr_name(&node_mod, "node_init_self", 0);
+	node_init_rpc = get_tpo_mod_exp_addr_name(&node_mod, "node_init_rpc", 0);
+	check_rpc_request = get_tpo_mod_exp_addr_name(&node_mod, "check_rpc_request", 0);
 	new_peer_node = get_tpo_mod_exp_addr_name(&node_mod, "new_peer_node", 0);
 	node_add_block = get_tpo_mod_exp_addr_name(&node_mod, "node_add_block", 0);
 	read_node_msg = get_tpo_mod_exp_addr_name(&node_mod, "read_node_msg", 0);
@@ -815,9 +746,8 @@ OS_API_C_FUNC(int) app_init(mem_zone_ref_ptr params)
 	unsigned char		*data;
 
 	size_t				data_len;
-	
-
 	tree_manager_init();
+	
 	lastBlk.zone = PTR_NULL;
 	node_port_str.str = PTR_NULL;
 	node_port_str.len = 0;
@@ -847,7 +777,7 @@ OS_API_C_FUNC(int) app_init(mem_zone_ref_ptr params)
 	}
 	free_c(data);
 	
-	tree_manager_get_child_value_istr(&node_config, NODE_HASH("p2p_port"), &node_port_str, 0);
+	
 	tree_manager_get_child_value_istr(&node_config, NODE_HASH("seed_node_host"), &node_hostname, 0);
 	tree_manager_get_child_value_i32(&node_config, NODE_HASH("seed_node_port"), &seed_port);
 	tree_manager_get_child_value_istr(&node_config, NODE_HASH("name"), &user_agent, 0);
@@ -859,9 +789,7 @@ OS_API_C_FUNC(int) app_init(mem_zone_ref_ptr params)
 	create_dir("blks");
 
 	load_node_module(&node_config);
-
-	node_port = strtoul_c(node_port_str.str, PTR_NULL, 16);
-	if (!node_init_self(&self_node, node_port, &node_config))
+	if (!node_init_self(&self_node, &node_config))
 	{
 		console_print("unable to init self node \n");
 		return 0;
@@ -882,10 +810,9 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 	hash_t				last_hash;
 	mem_zone_ref		genesis = { PTR_NULL };
 	mem_zone_ref		log = { PTR_NULL };
-	mem_zone_ref		seed_node = { PTR_NULL }, genesis_conf = { PTR_NULL }, stake_conf = { PTR_NULL };
+	mem_zone_ref		seed_node = { PTR_NULL }, rpc_wallet_conf = { PTR_NULL },genesis_conf = { PTR_NULL }, stake_conf = { PTR_NULL };
 	struct host_def		*seed_host;
 	int					nc;
-
 
 	if (!tree_manager_find_child_node(&node_config, NODE_HASH("genesis"), 0xFFFFFFFF, &genesis_conf))
 	{
@@ -943,6 +870,16 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 		return 0;
 	}
 	free_host_def(seed_host);
+
+	
+		
+	if (tree_manager_find_child_node(&node_config, NODE_HASH("rpc_wallet"), 0xFFFFFFFF, &rpc_wallet_conf))
+	{
+		node_init_rpc(&rpc_wallet_conf);
+		release_zone_ref(&rpc_wallet_conf);
+	}
+
+
 	
 	tree_manager_get_child_at(&peer_nodes, 0, &seed_node);
 	queue_version_message(&seed_node, &user_agent);

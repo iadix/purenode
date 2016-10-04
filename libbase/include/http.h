@@ -53,5 +53,6 @@ LIBBASE_API struct  http_req*		C_API_FUNC http_process_request(struct con *new_c
 LIBBASE_API int						C_API_FUNC fetch_http_url(const struct string *url, struct	string *data, const struct	string *cookie);
 LIBBASE_API struct http_req *		C_API_FUNC make_soap_request(const struct string *url, const char *soap_action, const char *soap_body, struct string *data);
 LIBBASE_API int						C_API_FUNC json_rpc(struct con *mycon, const char *method, mem_zone_ref_ptr params, unsigned int call_id, unsigned int mode);
+LIBBASE_API void					C_API_FUNC write_json(mem_zone_ref_ptr params, unsigned int mode, struct string *json_req);
 
 

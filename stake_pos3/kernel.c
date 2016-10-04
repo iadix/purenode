@@ -11,6 +11,7 @@
 
 hash_t			nullhash = { 0xCD };
 hash_t			Difflimit = { 0xCD };;
+unsigned int	Di = 0xFFFFFFFF;
 static int64_t	TargetSpacing = 0xFFFFFFFF;
 static int64_t	nTargetTimespan = 0xFFFFFFFF;
 static int64_t	nStakeReward= 0xFFFFFFFF;
@@ -29,7 +30,7 @@ C_IMPORT int  C_API_FUNC SetCompact				(unsigned int bits, hash_t out);
 C_IMPORT int  C_API_FUNC get_tx_output_amount	(const hash_t tx_hash, unsigned int idx, uint64_t *amount);
 C_IMPORT void C_API_FUNC mul_compact			(unsigned int nBits, uint64_t op, hash_t hash);
 C_IMPORT int  C_API_FUNC cmp_hashle				(hash_t hash1, hash_t hash2);
-C_IMPORT int  C_API_FUNC check_diff				(unsigned int nActualSpacing, unsigned int TargetSpacing, unsigned int nTargetTimespan,hash_t limit, unsigned int pBits, unsigned int nBits);
+C_IMPORT unsigned int C_API_FUNC calc_new_target(unsigned int nActualSpacing, unsigned int TargetSpacing, unsigned int nTargetTimespan, unsigned int pBits);
 C_IMPORT int  C_API_FUNC get_block_height		();
 #define ONE_COIN		100000000ULL
 #define ONE_CENT		1000000ULL
@@ -37,7 +38,9 @@ C_IMPORT int  C_API_FUNC get_block_height		();
 
 OS_API_C_FUNC(int) init_pos(mem_zone_ref_ptr stake_conf)
 {
-	unsigned int Di;
+	
+	int n;
+	
 	memset_c(nullhash, 0, 32);
 
 	if(!tree_manager_get_child_value_i64(stake_conf, NODE_HASH("target spacing"), &TargetSpacing))
@@ -51,9 +54,12 @@ OS_API_C_FUNC(int) init_pos(mem_zone_ref_ptr stake_conf)
 		nStakeReward = 150 * ONE_CENT;  // 16 mins
 
 	if (!tree_manager_get_child_value_i32(stake_conf, NODE_HASH("limit"), &Di))
-		Di = 0x1B00FFFF;
+		Di = 0x1E00FFFF;
 
+	memset_c(Difflimit, 0, sizeof(hash_t));
 	SetCompact(Di, Difflimit);
+
+	
 	return 1;
 }
 
@@ -183,7 +189,7 @@ OS_API_C_FUNC(int) store_blk_staking(mem_zone_ref_ptr header)
 		ret = put_file(file_path.str, StakeMod, sizeof(hash_t));
 		free_string(&file_path);
 	}
-	if (tree_manager_get_child_value_hash(header, NODE_HASH("pos"), hashPos))
+	if (tree_manager_get_child_value_hash(header, NODE_HASH("blk pos"), hashPos))
 	{
 		clone_string(&file_path, &blk_path);
 		cat_cstring(&file_path, "/pos");
@@ -302,7 +308,7 @@ OS_API_C_FUNC(int) compute_blk_staking(mem_zone_ref_ptr prev, mem_zone_ref_ptr h
 	if (ret && is_tx_null(&tx) && is_vout_null(&tx2, 0))
 	{
 		//block is proof of stake
-		hash_t				pos_hash, blk_hash = { 0 }, diff_hash = { 0 };
+		hash_t				pos_hash, out_diff,blk_hash = { 0 };
 		unsigned int		pBits,nBits, prevOutIdx, txTime;
 		unsigned int		prevTime, pprevTime;
 		mem_zone_ref		prevPOS = { PTR_NULL },log = { PTR_NULL };
@@ -315,6 +321,8 @@ OS_API_C_FUNC(int) compute_blk_staking(mem_zone_ref_ptr prev, mem_zone_ref_ptr h
 		tree_manager_get_child_value_i32(&tx2, NODE_HASH("time"), &txTime);
 		compute_tx_pos					(&tx2, lastStakeModifier, txTime, pos_hash, StakeModKernel, &prevOutIdx);
 
+		tree_manager_set_child_value_hash(hdr, "blk pos", pos_hash);
+		memset_c(out_diff, 0, sizeof(hash_t));
 
 		//get last two pos blocks
 		copy_zone_ref(&prevPOS, prev);
@@ -326,64 +334,59 @@ OS_API_C_FUNC(int) compute_blk_staking(mem_zone_ref_ptr prev, mem_zone_ref_ptr h
 
 			tree_manager_get_child_value_i32(&prevPOS, NODE_HASH("bits"), &pBits);
 			tree_manager_get_child_value_str(&prevPOS, NODE_HASH("prev"), cpphash, 65, 16);
-			
+						
 			sRet = load_blk_hdr(&pprev, cpphash);
 			if (sRet)
 			{
+				int64_t				nActualSpacing;
 				sRet = get_last_pos_block(&pprev, &pprevTime);
 				release_zone_ref(&pprev);
+
+				if (sRet)
+				{
+					unsigned bits;
+					hash_t   od1;
+					nActualSpacing = prevTime - pprevTime;
+
+					if (nActualSpacing > TargetSpacing * 10)
+						nActualSpacing = TargetSpacing * 10;
+
+					get_tx_output_amount(StakeModKernel, prevOutIdx, &weight);
+					bits=calc_new_target(nActualSpacing, TargetSpacing, nTargetTimespan, pBits);
+
+					SetCompact(bits, od1);
+					if (memcmp_c(od1, Difflimit,sizeof(hash_t)) < 0)
+						bits = Di;
+
+					mul_compact(bits, weight, out_diff);
+				}
 			}
 		}
 		release_zone_ref(&prevPOS);
-
-
-		//compute current block difficulty
-		if (sRet)
+		
+		if (!sRet)
 		{
-			int64_t				nActualSpacing;
-			
-			nActualSpacing = prevTime - pprevTime;
+			hash_t t;
 
-			if (nActualSpacing > TargetSpacing * 10)
-				nActualSpacing = TargetSpacing * 10;
+			memset_c(out_diff, 0, sizeof(hash_t));
+			get_tx_output_amount(StakeModKernel, prevOutIdx, &weight);
+			mul_compact(nBits, weight, out_diff);
 
-			if (!check_diff(nActualSpacing, TargetSpacing, nTargetTimespan, Difflimit, pBits, nBits))
-			{
-				tree_manager_create_node("log", NODE_LOG_PARAMS, &log);
-				tree_manager_set_child_value_i32(&log, "diff"   , pBits);
-				tree_manager_set_child_value_i32(&log, "diff2"  , nBits);
-				tree_manager_set_child_value_i32(&log, "spacing", nActualSpacing);
-				tree_manager_set_child_value_hash(&log, "hash"  , blk_hash);
-				log_message("----------------\nBAD POS DIFF %diff% + %spacing% !=0 %diff2%\n%hash%\n", &log);
-				release_zone_ref(&log);
-				ret = 0;
-			}
 		}
-	
+			
 		if (ret)
 		{
 			hash_t rpos,rdiff;
-			//StakeModKernel is prev out hash
-			
-			//get weighted difficulty
-			get_tx_output_amount(StakeModKernel, prevOutIdx, &weight);
-			mul_compact(nBits, weight, diff_hash);
-
 			n = 32;
 			while (n--)
 			{
 				rpos[n] = pos_hash[31 - n];
-				rdiff[n] = diff_hash[31 - n];
+				rdiff[n] = out_diff[31 - n];
 			}
-
-	
-			
 			//check proof of stake
-			if (cmp_hashle(pos_hash, diff_hash) >= 0)
+			if (cmp_hashle(pos_hash, out_diff) >= 0)
 			{
-				tree_manager_set_child_value_hash(hdr, "pos", pos_hash);
 				*staking_reward = nStakeReward;
-				
 				tree_manager_create_node("log", NODE_LOG_PARAMS, &log);
 				tree_manager_set_child_value_hash(&log, "diff", rdiff);
 				tree_manager_set_child_value_hash(&log, "pos", rpos);
@@ -399,9 +402,7 @@ OS_API_C_FUNC(int) compute_blk_staking(mem_zone_ref_ptr prev, mem_zone_ref_ptr h
 				tree_manager_set_child_value_hash(&log, "hash", blk_hash);
 				log_message("----------------\nNBAD POS BLOCK\n%diff%\n%pos%\n%hash%\n", &log);
 				release_zone_ref(&log);
-
-				if (get_block_height()>=300)
-					ret = 0;
+				ret = 0;
 
 			}
 		}

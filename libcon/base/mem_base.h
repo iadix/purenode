@@ -96,7 +96,8 @@ extern mem_ptr			ASM_API_FUNC memset							(mem_ptr ptr, int value, unsigned int
 
 LIBC_API uint64_t		C_API_FUNC mul64							(uint64_t a, uint64_t b);
 LIBC_API uint64_t		C_API_FUNC muldiv64							(uint64_t a, uint64_t b, uint64_t c);
-
+LIBC_API uint64_t		C_API_FUNC shl64							(uint64_t a, unsigned char n);
+LIBC_API uint64_t		C_API_FUNC shr64							(uint64_t a, unsigned char n);
 
 static __inline unsigned int mem_to_uint(const_mem_ptr ptr)
 {

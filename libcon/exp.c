@@ -26,7 +26,10 @@ void init_funcs()
 	sys_add_tpo_mod_func_name("libcon", "console_print", console_print, 0);
 	sys_add_tpo_mod_func_name("libcon", "stat_file", stat_file, 0);
 	sys_add_tpo_mod_func_name("libcon", "create_dir", create_dir, 0);
+	sys_add_tpo_mod_func_name("libcon", "del_dir", del_dir, 0);
 	sys_add_tpo_mod_func_name("libcon", "put_file", put_file, 0);
+	sys_add_tpo_mod_func_name("libcon", "append_file", append_file, 0);
+	sys_add_tpo_mod_func_name("libcon", "truncate_file", truncate_file, 0);
 	sys_add_tpo_mod_func_name("libcon", "get_file", get_file, 0);
 	sys_add_tpo_mod_func_name("libcon", "del_file", del_file, 0);
 	sys_add_tpo_mod_func_name("libcon", "move_file", move_file, 0);
@@ -44,7 +47,6 @@ void init_funcs()
 
 	sys_add_tpo_mod_func_name("libcon", "daemonize", daemonize, 0);
 	sys_add_tpo_mod_func_name("libcon", "get_time_c", get_time_c, 0);
-	sys_add_tpo_mod_func_name("libcon", "append_file", append_file, 0);
 	sys_add_tpo_mod_func_name("libcon", "XML_ParserCreate", XML_ParserCreate, 0);
 	sys_add_tpo_mod_func_name("libcon", "XML_SetElementHandler", XML_SetElementHandler, 0);
 	sys_add_tpo_mod_func_name("libcon", "XML_SetCharacterDataHandler", XML_SetCharacterDataHandler, 0);

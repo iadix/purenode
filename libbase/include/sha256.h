@@ -19,3 +19,5 @@ LIBBASE_API void C_API_FUNC mbedtls_sha256_update(mbedtls_sha256_context *ctx, c
 LIBBASE_API void C_API_FUNC mbedtls_sha256_free(mbedtls_sha256_context *ctx);
 LIBBASE_API void C_API_FUNC mbedtls_sha256_finish(mbedtls_sha256_context *ctx, unsigned char output[32]);
 LIBBASE_API void C_API_FUNC mbedtls_sha256(const unsigned char *input, size_t ilen, unsigned char output[32], int is224);
+
+LIBBASE_API int	 C_API_FUNC ripemd160(const void* in, unsigned long length, void* out);

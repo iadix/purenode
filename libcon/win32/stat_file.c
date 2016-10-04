@@ -45,6 +45,11 @@ OS_API_C_FUNC(int) stat_file(const char *path)
 	
 	return ret;
 }
+
+OS_API_C_FUNC(int) del_dir(const char *path)
+{
+	return RemoveDirectory(path);
+}
 OS_API_C_FUNC(int) create_dir(const char *path)
 {
 	return CreateDirectory(path, NULL);
