@@ -17,8 +17,10 @@
 extern int init_zfuncs();
 extern struct string home_path;
 extern struct string log_file_name;
+extern struct string exe_path;
 void init_funcs()
 {
+
 	sys_add_tpo_mod_func_name("libcon", "utf8_encode", utf8_encode, 0);
 	sys_add_tpo_mod_func_name("libcon", "utf8_check_first", utf8_check_first, 0);
 	sys_add_tpo_mod_func_name("libcon", "utf8_check_full", utf8_check_full, 0);
@@ -27,6 +29,7 @@ void init_funcs()
 	sys_add_tpo_mod_func_name("libcon", "stat_file", stat_file, 0);
 	sys_add_tpo_mod_func_name("libcon", "create_dir", create_dir, 0);
 	sys_add_tpo_mod_func_name("libcon", "del_dir", del_dir, 0);
+	sys_add_tpo_mod_func_name("libcon", "rm_dir", rm_dir, 0);
 	sys_add_tpo_mod_func_name("libcon", "put_file", put_file, 0);
 	sys_add_tpo_mod_func_name("libcon", "append_file", append_file, 0);
 	sys_add_tpo_mod_func_name("libcon", "truncate_file", truncate_file, 0);
@@ -42,8 +45,10 @@ void init_funcs()
 	sys_add_tpo_mod_func_name("libcon", "get_ftime", get_ftime, 0);
 	sys_add_tpo_mod_func_name("libcon", "get_home_dir", get_home_dir, 0);
 	sys_add_tpo_mod_func_name("libcon", "set_home_path", set_home_path, 0);
+	sys_add_tpo_mod_func_name("libcon", "set_cwd", set_cwd, 0);
+	sys_add_tpo_mod_func_name("libcon", "get_cwd", get_cwd, 0);
 	
-
+	sys_add_tpo_mod_func_name("libcon", "background_func", background_func, 0);
 
 	sys_add_tpo_mod_func_name("libcon", "daemonize", daemonize, 0);
 	sys_add_tpo_mod_func_name("libcon", "get_time_c", get_time_c, 0);
@@ -54,8 +59,12 @@ void init_funcs()
 	sys_add_tpo_mod_func_name("libcon", "XML_Parse", XML_Parse, 0);
 	sys_add_tpo_mod_func_name("libcon", "XML_ParserFree", XML_ParserFree, 0);
 
+
+	init_string	(&exe_path);
 	init_string(&home_path);
 	init_string(&log_file_name);
+
+
 	
 
 	init_zfuncs();	

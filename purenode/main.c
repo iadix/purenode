@@ -15,8 +15,6 @@
 #include <mem_stream.h>
 #include <tpo_mod.h>
 
-
-
 mem_zone_ref		self_node  = { PTR_INVALID };
 mem_zone_ref		peer_nodes = { PTR_INVALID };
 hash_t				null_hash = { 0xCD };
@@ -39,6 +37,7 @@ C_IMPORT int  C_API_FUNC load_blk_hdr(mem_zone_ref_ptr hdr, const char *blk_hash
 C_IMPORT int  C_API_FUNC make_genesis_block(mem_zone_ref_ptr genesis_conf, mem_zone_ref_ptr genesis);
 C_IMPORT int  C_API_FUNC get_block_height();
 C_IMPORT int  C_API_FUNC remove_block(hash_t blk_hash);
+C_IMPORT int	C_API_FUNC rescan_addr(btc_addr_t addr);
 
 typedef int	C_API_FUNC node_init_self_func(mem_zone_ref_ptr out_self_node, mem_zone_ref_ptr node_config);
 typedef int	C_API_FUNC new_peer_node_func(struct host_def *host, mem_zone_ref_ptr peer_nodes);
@@ -59,6 +58,7 @@ typedef int	C_API_FUNC queue_emitted_element_func(mem_zone_ref_ptr node, mem_zon
 typedef int	C_API_FUNC queue_emitted_message_func(mem_zone_ref_ptr node, mem_zone_ref_ptr msg);
 typedef int	C_API_FUNC node_init_rpc_func(mem_zone_ref_ptr in_config);
 typedef int	C_API_FUNC check_rpc_request_func();
+typedef int	C_API_FUNC scan_addresses_func();
 
 
 typedef int	C_API_FUNC	init_pos_func(mem_zone_ref_ptr stake_conf);
@@ -86,6 +86,8 @@ typedef queue_emitted_element_func			 *queue_emitted_element_func_ptr;
 typedef queue_emitted_message_func			 *queue_emitted_message_func_ptr;
 typedef node_init_rpc_func					 *node_init_rpc_func_ptr;
 typedef check_rpc_request_func				 *check_rpc_request_func_ptr;
+typedef scan_addresses_func				 *scan_addresses_func_ptr;
+
 
 typedef init_pos_func						*init_pos_func_ptr;
 typedef store_blk_staking_func				*store_blk_staking_func_ptr;
@@ -113,6 +115,7 @@ C_IMPORT int			C_API_FUNC		queue_emitted_message(mem_zone_ref_ptr node, mem_zone
 
 C_IMPORT int			C_API_FUNC		node_init_rpc(mem_zone_ref_ptr in_config);
 C_IMPORT int			C_API_FUNC		check_rpc_request();
+C_IMPORT int			C_API_FUNC		scan_addresses();
 
 C_IMPORT int	C_API_FUNC	init_pos(mem_zone_ref_ptr stake_conf);
 C_IMPORT int	C_API_FUNC	store_blk_staking(mem_zone_ref_ptr header);
@@ -141,6 +144,7 @@ check_rpc_request_func_ptr					_check_rpc_request = PTR_INVALID;
 init_pos_func_ptr							_init_pos = PTR_INVALID;
 store_blk_staking_func_ptr					_store_blk_staking = PTR_INVALID;
 compute_blk_staking_func_ptr				_compute_blk_staking = PTR_INVALID;
+scan_addresses_func_ptr						_scan_addresses = PTR_INVALID;
 
 
 #else
@@ -167,6 +171,7 @@ queue_emitted_message_func_ptr				queue_emitted_message = PTR_INVALID;
 init_pos_func_ptr							init_pos= PTR_INVALID;
 store_blk_staking_func_ptr					store_blk_staking= PTR_INVALID;
 compute_blk_staking_func_ptr				compute_blk_staking= PTR_INVALID;
+scan_addresses_func_ptr						scan_addresses = PTR_INVALID;
 #endif
 
 
@@ -401,7 +406,9 @@ int handle_inv(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 
 
 	return 1;
-}	/*
+}	
+
+/*
 //fProofOfStake ?GetProofOfStakeLimit(pindexLast->nHeight) : Params().ProofOfWorkLimit()
 unsigned int GetNextTargetRequired(mem_zone_ref_ptr pindexLast, unsigned int bnTargetLimit)
 {
@@ -634,7 +641,6 @@ int update_nodes()
 		send_node_messages	(node);
 		read_node_msg		(node);
 		check_rpc_request	();
-		
 	}
 	return 1;
 }
@@ -649,6 +655,8 @@ int process_nodes()
 		ctime_t		 curtime;
 		process_node_messages(node);
 		process_node_elements(node);
+
+		scan_addresses();
 
 		if (synching == 1)
 		{
@@ -715,6 +723,7 @@ void load_node_module(mem_zone_ref_ptr node_config)
 	_queue_send_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_send_message", 0);
 	_queue_emitted_element = get_tpo_mod_exp_addr_name(&node_mod, "queue_emitted_element", 0);
 	_queue_emitted_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_emitted_message", 0);
+	_scan_addresses= get_tpo_mod_exp_addr_name(&node_mod, "scan_addresses", 0);
 
 #else
 	node_init_self = get_tpo_mod_exp_addr_name(&node_mod, "node_init_self", 0);
@@ -736,6 +745,7 @@ void load_node_module(mem_zone_ref_ptr node_config)
 	queue_send_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_send_message", 0);
 	queue_emitted_element = get_tpo_mod_exp_addr_name(&node_mod, "queue_emitted_element", 0);
 	queue_emitted_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_emitted_message", 0);
+	scan_addresses = get_tpo_mod_exp_addr_name(&node_mod, "scan_addresses", 0);
 #endif
 }
 
@@ -746,7 +756,7 @@ OS_API_C_FUNC(int) app_init(mem_zone_ref_ptr params)
 	unsigned char		*data;
 
 	size_t				data_len;
-	tree_manager_init();
+	tree_manager_init(4*1024*1024);
 	
 	lastBlk.zone = PTR_NULL;
 	node_port_str.str = PTR_NULL;
@@ -870,15 +880,12 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 		return 0;
 	}
 	free_host_def(seed_host);
-
-	
 		
 	if (tree_manager_find_child_node(&node_config, NODE_HASH("rpc_wallet"), 0xFFFFFFFF, &rpc_wallet_conf))
 	{
 		node_init_rpc(&rpc_wallet_conf);
 		release_zone_ref(&rpc_wallet_conf);
 	}
-
 
 	
 	tree_manager_get_child_at(&peer_nodes, 0, &seed_node);
@@ -889,6 +896,9 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 	return 1;
 
 }
+
+
+
 OS_API_C_FUNC(int) app_loop(mem_zone_ref_ptr params)
 {
 	update_nodes();

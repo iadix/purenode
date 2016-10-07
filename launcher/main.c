@@ -34,19 +34,22 @@ int main(int argc, char **argv)
 	init_mem_system			();
 	init_default_mem_area	(8 * 1024 * 1024);
 	network_init			();
-
+	
+	set_exe_path			();
 	set_home_path			("purenode");
 
 	load_module("modz/libbase.tpo", "libbase", &libbase_mod);
 	load_module("modz/protocol_adx.tpo", "protocol_adx", &protocol_mod);
 	load_module("modz/block_adx.tpo", "block_adx", &block_mod);
 	load_module("modz/iadixcoin.tpo", "iadixcoin", &iadix_mod);
+	/*
 #ifdef _DEBUG
 	init_func_ptr init;
 	init=get_tpo_mod_exp_addr_name(&libbase_mod, "tree_manager_init", 0);
 	if(init)
 		init();
 #endif
+	*/
 #ifndef _DEBUG
 	app_init = get_tpo_mod_exp_addr_name(&iadix_mod, "app_init", 0);
 	app_start = get_tpo_mod_exp_addr_name(&iadix_mod, "app_start", 0);

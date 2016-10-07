@@ -16,13 +16,27 @@
 char path_sep='\\';
 struct string log_file_name = { PTR_INVALID };
 struct string home_path = { PTR_INVALID };
+struct string exe_path = { PTR_INVALID };
+
+struct thread
+{
+	thread_func_ptr		func;
+	mem_zone_ref		params;
+	unsigned int		status;
+	unsigned int		tree_area_id;
+	unsigned int		mem_area_id;
+	HANDLE				h;
+};
+
+
+struct thread threads[16] = { PTR_INVALID };
+
 
 OS_API_C_FUNC(int) set_mem_exe(mem_zone_ref_ptr zone)
 {
 	unsigned int	old;
 	mem_ptr				ptr;
 	mem_size			size;
-	int					ret;
 
 	ptr = uint_to_mem(mem_to_uint(get_zone_ptr(zone, 0))&(~0xFFF));
 	size = (get_zone_size(zone)&(~0xFFF)) + 4096*2;
@@ -33,16 +47,15 @@ OS_API_C_FUNC(int) stat_file(const char *path)
 {
 	struct string t = { 0 };
 	int ret;
-	if (home_path.len>0)
+
+	ret = PathFileExists(path) ? 0 : -1;
+	if ((ret!=0) && (exe_path.len > 0))
 	{
-		clone_string	(&t, &home_path);
-		cat_cstring_p	(&t, path);
+		clone_string(&t, &exe_path);
+		cat_cstring_p(&t, path);
 		ret = PathFileExists(t.str) ? 0 : -1;
 		free_string(&t);
 	}
-	else
-		ret = PathFileExists(path) ? 0 : -1;
-	
 	return ret;
 }
 
@@ -253,7 +266,19 @@ OS_API_C_FUNC(int) get_file(const char *path, unsigned char **data, size_t *data
 	size_t		len=0;
 	int			ret;
 	ret	=	fopen_s	(&f,path,"rb");
-	if(f==NULL){*data_len=0;return -1;}
+	if(f==NULL)
+	{
+		struct string t;
+		clone_string(&t, &exe_path);
+		cat_cstring_p(&t, path);
+		ret = fopen_s(&f, t.str, "rb");
+		free_string(&t);
+		if (f == NULL)
+		{
+			*data_len = 0;
+			return -1;
+		}
+	}
 	fseek(f,0,SEEK_END);
 	(*data_len) = ftell(f);
 	rewind(f);
@@ -286,6 +311,16 @@ OS_API_C_FUNC(int) get_home_dir(struct string *path)
 	}
 	return 0;
 }
+OS_API_C_FUNC(int) set_exe_path()
+{
+	char path[512];
+	get_cwd(path, 512);
+	make_string(&exe_path, path);
+
+	return 1;
+}
+
+
 OS_API_C_FUNC(int) set_home_path(const char *name)
 {
 	get_home_dir (&home_path);
@@ -297,14 +332,143 @@ OS_API_C_FUNC(int) set_home_path(const char *name)
 }
 OS_API_C_FUNC(int) daemonize(const char *name)
 {
-
 	set_home_path(name);
 	init_string (&log_file_name);
 	make_string	(&log_file_name,name);
 	cat_cstring	(&log_file_name,".log");
-	
-
 	return 0;
+}
+
+
+
+void init_threads()
+{
+	memset_c(threads, 0, sizeof(threads));
+
+}
+unsigned int new_thread(unsigned int h)
+{
+	int				i;
+	unsigned int	n;
+
+	n = 0;
+
+	while (n<16)
+	{
+		if (compare_z_exchange_c(&threads[n].h,h))
+			return n;
+
+		n++;
+	}
+	return 0xFFFFFFFF;
+}
+
+unsigned int get_current_thread(unsigned int h)
+{
+	int n=0;
+
+	while (n < 16)
+	{
+		if (h == threads[n].h)
+			return n;
+		n++;
+	}
+	return 0xFFFFFFFF;
+
+}
+
+
+OS_API_C_FUNC(int) set_tree_mem_area_id(unsigned int area_id)
+{
+	DWORD  h;
+	unsigned int cur;
+	h = GetCurrentThreadId();
+	cur = get_current_thread(h);
+	if (cur == 0xFFFFFFFF)
+		cur = new_thread(h);
+
+	threads[cur].tree_area_id = area_id;
+	return 1;
+}
+
+OS_API_C_FUNC(int) set_mem_area_id(unsigned int area_id)
+{
+	DWORD  h;
+	unsigned int cur;
+	h = GetCurrentThreadId();
+	cur = get_current_thread(h);
+	if (cur == 0xFFFFFFFF)
+		cur = new_thread(h);
+	threads[cur].mem_area_id = area_id;
+	return 1;
+}
+OS_API_C_FUNC(unsigned int) get_tree_mem_area_id()
+{
+	DWORD  h;
+	unsigned int cur;
+	h = GetCurrentThreadId();
+	cur = get_current_thread(h);
+	if (cur == 0xFFFFFFFF)
+		return cur;
+
+	return threads[cur].tree_area_id;
+}
+OS_API_C_FUNC(unsigned int) get_mem_area_id()
+{
+	DWORD  h;
+	unsigned int cur;
+	h = GetCurrentThreadId();
+	cur = get_current_thread(h);
+	if (cur == 0xFFFFFFFF)
+		return cur;
+
+	return threads[cur].mem_area_id;
+}
+
+DWORD WINAPI thread_start(void *p)
+{
+	thread_func_ptr		func;
+	struct thread	    *thread;
+	unsigned int		pn;
+	int ret;
+
+	thread			= (struct thread *)p;
+	thread->h		= GetCurrentThreadId();
+	func			= thread->func;
+
+	init_default_mem_area(4 * 1024 * 1024);
+	ret = func			 (&thread->params, &thread->status);
+	free_mem_area		 (0);
+	
+	return ret;
+}
+
+unsigned int next_ttid=1;
+
+
+OS_API_C_FUNC(int) background_func(thread_func_ptr func,mem_zone_ref_ptr params)
+{
+	unsigned int			cur;
+
+	DWORD					threadid;
+	HANDLE					newThread;
+
+	cur = new_thread(next_ttid++);
+
+	copy_zone_ref(&threads[cur].params, params);
+	threads[cur].func = func;
+	threads[cur].status = 0;
+
+	newThread	= CreateThread(NULL, 4096, thread_start, &threads[cur], 0, &threadid);
+
+	while (threads[cur].status == 0)
+	{
+		SleepEx(1, 1);
+	}
+
+	release_zone_ref(&threads[cur].params);
+		
+	return 1;
 }
 
 OS_API_C_FUNC(void) console_print(const char *msg)
@@ -316,13 +480,21 @@ OS_API_C_FUNC(void	*)kernel_memory_map_c(unsigned int size)
 {
 	return HeapAlloc(GetProcessHeap(),0,size);
 }
-
+OS_API_C_FUNC(void	*)kernel_memory_free_c(mem_ptr ptr)
+{
+	return HeapFree(GetProcessHeap(),0,ptr);
+}
  unsigned int 	 get_system_time_c				()
 {
 	return 0;
 }
 
- 
+
+ OS_API_C_FUNC(int) get_cwd(const char *path,size_t len)
+ {
+	 return GetCurrentDirectory(len,path);
+ }
+
 
  OS_API_C_FUNC(int) set_cwd(const char *path)
  {
@@ -337,3 +509,34 @@ OS_API_C_FUNC(void	*)kernel_memory_map_c(unsigned int size)
 	 return 1;
  }
 
+ OS_API_C_FUNC(int) rm_dir(const char *dir)
+ {
+	 char			mdir[512];
+	 struct string	dir_list = { PTR_NULL };
+	 const char		*ptr, *optr;		
+	 unsigned int	dir_list_len;
+	 size_t			cur, nfiles;
+
+	 if ((nfiles = get_sub_files(dir, &dir_list)) > 0)
+	 {
+		 dir_list_len = dir_list.len;
+		 optr = dir_list.str;
+		 cur = 0;
+		 while (cur < nfiles)
+		 {
+			 size_t			sz;
+			 ptr = memchr_c(optr, 10, dir_list_len);
+			 sz = mem_sub(optr, ptr);
+
+			 strcpy_cs	(mdir, 512, dir);
+			 strncat_s	(mdir, 512, &path_sep, 1);
+			 strncat_s	(mdir, 512, optr, sz);
+			 del_file	(mdir);
+			 cur++;
+			 optr = ptr + 1;
+			 dir_list_len -= sz;
+		 }
+	 }
+	 free_string(&dir_list);
+	 return del_dir(dir);
+ }

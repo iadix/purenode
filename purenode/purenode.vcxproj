@@ -86,7 +86,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>libcon.lib;libbase.lib;block_adx.lib;node_adx.lib;stake_pos3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libcon.lib;libbase.lib;block_adx.lib;stake_pos3.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)export;</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
     </Link>

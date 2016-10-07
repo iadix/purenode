@@ -1,6 +1,6 @@
 
-#define MAX_MEM_AREAS 4
-#define MAX_MEM_ZONES 1024*32
+#define MAX_MEM_AREAS 8
+#define MAX_MEM_ZONES 1024*16
 #define PTR_NULL	(void *)0x00000000L
 #define PTR_INVALID (void *)0xDEADBEEFLL
 #define PTR_FF		(void *)0xFFFFFFFFLL
@@ -22,6 +22,10 @@ typedef mem_zone_const_ref		*mem_zone_const_ref_ptr;
 
 typedef int C_API_FUNC zone_free_func(mem_zone_ref_ptr zone_ref);
 typedef  zone_free_func	*zone_free_func_ptr;
+
+typedef int C_API_FUNC thread_func(mem_zone_ref_ptr p,unsigned int *status);
+typedef thread_func *thread_func_ptr;
+
 
 typedef enum {MEM_TYPE_DATA = 1,MEM_TYPE_TREE = 2}mem_area_type_t;
  
@@ -54,6 +58,7 @@ LIBC_API void			C_API_FUNC init_default_mem_area	(unsigned int size);
 LIBC_API unsigned int	C_API_FUNC mem_area_enable_sem		(unsigned int area_id);
 //LIBC_API void			C_API_FUNC set_default_mem_area		(unsigned int size);
 LIBC_API unsigned int	C_API_FUNC init_new_mem_area		(mem_ptr phys_start,	mem_ptr phys_end,mem_area_type_t type);
+LIBC_API unsigned int	C_API_FUNC free_mem_area			(area_id);
 LIBC_API unsigned int	C_API_FUNC allocate_new_zone		(unsigned int area_id,	mem_size zone_size,	mem_zone_ref *zone_ref);
 LIBC_API unsigned int	C_API_FUNC allocate_new_empty_zone	(unsigned int area_id,mem_zone_ref *zone_ref);
 LIBC_API int			C_API_FUNC expand_zone				(mem_zone_ref *ref,mem_size new_size);
@@ -82,18 +87,17 @@ LIBC_API unsigned int	C_API_FUNC update_mem_area_list			(mem_zone_ref_ptr mem_ar
 LIBC_API unsigned int	C_API_FUNC update_tree_area_zone_list	(mem_zone_ref_ptr mem_area_zone_list_node,unsigned int first,unsigned int num);
 LIBC_API unsigned int	C_API_FUNC update_mem_area_zone_list	(mem_zone_ref_ptr mem_area_zone_list_node,unsigned int first,unsigned int num);
 
-LIBC_API unsigned int	C_API_FUNC gfx_ctrl_new						(struct obj_array_t *ctrl_data,const char *style);
-LIBC_API unsigned int	C_API_FUNC gfx_ctrl_new_row					(struct obj_array_t *ctrl_data,const char *style,const char *cols);
-LIBC_API unsigned int	C_API_FUNC gfx_ctrl_add_item				(struct obj_array_t *ctrl_data,const char *name,const char *label,unsigned int item_id);
-LIBC_API unsigned int	C_API_FUNC gfx_ctrl_create_object			(struct obj_array_t *ctrl_data,const char *class_name,const char *name,mem_zone_ref_ptr ctrl_data_node,unsigned int n_items);
-LIBC_API int			C_API_FUNC gfx_create_rect_style			(struct obj_array_t *rect_style_ar,const struct gfx_rect *rect,const vec_4uc_t color);
-LIBC_API unsigned int	C_API_FUNC gfx_ctrl_add_item_data			(mem_zone_ref_ptr ctrl_data_node,unsigned int item_id,mem_zone_ref_ptr item_data);
-LIBC_API int			C_API_FUNC gfx_create_set_ctrl_event		(mem_zone_ref_ptr ctrl_data_node,const char *type,const struct gfx_rect *rect,const char *prop,unsigned int prop_val);
 LIBC_API void			C_API_FUNC swap_zone_ref					(mem_zone_ref_ptr dest_zone_ref, mem_zone_ref_ptr src_zone_ref);
 LIBC_API int			C_API_FUNC align_zone_memory				(mem_zone_ref *zone_ref, mem_size align);
 
 extern mem_ptr			ASM_API_FUNC memset							(mem_ptr ptr, int value, unsigned int size);
 
+LIBC_API int			C_API_FUNC set_mem_area_id					(unsigned int area_id);
+LIBC_API int			C_API_FUNC set_tree_mem_area_id				(unsigned int area_id);
+LIBC_API unsigned int	C_API_FUNC get_mem_area_id					();
+LIBC_API unsigned int	C_API_FUNC get_tree_mem_area_id				();
+
+LIBC_API int			C_API_FUNC background_func					(thread_func_ptr func, mem_zone_ref_ptr params);
 LIBC_API uint64_t		C_API_FUNC mul64							(uint64_t a, uint64_t b);
 LIBC_API uint64_t		C_API_FUNC muldiv64							(uint64_t a, uint64_t b, uint64_t c);
 LIBC_API uint64_t		C_API_FUNC shl64							(uint64_t a, unsigned char n);

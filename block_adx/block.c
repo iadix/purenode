@@ -257,7 +257,6 @@ unsigned int scale_compact(unsigned int nBits, uint64_t mop, uint64_t dop)
 	unsigned int ret;
 	unsigned int bdata;
 	uint64_t	data;
-	int			n;
 	size = (nBits >> 24);
 	data = muldiv64(nBits & 0xFFFFFF, mop, dop);
 	
@@ -451,28 +450,6 @@ OS_API_C_FUNC(int) load_tx(mem_zone_ref_ptr tx, hash_t blk_hash, const hash_t tx
 		free_c(tx_data);
 	}
 	free_string		(&tx_path);
-
-	/*
-	make_string(&tx_path, "./txs/");
-	cat_ncstring(&tx_path, tx_hash + 0, 2);
-	cat_cstring(&tx_path, "/");
-	cat_ncstring(&tx_path, tx_hash + 2, 2);
-	cat_cstring(&tx_path, "/");
-	cat_cstring(&tx_path, tx_hash);
-	cat_cstring(&tx_path, "/data");
-
-	if (get_file(tx_path.str, &tx_data, &tx_data_len) > 0)
-	{
-		if ((tx->zone!=PTR_NULL)||(tree_manager_create_node("tx", NODE_BITCORE_TX, tx)))
-		{
-			init_node(tx);
-			read_node(tx, tx_data);
-			ret=1;
-		}
-		free_c(tx_data);
-	}
-	free_string(&tx_path);
-	*/
 	return ret;
 }
 OS_API_C_FUNC(int) load_tx_input(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr	vin , mem_zone_ref_ptr tx_out)
@@ -575,17 +552,12 @@ int spend_tx_addr(btc_addr_t addr, const char *tx_hash, unsigned int oidx, btc_a
 		
 		put_file		(spent_path.str, sp_buf, 8);
 		append_file		(spent_path.str, sp_buf+8, sizeof(btc_addr_t));
-
 		append_file		(spent_path.str,addrs_to,n_addrs_to*sizeof(btc_addr_t));
 		free_string		(&spent_path);
-		free_c(sp_buf);
-		del_file(unspent_path.str);
+		free_c			(sp_buf);
+		del_file		(unspent_path.str);
 	}
-	else
-	{
-		int xxx;
-		xxx = 0;
-	}
+
 	free_string(&unspent_path);
 
 
@@ -640,32 +612,99 @@ int store_tx_vout(struct string *out_path, mem_zone_ref_ptr vout, btc_addr_t out
 	put_file(out_path->str, bbuffer, sizeof(uint64_t) + sizeof(btc_addr_t));
 
 	return ret_addr;
+}
+
+OS_API_C_FUNC(int) get_tx_output(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr vout)
+{
+	int ret;
+	mem_zone_ref txout_list = { PTR_NULL };
+
+	if (!tree_manager_find_child_node(tx, NODE_HASH("txsout"), NODE_BITCORE_VOUTLIST, &txout_list))return 0;
+	ret = tree_manager_get_child_at(&txout_list, idx, vout);
+	release_zone_ref(&txout_list);
+	return ret;
 
 }
-OS_API_C_FUNC(int) store_tx_staking(mem_zone_ref_ptr tx,const char *tx_hash)
+
+
+
+OS_API_C_FUNC(int) get_tx_output_amount(const hash_t tx_hash, unsigned int idx, uint64_t *amount)
 {
-	mem_zone_ref	 txin_list = { PTR_NULL }, txout_list = { PTR_NULL }, my_list = { PTR_NULL };
-	mem_zone_ref	vin = { PTR_NULL };
-	mem_zone_ref_ptr input = PTR_NULL, out = PTR_NULL;
-	btc_addr_t		 stake_addr;
-	uint64_t		 stake_in = 0, stake_out = 0,staked;
-	struct string	 unspent_path = { 0 };
+	hash_t			blkhash;
+	mem_zone_ref	tx = { PTR_NULL }, vout = { PTR_NULL };
+	int				ret;
 
-
-	if (!tree_manager_find_child_node(tx, NODE_HASH("txsin"), NODE_BITCORE_VINLIST, &txin_list))return 0;
-	if (tree_manager_get_child_at(&txin_list, 0, &vin))
+	if (!load_tx(&tx, blkhash, tx_hash))return 0;
+	ret = get_tx_output(&tx, idx, &vout);
+	if (ret)
 	{
-		tree_manager_get_child_value_btcaddr	(&vin, NODE_HASH("src addr"), stake_addr);
-		tree_manager_get_child_value_i64		(&vin, NODE_HASH("amount")	, &stake_in);
-		release_zone_ref(&vin);
+		ret = tree_manager_get_child_value_i64(&vout, NODE_HASH("value"), amount);
+		release_zone_ref(&vout);
 	}
-	release_zone_ref(&txin_list);
+	release_zone_ref(&tx);
+	return ret;
+}
 
-	make_string(&unspent_path, "adrs");
-	cat_ncstring_p(&unspent_path, stake_addr, 34);
-	if (stat_file(unspent_path.str) != 0)
+OS_API_C_FUNC(int) get_tx_output_addr(const hash_t tx_hash, unsigned int idx, btc_addr_t addr)
+{
+	hash_t			blkhash;
+	mem_zone_ref	tx = { PTR_NULL }, vout = { PTR_NULL };
+	int				ret;
+
+	if (!load_tx(&tx, blkhash, tx_hash))return 0;
+	ret = get_tx_output(&tx, idx, &vout);
+	if (ret)
 	{
-		free_string(&unspent_path);
+		struct string  script;
+		ret = tree_manager_get_child_value_istr(&vout, NODE_HASH("script"), &script,0);
+		if (ret)
+		{
+			get_out_script_address(&script, addr);
+			free_string(&script);
+		}
+		release_zone_ref(&vout);
+	}
+	release_zone_ref(&tx);
+	return ret;
+}
+
+
+OS_API_C_FUNC(int) is_vout_null(mem_zone_ref_const_ptr tx, unsigned int idx)
+{
+	uint64_t		amount;
+	struct string	script = { PTR_NULL };
+	mem_zone_ref vout = { PTR_NULL };
+	int			ret;
+	if (!get_tx_output(tx, idx, &vout))return 0;
+
+	ret = tree_manager_get_child_value_i64(&vout, NODE_HASH("value"), &amount);
+	if ((ret) && (amount > 0))
+		ret = 0;
+
+	if (ret)
+		ret = tree_manager_get_child_value_istr(&vout, NODE_HASH("script"), &script, 0);
+
+	if ((ret) && (script.str[0] != 0))
+		ret = 0;
+
+	free_string(&script);
+	release_zone_ref(&vout);
+
+	return ret;
+}
+OS_API_C_FUNC(int) store_tx_staking(mem_zone_ref_ptr tx, const char *tx_hash, btc_addr_t stake_addr, uint64_t	stake_in)
+{
+	mem_zone_ref	 txout_list = { PTR_NULL }, my_list = { PTR_NULL };
+	mem_zone_ref_ptr out = PTR_NULL;
+	uint64_t		 stake_out = 0,staked;
+	struct string	 stake_path = { 0 };
+	
+
+	make_string(&stake_path, "adrs");
+	cat_ncstring_p(&stake_path, stake_addr, 34);
+	if (stat_file(stake_path.str) != 0)
+	{
+		free_string(&stake_path);
 		return 0;
 	}
 
@@ -673,25 +712,247 @@ OS_API_C_FUNC(int) store_tx_staking(mem_zone_ref_ptr tx,const char *tx_hash)
 	{
 		for (tree_manager_get_first_child(&txout_list, &my_list, &out); ((out != NULL) && (out->zone != NULL)); tree_manager_get_next_child(&my_list, &out))
 		{
-			uint64_t amount=0;
+			uint64_t amount = 0;
 			if (!tree_manager_get_child_value_i64(out, NODE_HASH("value"), &amount))continue;
 			stake_out += amount;
 		}
-
 		release_zone_ref(&txout_list);
 	}
-	staked = stake_out - stake_in;
+	staked			= stake_out - stake_in;
 
-	cat_cstring_p	(&unspent_path, "unspent");
-	create_dir		(unspent_path.str);
-	cat_cstring_p	(&unspent_path, tx_hash);
-	cat_cstring		(&unspent_path, "_stake");
-	put_file		(unspent_path.str,&staked,sizeof(uint64_t));
-	
-	free_string		(&unspent_path);
+	cat_cstring_p	(&stake_path, "stake");
+	create_dir		(stake_path.str);
+	cat_cstring_p	(&stake_path, tx_hash);
+	put_file		(stake_path.str,&staked,sizeof(uint64_t));
+	free_string		(&stake_path);
 
 	return 1;
 	
+}
+
+
+OS_API_C_FUNC(int) is_tx_null(mem_zone_ref_const_ptr tx)
+{
+	struct string	script = { 0 };
+	mem_zone_ref	vout = { PTR_NULL };
+	mem_zone_ref	txout_list = { PTR_NULL };
+	uint64_t		amount;
+	int				ret, nc;
+
+
+	if (!tree_manager_find_child_node(tx, NODE_HASH("txsout"), NODE_BITCORE_VOUTLIST, &txout_list))return -1;
+	nc = tree_manager_get_node_num_children(&txout_list);
+	if (nc == 0)
+	{
+		release_zone_ref(&txout_list);
+		return -1;
+	}
+	ret = tree_manager_get_child_at(&txout_list, 0, &vout);
+	release_zone_ref(&txout_list);
+	if (!ret)return -1;
+	ret = tree_manager_get_child_value_i64(&vout, NODE_HASH("value"), &amount);
+	if (ret)ret = tree_manager_get_child_value_istr(&vout, NODE_HASH("script"), &script, 0);
+	release_zone_ref(&vout);
+	if (!ret)return -1;
+	if ((nc == 1) && (amount == 0) && (script.str[0] == 0))
+		ret = 1;
+	else
+		ret = 0;
+
+	free_string(&script);
+	return ret;
+}
+OS_API_C_FUNC(int) hash_equal(hash_t hash, const char *shash)
+{
+	int n = 0;
+	while (n < 32)
+	{
+		char hex[3] = { shash[n * 2], shash[n * 2 + 1], 0 };
+		unsigned char uc;
+		uc = strtoul_c(hex, PTR_NULL, 16);
+		if (hash[31 - n] != uc)
+			return 0;
+
+		n++;
+	}
+
+	return 1;
+
+}
+OS_API_C_FUNC(int) store_tx_wallet(btc_addr_t addr, hash_t tx_hash)
+{
+	char			 tchash[65];
+	hash_t			 blk_hash;
+	btc_addr_t	 	 to_addr_list[16];
+	btc_addr_t		 src_addr_list[16];
+	struct string	 tx_path = { 0 };
+	mem_zone_ref	 txin_list = { PTR_NULL }, txout_list = { PTR_NULL }, my_list = { PTR_NULL }, tx = { PTR_NULL };
+	mem_zone_ref_ptr input = PTR_NULL, out = PTR_NULL;
+	unsigned int	 n,oidx;
+	unsigned int	 n_to_addrs;
+	unsigned int	 n_in_addr;
+
+	if (!load_tx(&tx, blk_hash, tx_hash))return 0;
+	if (is_tx_null(&tx))
+	{
+		release_zone_ref(&tx);
+		return 0;
+	}
+	if (!tree_manager_find_child_node(&tx, NODE_HASH("txsin"), NODE_BITCORE_VINLIST, &txin_list))return 0;
+	if (!tree_manager_find_child_node(&tx, NODE_HASH("txsout"), NODE_BITCORE_VOUTLIST, &txout_list)){ release_zone_ref(&txin_list); return 0; }
+	
+	n = 0;
+	while (n < 32)
+	{
+		tchash[n * 2 + 0] = hex_chars[tx_hash[n] >> 4];
+		tchash[n * 2 + 1] = hex_chars[tx_hash[n] & 0x0F];
+		n++;
+	}
+	tchash[64] = 0;
+
+	n_to_addrs = 0;
+	for (tree_manager_get_first_child(&txout_list, &my_list, &out); ((out != NULL) && (out->zone != NULL)); tree_manager_get_next_child(&my_list, &out))
+	{
+		struct string script = { 0 };
+		if (!tree_manager_get_child_value_istr(out, NODE_HASH("script"), &script, 16))continue;
+		if (script.len == 0){ free_string(&script); continue; }
+		if (get_out_script_address(&script, to_addr_list[n_to_addrs]))
+		{
+			unsigned int n, f;
+			f = 0;
+			for (n = 0; n < n_to_addrs; n++)
+			{
+				if (!memcmp_c(to_addr_list[n_to_addrs], to_addr_list[n], sizeof(btc_addr_t)))
+				{
+					f = 1;
+					break;
+				}
+			}
+			if (f == 0)
+				n_to_addrs++;
+		}
+		free_string(&script);
+	}
+
+	
+	n_in_addr = 0;
+	for (tree_manager_get_first_child(&txin_list, &my_list, &input); ((input != NULL) && (input->zone != NULL)); tree_manager_get_next_child(&my_list, &input))
+	{
+		char			ptchash[65];
+		hash_t			prev_hash = { 0xFF };
+		struct string	out_path = { 0 };
+		int				n,my_addr;
+		uint64_t		amount;
+	
+		tree_manager_get_child_value_hash(input, NODE_HASH("tx hash"), prev_hash);
+		tree_manager_get_child_value_i32(input, NODE_HASH("idx"), &oidx);
+
+		my_addr = 0;
+
+		//coin base
+		if (!memcmp_c(prev_hash, null_hash, sizeof(hash_t)))
+		{
+			memset_c							(src_addr_list[0], '0', sizeof(btc_addr_t));
+			n_in_addr = 1;
+			continue;
+		}
+		
+
+		if (get_tx_output_addr(prev_hash, oidx, src_addr_list[n_in_addr]))
+		{
+			unsigned int nn, f;
+			f = 0;
+			for (nn = 0; nn < n_in_addr; nn++)
+			{
+				if (!memcmp_c(src_addr_list[n_in_addr], src_addr_list[nn], sizeof(btc_addr_t)))
+				{
+					f = 1;
+					break;
+				}
+			}
+
+			if (!memcmp_c(addr, src_addr_list[n_in_addr], sizeof(btc_addr_t)))
+				my_addr = 1;
+
+			if (f == 0)
+				n_in_addr++;
+				
+		}
+
+		if (my_addr)
+		{
+			n = 0;
+			while (n < 32)
+			{
+				ptchash[n * 2 + 0] = hex_chars[prev_hash[n] >> 4];
+				ptchash[n * 2 + 1] = hex_chars[prev_hash[n] & 0x0F];
+				n++;
+			}
+			ptchash[64] = 0;
+			spend_tx_addr(addr, ptchash, oidx, to_addr_list, n_to_addrs);
+
+			if (get_tx_output_amount(prev_hash, oidx, &amount))
+				tree_manager_set_child_value_i64(input, "amount", amount);
+			tree_manager_set_child_value_btcaddr(input, "src addr", addr);
+		}
+	}
+	
+
+	out = PTR_NULL;
+	release_zone_ref(&my_list);
+
+	for (oidx = 0, tree_manager_get_first_child(&txout_list, &my_list, &out); ((out != NULL) && (out->zone != NULL)); oidx++, tree_manager_get_next_child(&my_list, &out))
+	{
+		btc_addr_t		out_addr = { 0 };
+		struct string	out_path = { 0 }, script = { 0 };
+		uint64_t		amount = 0;
+		int				ret;
+
+		tree_manager_get_child_value_istr(out, NODE_HASH("script"), &script,0);
+		ret=get_out_script_address(&script, out_addr);
+		free_string(&script);
+
+		if (ret)
+		{
+			make_string(&out_path, "adrs");
+			cat_ncstring_p(&out_path, out_addr, 34);
+
+			/*
+			if (is_coinbase(&tx))
+				create_dir(out_path.str);
+			*/
+			if ((stat_file(out_path.str) == 0) && (!memcmp_c(addr, out_addr,sizeof(btc_addr_t))))
+			{
+				tree_manager_get_child_value_i64(out, NODE_HASH("value"), &amount);
+				add_unspent(out_addr, tchash, oidx, amount, src_addr_list, n_in_addr);
+			}
+			free_string(&out_path);
+		}
+	}
+
+
+	if (is_vout_null(&tx, 0))
+	{
+		mem_zone_ref	vin = { PTR_NULL };
+		btc_addr_t		stake_addr = { 0 };
+		uint64_t		stake_in=0;
+		if (tree_manager_get_child_at(&txin_list, 0, &vin))
+		{
+			tree_manager_get_child_value_btcaddr(&vin, NODE_HASH("src addr"), stake_addr);
+			tree_manager_get_child_value_i64(&vin, NODE_HASH("amount"), &stake_in);
+			release_zone_ref(&vin);
+		}
+		release_zone_ref(&txin_list);
+
+		if (!memcmp_c(stake_addr,addr,sizeof(btc_addr_t)))
+			store_tx_staking(&tx, tchash, stake_addr, stake_in);
+	}
+	release_zone_ref(&txin_list);
+	release_zone_ref(&txout_list);
+	release_zone_ref(&tx);
+
+	return 1;
+
 }
 
 OS_API_C_FUNC(int) store_tx_inputs(mem_zone_ref_ptr tx,unsigned int wallet)
@@ -798,7 +1059,6 @@ OS_API_C_FUNC(int) store_tx_inputs(mem_zone_ref_ptr tx,unsigned int wallet)
 				}
 				free_c(buffer);
 			}
-			
 			del_file(out_path.str);
 		}
 		free_string	 (&out_path);
@@ -889,36 +1149,6 @@ OS_API_C_FUNC(int) store_tx_outputs(const char * blk_hash,mem_zone_ref_ptr tx, c
 	return 1;
 }
 
-OS_API_C_FUNC(int) get_tx_output(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr vout)
-{
-	int ret;
-	mem_zone_ref txout_list={PTR_NULL};
-
-	if (!tree_manager_find_child_node(tx, NODE_HASH("txsout"), NODE_BITCORE_VOUTLIST, &txout_list))return 0;
-	ret = tree_manager_get_child_at(&txout_list,idx,vout);
-	release_zone_ref(&txout_list);
-	return ret;
-
-}
-
-
-
-OS_API_C_FUNC(int) get_tx_output_amount(const hash_t tx_hash, unsigned int idx, uint64_t *amount)
-{
-	hash_t			blkhash;
-	mem_zone_ref	tx = { PTR_NULL }, vout={PTR_NULL};
-	int				ret;
-
-	if (!load_tx(&tx, blkhash, tx_hash))return 0;
-	ret=get_tx_output	(&tx,idx,&vout);
-	if (ret)
-	{
-		ret = tree_manager_get_child_value_i64(&vout, NODE_HASH("value"), amount);
-		release_zone_ref(&vout);
-	}
-	release_zone_ref	(&tx);
-	return ret;
-}
 
 
 OS_API_C_FUNC(int) check_tx_outputs(mem_zone_ref_ptr tx, uint64_t *total, unsigned int coinstake, unsigned int *is_staking)
@@ -972,79 +1202,7 @@ OS_API_C_FUNC(int) check_tx_outputs(mem_zone_ref_ptr tx, uint64_t *total, unsign
 }
 
 
-OS_API_C_FUNC(int) is_vout_null(mem_zone_ref_const_ptr tx, unsigned int idx)
-{
-	uint64_t		amount;
-	struct string	script = { PTR_NULL };
-	mem_zone_ref vout = { PTR_NULL };
-	int			ret;
-	if (!get_tx_output(tx, idx, &vout))return 0;
 
-	ret = tree_manager_get_child_value_i64(&vout, NODE_HASH("value"), &amount);
-	if ((ret) && (amount > 0))
-		ret = 0;
-
-	if (ret)
-		ret = tree_manager_get_child_value_istr(&vout, NODE_HASH("script"), &script, 0);
-
-	if ((ret) && (script.str[0]!=0))
-		ret = 0;
-
-	free_string(&script);
-	release_zone_ref(&vout);
-
-	return ret;
-}
-
-
-OS_API_C_FUNC(int) is_tx_null(mem_zone_ref_const_ptr tx)
-{
-	struct string	script={0};
-	mem_zone_ref	vout = {PTR_NULL};
-	mem_zone_ref	txout_list = { PTR_NULL };
-	uint64_t		amount;
-	int				ret,nc;
-
-
-	if (!tree_manager_find_child_node(tx, NODE_HASH("txsout"), NODE_BITCORE_VOUTLIST, &txout_list))return -1;
-	nc = tree_manager_get_node_num_children(&txout_list);
-	if (nc == 0)
-	{
-		release_zone_ref(&txout_list);
-		return -1;
-	}
-	ret = tree_manager_get_child_at(&txout_list, 0, &vout);
-	release_zone_ref(&txout_list);
-	if (!ret)return -1;
-	ret = tree_manager_get_child_value_i64(&vout,NODE_HASH("value"),&amount);
-	if (ret)ret = tree_manager_get_child_value_istr(&vout, NODE_HASH("script"), &script,0);
-	release_zone_ref(&vout);
-	if(!ret)return -1;
-	if((nc==1)&&(amount==0)&&(script.str[0]==0))
-		ret=1;
-	else
-		ret=0;
-
-	free_string(&script);
-	return ret;
-}
-OS_API_C_FUNC(int) hash_equal(hash_t hash, const char *shash)
-{
-	int n = 0;
-	while (n < 32)
-	{
-		char hex[3] = { shash[n * 2], shash[n * 2 + 1], 0 };
-		unsigned char uc;
-		uc = strtoul_c(hex, PTR_NULL, 16);
-		if (hash[31-n] != uc)
-			return 0;
-
-		n++;
-	}
-
-	return 1;
-	
-}
 OS_API_C_FUNC(int) check_block_hdr(mem_zone_ref_ptr hdr)
 {
 	hash_t	blk_hash, prev_hash;
@@ -1188,7 +1346,7 @@ OS_API_C_FUNC(int) check_tx_list(mem_zone_ref_ptr tx_list,uint64_t staking_rewar
 	hash_t				merkleRoot;
 	mem_zone_ref		my_list = { PTR_NULL };
 	mem_zone_ref_ptr	tx = PTR_NULL;
-	unsigned int		list_reward;
+	uint64_t			list_reward;
 	int					ret;
 	unsigned int		coinbase, coinstaking, is_staking;
 	uint64_t			txFee, fees;
@@ -1656,24 +1814,120 @@ OS_API_C_FUNC(int) remove_block(hash_t blk_hash)
 	return 1;
 }
 
+OS_API_C_FUNC(int) list_unspent(btc_addr_t addr, mem_zone_ref_ptr unspents)
+{
+	struct string		unspent_path = { 0 };
+	int					n;
+	unsigned int		dir_list_len;
+	struct string		dir_list = { PTR_NULL };
+	const char			*ptr, *optr;
+	size_t				cur, nfiles;
+
+	make_string		(&unspent_path, "adrs");
+	cat_ncstring_p	(&unspent_path, addr, 34);
+	cat_cstring_p	(&unspent_path, "unspent");
+
+	if (stat_file(unspent_path.str) != 0)
+	{
+		free_string(&unspent_path);
+		return 0;
+	}
+
+
+	nfiles = get_sub_files(unspent_path.str, &dir_list);
+
+	dir_list_len = dir_list.len;
+	optr = dir_list.str;
+	cur = 0;
+	while (cur < nfiles)
+	{
+		struct string	tx_path = { 0 };
+		unsigned int	output = 0xFFFFFFFF;
+		size_t			sz, len;
+		unsigned char	*data;
+
+		ptr = memchr_c(optr, 10, dir_list_len);
+		sz = mem_sub(optr, ptr);
+
+
+		clone_string(&tx_path, &unspent_path);
+		cat_ncstring_p(&tx_path, optr, sz);
+
+		if (get_file(tx_path.str, &data, &len)>0)
+		{
+			if (optr[64] == '_')
+				output = strtoul_c(&optr[65], PTR_NULL, 10);
+			else
+				output = 0xFFFFFFFF;
+
+			if (len >= sizeof(uint64_t))
+			{
+				mem_zone_ref unspent = { PTR_NULL };
+				if (tree_manager_add_child_node(unspents, "unspent", NODE_GFX_OBJECT, &unspent))
+				{
+					hash_t		hash;
+					btc_addr_t	src_addr;
+					n = 0;
+					while (n<32)
+					{
+						char    hex[3];
+						hex[0] = optr[n * 2 + 0];
+						hex[1] = optr[n * 2 + 1];
+						hex[2] = 0;
+						hash[31-n] = strtoul_c(hex, PTR_NULL, 16);
+						n++;
+					}
+					len -= sizeof(uint64_t);
+					if(len >= sizeof(btc_addr_t))
+						memcpy_c(src_addr, &data[sizeof(uint64_t)], sizeof(btc_addr_t));
+					else
+						memset_c(src_addr, '0', sizeof(btc_addr_t));
+
+					tree_manager_set_child_value_hash	(&unspent, "txid"		  , hash);
+					tree_manager_set_child_value_i32	(&unspent, "vout"		  , output);
+					tree_manager_set_child_value_i64	(&unspent, "amount"		  , *((uint64_t*)data));
+					tree_manager_set_child_value_btcaddr(&unspent, "address"	  , src_addr);
+					tree_manager_set_child_value_i64	(&unspent, "confirmations", 0);
+					release_zone_ref(&unspent);
+				}
+			}
+			free_c(data);
+		}
+		free_string(&tx_path);
+		
+		cur++;
+		optr = ptr + 1;
+		dir_list_len -= sz;
+	}
+	free_string(&dir_list);
+
+	return 1;
+}
+
 OS_API_C_FUNC(int) list_received(btc_addr_t addr, uint64_t *amount)
 {
 	mem_zone_ref		my_list = { PTR_NULL };
 	mem_zone_ref_ptr	ptx = PTR_NULL;
 	struct string		unspent_path = { 0 };
 	struct string		spent_path = { 0 };
-	int					n;
+	struct string		stake_path = { 0 };
 	unsigned int		dir_list_len;
 	struct string		dir_list = { PTR_NULL };
 
 	const char			*ptr, *optr;
 	size_t				cur, nfiles;
 
+
 	make_string(&unspent_path, "adrs");
 	cat_ncstring_p(&unspent_path, addr, 34);
+
 	clone_string(&spent_path, &unspent_path);
+	clone_string(&stake_path, &unspent_path);
+
 	cat_cstring_p(&spent_path, "spent");
 	cat_cstring_p(&unspent_path, "unspent");
+	cat_cstring_p(&stake_path, "stake");
+	
 
 	*amount = 0;
 
@@ -1685,37 +1939,35 @@ OS_API_C_FUNC(int) list_received(btc_addr_t addr, uint64_t *amount)
 	while (cur < nfiles)
 	{
 		struct string	tx_path= { 0 };
-		hash_t			tx_hash = { 0 };
 		unsigned int	output=0xFFFFFFFF;
+		int				sRet;
 		size_t			sz,len;
 		unsigned char	*data;
 
 		ptr = memchr_c(optr, 10, dir_list_len);
 		sz = mem_sub(optr, ptr);
 
-		n = 0;
-		while (n < 32)
-		{
-			char hex[3] = { 0 };
-			hex[0] = optr[n * 2 + 0];
-			hex[1] = optr[n * 2 + 1];
-			tx_hash[31-n] = strtoul_c(hex, PTR_NULL, 16);
-			n++;
-		}
-
-		if ((optr[64] == '_') && (optr[65] == 'o'))
-			output = strtoul_c(&optr[65], PTR_NULL, 10);
-
-		clone_string(&tx_path, &unspent_path);
-		cat_ncstring_p(&tx_path, optr, sz);
+		clone_string	(&tx_path, &stake_path);
+		cat_ncstring_p	(&tx_path, optr, 64);
+		sRet = stat_file(tx_path.str) == 0 ? 1 : 0;
+		free_string		(&tx_path);
 		
-		if (get_file(tx_path.str,&data,&len)>0)
+		if (!sRet)
 		{
-			if (len >= sizeof(uint64_t))
-				*amount += *((uint64_t*)data);
-			free_c(data);
+			if (optr[64] == '_')
+				output = strtoul_c(&optr[65], PTR_NULL, 10);
+
+			clone_string(&tx_path, &unspent_path);
+			cat_ncstring_p(&tx_path, optr, sz);
+
+			if (get_file(tx_path.str, &data, &len)>0)
+			{
+				if (len >= sizeof(uint64_t))
+					*amount += *((uint64_t*)data);
+				free_c(data);
+			}
+			free_string(&tx_path);
 		}
-		free_string(&tx_path);
 		cur++;
 		optr = ptr + 1;
 		dir_list_len -= sz;
@@ -1729,31 +1981,57 @@ OS_API_C_FUNC(int) list_received(btc_addr_t addr, uint64_t *amount)
 	while (cur < nfiles)
 	{
 		struct string	tx_path = { 0 };
-		hash_t			tx_hash = { 0 };
 		unsigned int	output = 0xFFFFFFFF;
+		int				sRet;
 		size_t			sz, len;
 		unsigned char	*data;
 
 		ptr = memchr_c(optr, 10, dir_list_len);
 		sz = mem_sub(optr, ptr);
+		
+		clone_string(&tx_path, &stake_path);
+		cat_ncstring_p(&tx_path, optr, 64);
+		sRet = stat_file(tx_path.str) == 0 ? 1 : 0;
+		free_string(&tx_path);
 
-		n = 0;
-		while (n < 32)
+		if (!sRet)
 		{
-			char hex[3] = { 0 };
-			hex[0] = optr[n * 2 + 0];
-			hex[1] = optr[n * 2 + 1];
-			tx_hash[31-n] = strtoul_c(hex, PTR_NULL, 16);
-			n++;
+			clone_string(&tx_path, &spent_path);
+			cat_ncstring_p(&tx_path, optr, sz);
+
+			if (get_file(tx_path.str, &data, &len) > 0)
+			{
+				if (len >= sizeof(uint64_t))
+					*amount += *((uint64_t*)data);
+
+				free_c(data);
+			}
+			free_string(&tx_path);
 		}
+		cur++;
+		optr = ptr + 1;
+		dir_list_len -= sz;
+	}
+	free_string(&unspent_path);
+	free_string(&dir_list);
 
-		if (optr[64] == '_')
-			output = strtoul_c(&optr[33], PTR_NULL, 10);
+	nfiles = get_sub_files(stake_path.str, &dir_list);
+	dir_list_len = dir_list.len;
+	optr = dir_list.str;
+	cur = 0;
+	while (cur < nfiles)
+	{
+		struct string	tx_path = { 0 };
+		size_t			sz, len;
+		unsigned char	*data;
+		
+		ptr = memchr_c(optr, 10, dir_list_len);
+		sz = mem_sub(optr, ptr);
 
-		clone_string(&tx_path, &spent_path);
+		clone_string(&tx_path, &stake_path);
 		cat_ncstring_p(&tx_path, optr, sz);
 
-		if (get_file(tx_path.str, &data, &len)>0)
+		if (get_file(tx_path.str, &data, &len) > 0)
 		{
 			if (len >= sizeof(uint64_t))
 				*amount += *((uint64_t*)data);
@@ -1765,9 +2043,98 @@ OS_API_C_FUNC(int) list_received(btc_addr_t addr, uint64_t *amount)
 		optr = ptr + 1;
 		dir_list_len -= sz;
 	}
-	free_string(&unspent_path);
+	free_string(&dir_list);
+	free_string(&stake_path);
+	return 1;
 
+}
 
+OS_API_C_FUNC(int) rescan_addr(btc_addr_t addr)
+{
+	char			chash[65];
+	struct string	scan_path = { 0 },adr_path = { 0 };
+	unsigned int	n_blks,last_blk;
+	unsigned char	*data;
+	size_t			data_len;
+	
+	make_string(&adr_path, "adrs");
+	cat_ncstring_p(&adr_path, addr, 34);
+
+	clone_string(&scan_path, &adr_path);
+	cat_cstring_p(&scan_path, "scan");
+	if (stat_file(scan_path.str) == 0)
+	{
+		free_string(&scan_path);
+		free_string(&adr_path);
+		return 0;
+	}
+	
+	if (!get_file("./blk_indexes", &data, &data_len))return 0;
+
+	if (stat_file(adr_path.str) == 0)
+	{
+		struct string path = { 0 };
+		clone_string(&path, &adr_path);
+		cat_cstring_p(&path, "spent");
+		rm_dir(path.str);
+		free_string(&path);
+
+		clone_string(&path, &adr_path);
+		cat_cstring_p(&path, "unspent");
+		rm_dir(path.str);
+		free_string(&path);
+
+		clone_string(&path, &adr_path);
+		cat_cstring_p(&path, "stake");
+		rm_dir(path.str);
+		free_string(&path);
+	}
+	
+	n_blks = 0;
+	last_blk = 0;
+	while (n_blks<data_len)
+	{
+		struct string blk_path = { 0 };
+		int		n;
+		unsigned char *tx_list;
+		unsigned int  txs_len, ntx;
+
+		n = 0;
+		while (n<32)
+		{
+			chash[n * 2 + 0] = hex_chars[data[n_blks+n] >> 4];
+			chash[n * 2 + 1] = hex_chars[data[n_blks+n] & 0x0F];
+			n++;
+		}
+		chash[64] = 0;
+
+		make_string		(&blk_path		, "blks");
+		cat_ncstring_p	(&blk_path		, chash + 0, 2);
+		cat_ncstring_p	(&blk_path		, chash + 2, 2);
+		cat_cstring_p	(&blk_path		, chash);
+		cat_cstring_p	(&blk_path		, "txs");
+		if (get_file(blk_path.str, &tx_list, &txs_len) >0)
+		{
+			ntx = 0;
+			while (ntx < txs_len)
+			{
+				store_tx_wallet(addr, &tx_list[ntx]);
+				ntx += 32;
+			}
+			free_c(tx_list);
+		}
+		n_blks += 32;
+		free_string(&blk_path);
+
+		if ((n_blks-last_blk) >= 100 * 32)
+		{
+			unsigned int bl = n_blks / 32;
+			put_file(scan_path.str, &bl, sizeof(unsigned int));
+			last_blk = n_blks;
+		}
+	}
+	free_c	(data);
+	del_file(scan_path.str);
 	return 1;
 
 }
@@ -1782,8 +2149,8 @@ OS_API_C_FUNC(int) store_block(mem_zone_ref_ptr header, mem_zone_ref_ptr tx_list
 	hash_t				blk_hash, pow;
 	
 	struct string		blk_path={0},blk_data_path={0};
-	unsigned int		n, nc, block_time;
-	hash_t				*blk_txs;
+	unsigned int		n,n_tx, nc, block_time;
+	unsigned char		*blk_txs;
 
 	if (!tree_manager_get_child_value_hash(header, NODE_HASH("blk hash"), blk_hash))return 0;
 
@@ -1826,12 +2193,11 @@ OS_API_C_FUNC(int) store_block(mem_zone_ref_ptr header, mem_zone_ref_ptr tx_list
 	if (nc > 0)
 	{
 		blk_txs = calloc_c(sizeof(hash_t), nc);
-		n = 0;
-		for (tree_manager_get_first_child(tx_list, &my_list, &tx); ((tx != NULL) && (tx->zone != NULL)); tree_manager_get_next_child(&my_list, &tx))
+		n		= 0;
+		for (n_tx = 0, tree_manager_get_first_child(tx_list, &my_list, &tx); ((tx != NULL) && (tx->zone != NULL)); tree_manager_get_next_child(&my_list, &tx), n_tx++)
 		{
 			hash_t				tx_hash, tmp_hash;
 			struct string		tx_path = { 0 };
-			unsigned int		wallet;
 
 			length = get_node_size(tx);
 			buffer = malloc_c(length);
@@ -1842,7 +2208,7 @@ OS_API_C_FUNC(int) store_block(mem_zone_ref_ptr header, mem_zone_ref_ptr tx_list
 				mbedtls_sha256((unsigned char *)buffer, length, tmp_hash, 0);
 				mbedtls_sha256(tmp_hash, 32, tx_hash, 0);
 			}
-			memcpy_c		(&blk_txs[n++], tx_hash, 32);
+			memcpy_c		(&blk_txs[n_tx*32], tx_hash, 32);
 			n = 0;
 			while (n<32)
 			{
@@ -1872,23 +2238,29 @@ OS_API_C_FUNC(int) store_block(mem_zone_ref_ptr header, mem_zone_ref_ptr tx_list
 			if (is_tx_null(tx)==1)
 				continue;
 			
+			store_tx_inputs	(tx, 1);
+			store_tx_outputs(chash, tx, tchash, 1);
+
 			if (is_vout_null(tx, 0))
-				wallet = 0;
-			else
-				wallet = 1;
-
-			store_tx_inputs	(tx, wallet);
-			store_tx_outputs(chash, tx, tchash, wallet);
-
-			if (!wallet)
-				store_tx_staking(tx, tchash);
-
-			
+			{
+				mem_zone_ref vin = { PTR_NULL };
+				btc_addr_t	stake_addr;
+				uint64_t	stake_in;
+				if (get_tx_input(tx, 0, &vin))
+				{
+					if (tree_manager_get_child_value_btcaddr(&vin, NODE_HASH("src addr"), stake_addr))
+					{
+						tree_manager_get_child_value_i64(&vin, NODE_HASH("amount"), &stake_in);
+						store_tx_staking(tx, tchash, stake_addr, stake_in);
+					}
+					release_zone_ref					(&vin);
+				}
+			}
 		}
 
 		clone_string	(&blk_data_path, &blk_path);
-		cat_cstring		(&blk_data_path, "/txs");
-		put_file		(blk_data_path.str, blk_txs, nc*sizeof(hash_t));
+		cat_cstring_p	(&blk_data_path, "txs");
+		put_file		(blk_data_path.str, blk_txs, n_tx*sizeof(hash_t));
 		free_c			(blk_txs);
 	}
 	free_string(&blk_data_path);

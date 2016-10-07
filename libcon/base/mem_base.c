@@ -8,11 +8,13 @@
 #define KERNEL_API C_EXPORT
 #include "mem_stream.h"
 #include "tpo_mod.h"
-
+#include "fsio.h"
 
 
  LIBC_API void	*	C_API_FUNC kernel_memory_map_c				(unsigned int size);
-		
+ LIBC_API void		C_API_FUNC kernel_memory_free_c				(mem_ptr ptr);
+ extern struct string exe_path;
+ 
 			
 typedef struct
 {
@@ -49,9 +51,10 @@ typedef struct
 mem_area	*__global_mem_areas		=	PTR_INVALID;
 mem_zone	*__global_mem_zones		=	PTR_INVALID;
 
-unsigned int	default_mem_area_id	=	0xCDCDCDCD;
+
 mem_zone		mapped_zones[32]	=	{PTR_INVALID};
 unsigned int	n_mapped_zones		=	0xCDCDCDCD;
+unsigned int	area_lock			=	0xCDCDCDCD;
 
 int C_API_FUNC tree_manager_free_node		(mem_zone_ref_ptr p_node_ref);
 int C_API_FUNC tree_manager_free_node_array	(mem_zone_ref_ptr childs_ref_ptr);
@@ -252,10 +255,12 @@ OS_API_C_FUNC(mem_area *) get_area(unsigned int area_id)
 
 	if(area_id==0)
 	{
+		unsigned int m_area_id;
+		m_area_id = get_mem_area_id();
 		n=0;
 		while(n<MAX_MEM_AREAS)
 		{
-			if(__global_mem_areas[n].area_id==default_mem_area_id)
+			if (__global_mem_areas[n].area_id == m_area_id)
 				return &__global_mem_areas[n];
 			n++;
 		}
@@ -423,23 +428,22 @@ OS_API_C_FUNC(mem_size) set_zone_free(mem_zone_ref_ptr ref,zone_free_func_ptr	fr
 }
 
 
-void set_default_mem_area(unsigned int mem_area_id)
-{
-	default_mem_area_id		=	mem_area_id;
-}
 
 
 OS_API_C_FUNC(void) init_default_mem_area(unsigned int size)
 {
+	char path[512];
 	mem_ptr				start,end;
-	if(default_mem_area_id	!= 0xCDCDCDCD)return ;
-
+	unsigned int		default_mem_area_id;
 	
-	start					=	get_next_aligned_ptr(kernel_memory_map_c(size+8));
+	start					=	kernel_memory_map_c(size+8);
 	end						=	mem_add(start,size);
-	default_mem_area_id		=	init_new_mem_area	(start,end,MEM_TYPE_DATA);
+	memset_c(start, 0, mem_sub(start, end));
 
-	memset_c(start,0,mem_sub(start,end));
+	default_mem_area_id		=	init_new_mem_area	(start,end,MEM_TYPE_DATA);
+	set_mem_area_id				(default_mem_area_id);
+	
+
 
 	return;
 }
@@ -475,10 +479,17 @@ OS_API_C_FUNC(void) init_mem_system()
 
 	n_mapped_zones			=	0;
 	out_debug				=	0;
+	
+	area_lock				=	0;
 
-
+	
 
 	sys_add_tpo_mod_func_name("libcon", "init_new_mem_area", init_new_mem_area, 0);
+	sys_add_tpo_mod_func_name("libcon", "get_tree_mem_area_id", get_tree_mem_area_id, 0);
+	sys_add_tpo_mod_func_name("libcon", "set_tree_mem_area_id", set_tree_mem_area_id, 0);
+	sys_add_tpo_mod_func_name("libcon", "get_mem_area_id", get_mem_area_id, 0);
+	sys_add_tpo_mod_func_name("libcon", "free_mem_area", free_mem_area, 0);
+
 	sys_add_tpo_mod_func_name("libcon", "realloc_zone", realloc_zone, 0);
 	sys_add_tpo_mod_func_name("libcon", "malloc_c", malloc_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "calloc_c", calloc_c, 0);
@@ -583,11 +594,7 @@ OS_API_C_FUNC(void) init_mem_system()
 	sys_add_tpo_mod_func_name("libcon", "register_tpo_exports", register_tpo_exports, 0);
 	sys_add_tpo_mod_func_name("libcon", "get_tpo_mod_exp_addr_name", get_tpo_mod_exp_addr_name, 0);
 	
-
-
-	
 	init_funcs();
-	
 
 }
 OS_API_C_FUNC(mem_ptr)	get_next_aligned_ptr(mem_ptr ptr)
@@ -625,50 +632,49 @@ mem_size get_aligned_size(mem_ptr ptr,mem_ptr end)
 	return (size_align);
 }
 
+
+
 OS_API_C_FUNC(unsigned int) init_new_mem_area(mem_ptr phys_start,mem_ptr phys_end,mem_area_type_t type)
 {
 	int n;
-	n=0;
-
 	if(__global_mem_areas==PTR_NULL)return 0xFFFFFFFF;
 	if(__global_mem_zones==PTR_NULL)return 0xFFFFFFFF;
+
+
+
+	n = 0;
+	while (!compare_z_exchange_c(&area_lock, 1))
+		if ((n++) >= 1000)return 0;
 	
-	
+	n = 0;
 	while(n<MAX_MEM_AREAS)
 	{
 		if(__global_mem_areas[n].area_start == 0x00000000)
 		{
-	
+			__global_mem_areas[n].area_start		= phys_start;
 			__global_mem_areas[n].area_id			=n+1;
-			__global_mem_areas[n].area_start		=phys_start;
 			__global_mem_areas[n].area_end			=phys_end;
 			__global_mem_areas[n].type				=type;
 			__global_mem_areas[n].zones_buffer		=&__global_mem_zones[MAX_MEM_ZONES*n];
-
-			__global_mem_areas[n].lock_sema			=	PTR_NULL;
-			
-			
+			__global_mem_areas[n].lock_sema			=PTR_NULL;
 			memset_c	(__global_mem_areas[n].zones_free		,0,MAX_MEM_ZONES*sizeof(mem_zone_desc));
 
 			__global_mem_areas[n].zones_free[0].ptr		=	get_next_aligned_ptr(__global_mem_areas[n].area_start);
 			__global_mem_areas[n].zones_free[0].size	=	get_aligned_size	( __global_mem_areas[n].area_start, __global_mem_areas[n].area_end);
-			
-	
-							
+
+			area_lock									= 0;
 			return __global_mem_areas[n].area_id;
 	
 		}
 		n++;
 	}
 
+
+	area_lock = 0;
+
 	return 0xFFFFFFFF;
 	
 }
-
-
-
-
-
 
 mem_area * find_area(mem_ptr ptr,mem_size size)
 {
@@ -690,6 +696,30 @@ mem_area * find_area(mem_ptr ptr,mem_size size)
 
 
 	return PTR_NULL;
+}
+
+OS_API_C_FUNC(unsigned int) free_mem_area(area_id)
+{
+	mem_area	*area_ptr;
+	int			n;
+	if (__global_mem_areas == PTR_NULL)return 0xFFFFFFFF;
+	if (__global_mem_zones == PTR_NULL)return 0xFFFFFFFF;
+
+	n = 0;
+	while (!compare_z_exchange_c(&area_lock, 1))
+		if ((n++) >= 1000)return 0;
+	
+	area_ptr = get_area(area_id);
+
+	kernel_memory_free_c(area_ptr->area_start);
+	memset_c	(area_ptr ->zones_buffer,0,MAX_MEM_ZONES*sizeof(mem_zone_desc));
+	memset_c	(area_ptr ->zones_free,0, MAX_MEM_ZONES*sizeof(mem_zone_desc));
+	memset_c	(area_ptr, 0, sizeof(mem_area));
+
+	area_lock = 0;
+
+	return 1;
+
 }
 
 OS_API_C_FUNC(void) dump_mem_used_after	(unsigned int area_id,unsigned int time)

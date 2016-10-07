@@ -1,0 +1,158 @@
+<head>
+    <style type="text/css">
+        #addr_tab {
+            width:45%;
+            display:inline-block;
+            vertical-align:top;
+            text-align:center;
+        }
+        .src_address {
+            font-size:1.2em;
+            font-weight:lighter;
+        }
+        .address {
+            font-weight:bold;
+            cursor:pointer;
+        }
+        #unspent_tab
+        {
+            width:45%;
+            display:inline-block;
+            vertical-align:top;
+        }
+        .addr_from {
+            font-size:1.0em;
+            font-weight:bold;
+        }
+        .unspent_tx{
+            font-size:0.8em;
+            font-weight:lighter;
+        }
+      
+    </style>
+    <script src="/jquery-3.1.1.min.js"></script>
+    <script language="javascript">
+        var addrs = null;
+        var unspents = null;
+        var unit=1;
+        function rpc_call(in_method,in_params,in_success)
+        {
+            $.ajax({
+                url: 'http://127.0.0.1:16820/jsonrpc',
+                data: JSON.stringify({ jsonrpc: '2.0', method: in_method, params: in_params, id: 1 }),  // id is needed !!
+                type: "POST",
+                dataType: "json",
+                success: in_success,
+                error: function (err) { alert("Error"); }
+            });
+        }
+        function update_unspent() {
+
+            var num_unspents = unspents.length;
+            old_tbody = document.getElementById("unspent_list_table").tBodies[0];
+            new_tbody = document.createElement('tbody');
+
+            for (n = 0; n < num_unspents; n++) {
+                var row = new_tbody.insertRow(n);
+
+                cell = row.insertCell(0);
+                cell.className = "unspent_tx";
+                cell.innerHTML = unspents[n].txid;
+
+                cell = row.insertCell(1);
+                cell.className = "addr_from";
+                cell.innerHTML = unspents[n].address;
+
+                cell = row.insertCell(2);
+                cell.className = "addr_scan";
+                cell.innerHTML = unspents[n].amount / unit;
+            }
+            old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
+        }
+        function update_addr_list() {
+            var num_addrs = addrs.length;
+            old_tbody = document.getElementById("address_list_table").tBodies[0];
+            new_tbody = document.createElement('tbody');
+
+            for (n = 0; n < num_addrs; n++) {
+                var row = new_tbody.insertRow(n);
+
+                cell = row.insertCell(0);
+                cell.className = "address";
+                cell.innerHTML = addrs[n].addr;
+
+                cell = row.insertCell(1);
+                cell.className = "addr_received";
+                cell.innerHTML = '<span>' + addrs[n].amount / unit + '</span>';
+
+                cell = row.insertCell(2);
+                cell.className = "addr_scan";
+                cell.id = 'scan_' + addrs[n].addr;
+                cell.innerHTML = '';
+            }
+            old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
+            $('.address').click(function () { list_unspent($(this).html()); });
+        }
+
+        function list_unspent(address) {
+            $('#unspent_list').empty();
+            rpc_call('listunspent', [0, 9999999, [address]], function (data) {
+                unspents = data.result.unspents;
+                $('#unspentaddr').html(address);
+                update_unspent();
+            });
+        }
+        function list_received() {
+            rpc_call('listreceivedbyaddress', [0, true], function (data) {
+                addrs = data.result.addrs;
+                update_addr_list();
+                list_unspent(addrs[0].addr);
+            });
+        }
+        function scan_status(address) {
+            rpc_call('addressscanstatus', [address], function (data) {
+                if (data.error == 0) {
+                    $('#scan_' + address).html(data.result.block);
+                    setTimeout(scan_status, 1000,address);
+                }
+            });
+        }
+        function import_address(address) {
+            rpc_call('importaddress', [address], function (data) { });
+
+            scan_status(address);
+        }
+
+        $(document).ready(function(){
+            list_received();
+            scan_status("BPkMQCc6sjmbDpwpMNvyzMY7RuEQMAetHM");
+            scan_status("B6bUF4yLhKDFqJMU4BBZFWPRf5WQkfvHyr");
+        });
+
+     
+    </script>
+</head>
+<body>
+    <select onchange="unit = this.options[this.selectedIndex].value; update_addr_list(); update_unspent();" id="units" name="units">
+        <option value="1">satoshis</option>
+        <option value="1000000">cents</option>
+        <option value="100000000">coin</option>
+    </select>
+    <div id="addr_tab">
+        <h1>my addresses</h1>
+        <table id="address_list_table">
+            <thead><th>address</th><th>received</th><th>scan</th></thead>
+            <tbody></tbody>
+        </table>
+        <div id="newaddr">new addr : <input id="address" type="text" size="34" /> <input type="button" onclick="import_address($('#address').val());" value="import" /></div>        
+    </div>
+    <div id="unspent_tab">
+        <h1>unspent</h1>
+        <h2 id="unspentaddr"></h2>
+        <table id="unspent_list_table">
+            <thead><th>tx</th><th>from</th><th>amount</th></thead>
+            <tbody></tbody>
+        </table>
+        
+    </div>
+</body>

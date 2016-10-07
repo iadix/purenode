@@ -8,21 +8,142 @@
 #include <fsio.h>
 
 
-C_IMPORT int			C_API_FUNC load_blk_hdr(mem_zone_ref_ptr hdr, const char *blk_hash);
-C_IMPORT int			C_API_FUNC get_tx_output(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr vout);
-C_IMPORT int			C_API_FUNC get_tx_input(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr vin);
-C_IMPORT int			C_API_FUNC compute_block_hash(mem_zone_ref_ptr hdr, hash_t blk_hash);
-C_IMPORT int			C_API_FUNC compute_block_pow(mem_zone_ref_ptr block, hash_t hash);
-C_IMPORT int			C_API_FUNC is_tx_null(mem_zone_ref_const_ptr tx);
-C_IMPORT int			C_API_FUNC is_vout_null(mem_zone_ref_const_ptr tx, unsigned int idx);
-C_IMPORT int			C_API_FUNC load_tx_input(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr	vin, mem_zone_ref_ptr tx_out);
-C_IMPORT int			C_API_FUNC load_tx(mem_zone_ref_ptr tx, hash_t blk_hash, const char *tx_hash);
-C_IMPORT int			C_API_FUNC SetCompact(unsigned int bits, hash_t out);
-C_IMPORT int			C_API_FUNC get_tx_output_amount(const hash_t tx_hash, unsigned int idx, uint64_t *amount);
-C_IMPORT void			C_API_FUNC mul_compact(unsigned int nBits, uint64_t op, hash_t hash);
-C_IMPORT int			C_API_FUNC cmp_hashle(hash_t hash1, hash_t hash2);
-C_IMPORT int			C_API_FUNC get_block_height();
-C_IMPORT int			C_API_FUNC  list_received(btc_addr_t addr, uint64_t *amount);
+
+C_IMPORT int			C_API_FUNC list_received(btc_addr_t addr, uint64_t *amount);
+C_IMPORT int			C_API_FUNC list_unspent(btc_addr_t addr, mem_zone_ref_ptr unspents);
+
+
+mem_zone_ref			my_node = { PTR_INVALID };
+
+
+OS_API_C_FUNC(int) set_node(mem_zone_ref_ptr node)
+{
+	my_node.zone = PTR_NULL;
+	copy_zone_ref(&my_node, node);
+
+	return 1;
+}
+
+OS_API_C_FUNC(int) addressscanstatus(mem_zone_ref_const_ptr params, unsigned int rpc_mode, mem_zone_ref_ptr result)
+{
+	btc_addr_t			new_addr;
+	mem_zone_ref		addr = { PTR_NULL };
+	struct string		adr_path = { 0 };
+	unsigned char		*data;
+	size_t				len;
+	int					ret;
+
+	if (!tree_manager_get_child_at(params, 0, &addr))return 0;
+	if (!tree_manager_get_node_btcaddr(&addr, 0, new_addr))
+	{
+		release_zone_ref(&addr);
+		return 0;
+	}
+	release_zone_ref(&addr);
+
+	make_string(&adr_path, "adrs");
+	cat_ncstring_p(&adr_path, new_addr, 34);
+	cat_ncstring_p(&adr_path, "scan", 34);
+
+	if (get_file(adr_path.str, &data, &len)>0)
+	{
+		unsigned int block;
+		block = *((unsigned int *)(data));
+		tree_manager_set_child_value_i32(result, "block", block);
+		free_c(data);
+		ret = 1;
+	}
+	else
+		ret = 0;
+
+	free_string(&adr_path);
+	
+	return ret;
+}
+
+
+
+
+OS_API_C_FUNC(int) importaddress(mem_zone_ref_const_ptr params, unsigned int rpc_mode, mem_zone_ref_ptr result)
+{
+	btc_addr_t			new_addr;
+	mem_zone_ref		addr = { PTR_NULL }, rescan = { PTR_NULL };
+	struct string		adr_path = { 0 };
+	unsigned int		scan;
+	
+	tree_manager_get_child_at		(params, 0, &addr);
+	if (!tree_manager_get_node_btcaddr(&addr, 0, new_addr))
+	{
+		release_zone_ref(&addr);
+		return 0;
+	}
+
+	if (tree_manager_get_child_at(params, 1, &rescan))
+		tree_mamanger_get_node_dword(&rescan, 0, &scan);
+	else
+		scan = 1;
+
+
+	make_string						(&adr_path, "adrs");
+	cat_ncstring_p					(&adr_path, new_addr, 34);
+	create_dir						(adr_path.str);
+	
+	if (scan)
+	{
+		mem_zone_ref scan_list = { PTR_NULL };
+		if (tree_manager_find_child_node(&my_node, NODE_HASH("addr scan list"), NODE_BITCORE_WALLET_ADDR_LIST, &scan_list))
+		{
+			mem_zone_ref addr_scan = { PTR_NULL };
+			if (tree_manager_create_node("scan", NODE_BITCORE_WALLET_ADDR, &addr_scan))
+			{
+				tree_manager_set_child_value_btcaddr(&addr_scan, "addr", new_addr);
+				tree_manager_set_child_value_i32	(&addr_scan, "done", 0);
+				tree_manager_node_add_child			(&scan_list, &addr_scan);
+				release_zone_ref					(&addr_scan);
+			}
+			release_zone_ref						(&scan_list);
+		}
+	}
+		
+
+	release_zone_ref				(&addr);
+	release_zone_ref				(&rescan);
+	free_string						(&adr_path);
+		
+	return 1;
+}
+
+OS_API_C_FUNC(int) listunspent(mem_zone_ref_const_ptr params, unsigned int rpc_mode, mem_zone_ref_ptr result)
+{
+	mem_zone_ref minconf = { PTR_NULL }, maxconf = { PTR_NULL }, unspents = { PTR_NULL }, addrs = { PTR_NULL };
+	mem_zone_ref  my_list = { PTR_NULL };
+	mem_zone_ref_ptr addr;
+	
+	if (!tree_manager_create_node("unspents", NODE_JSON_ARRAY, &unspents))
+		return 0;
+
+	tree_manager_get_child_at(params, 0, &minconf);
+	tree_manager_get_child_at(params, 1, &maxconf);
+	tree_manager_get_child_at(params, 2, &addrs);
+
+
+	for (tree_manager_get_first_child(&addrs, &my_list, &addr); ((addr != NULL) && (addr->zone != NULL)); tree_manager_get_next_child(&my_list, &addr))
+	{
+		btc_addr_t my_addr;
+
+		tree_manager_get_node_btcaddr	(addr, 0, my_addr);
+		list_unspent					(my_addr, &unspents);
+	}
+
+	tree_manager_node_add_child	(result, &unspents);
+	release_zone_ref			(&unspents);
+
+	release_zone_ref			(&addrs);
+	release_zone_ref			(&maxconf);
+	release_zone_ref			(&minconf);
+
+	return 1;
+}
 
 OS_API_C_FUNC(int) listreceivedbyaddress(mem_zone_ref_const_ptr params, unsigned int rpc_mode, mem_zone_ref_ptr result)
 {

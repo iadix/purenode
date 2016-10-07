@@ -96,6 +96,7 @@ OS_API_C_FUNC(  int	)			tree_manager_get_node_vstr(mem_zone_ref_const_ptr node_r
 OS_API_C_FUNC(  int	)			tree_mamanger_get_node_dword(mem_zone_ref_const_ptr node_ref, mem_size ofset, unsigned int *val){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_get_node_hash(mem_zone_ref_const_ptr node_ref, mem_size ofset, hash_t hash){return 0;}
 OS_API_C_FUNC(  int		)		tree_manager_get_node_rhash(mem_zone_ref_const_ptr node_ref, mem_size ofset, hash_t hash){return 0;}
+OS_API_C_FUNC( int	)			tree_manager_get_node_btcaddr(mem_zone_ref_const_ptr node_ref, mem_size ofset, btc_addr_t addr){return 0;}
 OS_API_C_FUNC(  int	)			tree_mamanger_get_node_qword(mem_zone_ref_const_ptr node_ref, mem_size ofset, uint64_t *val){return 0;}
 OS_API_C_FUNC(  int	)			tree_mamanger_get_node_float(mem_zone_ref_const_ptr node_ref, mem_size ofset, double *val){return 0;}
 OS_API_C_FUNC(  int		)		tree_mamanger_get_node_signed_dword(mem_zone_ref_const_ptr node_ref, mem_size ofset, int *val){return 0;}
@@ -136,11 +137,15 @@ OS_API_C_FUNC(  int	)			tree_manager_set_child_value_str(mem_zone_ref_ptr	p_node
 OS_API_C_FUNC(  int	)			tree_manager_set_child_value_si64(mem_zone_ref_ptr p_node_ref, char *name, int64_t value){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_set_child_value_ipv4(mem_zone_ref_ptr p_node_ref, char *name, ipv4_t value){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_set_child_value_hash(mem_zone_ref_ptr p_node_ref, const char *name, const hash_t str){return 0;}
+OS_API_C_FUNC(  int	)			tree_manager_set_child_value_btcaddr(mem_zone_ref_ptr p_node_ref, const char *name, const btc_addr_t str){return 0;}
+
+
 OS_API_C_FUNC(  int	)			tree_manager_set_child_value_rhash(mem_zone_ref_ptr p_node_ref, const char *name, const hash_t str){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_set_child_value_bhash(mem_zone_ref_ptr p_node_ref, const char *name, const hash_t str){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_set_child_value_vstr(mem_zone_ref_ptr p_node_ref, const char *name, const struct string *str){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_set_child_value_vint(mem_zone_ref_ptr p_node_ref, const char *name, const_mem_ptr vint){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_set_child_value_vint32(mem_zone_ref_ptr p_node_ref, const char *name, unsigned int value){return 0;}
+
 OS_API_C_FUNC(  void)				tree_manager_set_output(int output){return ;}
 OS_API_C_FUNC(  void )				tree_manager_dump_node_rec(mem_zone_ref_const_ptr node_ref, unsigned int rec_level, unsigned int max_rec){return ;}
 
@@ -148,16 +153,6 @@ OS_API_C_FUNC(  unsigned int)		 node_array_pop(mem_zone_ref_ptr node_array, mem_
 OS_API_C_FUNC(  unsigned int)		 node_array_get_free_element(mem_zone_ref_ptr node_array, mem_zone_ref_ptr	node){return 0;}
 OS_API_C_FUNC(  void	)			 init_node_array(mem_zone_ref_ptr node_array, unsigned int n_elems, const char *name, unsigned int type, unsigned int size_alloc){return ;}
 
-OS_API_C_FUNC(  int	)		 tree_manager_create_obj(struct obj_array_t *obj_array){return 0;}
-OS_API_C_FUNC(  int	)		 tree_manager_create_obj_array(struct obj_array_t *obj_array){return 0;}
-OS_API_C_FUNC(  void	)		 tree_manager_add_obj(struct obj_array_t *obj_array, const char *name, unsigned int type){return ;}
-OS_API_C_FUNC(  void	)		 tree_manager_add_obj_array(struct obj_array_t *obj_array, const char *name, unsigned int type){return ;}
-OS_API_C_FUNC(  void	)		 tree_manager_add_obj_str_val(struct obj_array_t *obj_array, const char *name, const char *str){return ;}
-OS_API_C_FUNC(  void	)		 tree_manager_add_obj_int_val(struct obj_array_t *obj_array, const char *name, unsigned int value){return ;}
-OS_API_C_FUNC(  void	)		 tree_manager_add_obj_sint_val(struct obj_array_t *obj_array, const char *name, int value){return ;}
-OS_API_C_FUNC(  void)			 tree_manager_end_obj_array(struct obj_array_t *obj_array){return ;}
-OS_API_C_FUNC(  void	)		 tree_manager_end_obj(struct obj_array_t *obj_array){return ;}
-OS_API_C_FUNC(  void	)		 tree_manager_free_obj_array(struct obj_array_t *obj_array){return ;}
 
 
 
