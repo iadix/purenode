@@ -1,14 +1,18 @@
 #define LIBC_API C_EXPORT
+
+#include <windows.h>
 #include <time.h>
 #include <direct.h>
 #include <sys/stat.h>
 #include <stdio.h>
+
 #include "../base/std_def.h"
 #include "../base/std_mem.h"
 #include "../base/mem_base.h"
 #include "../base/std_str.h"
 #include "strs.h"
 #include "fsio.h"
+
 
 #include <shlwapi.h>
 #include "shlobj.h"
@@ -67,23 +71,71 @@ OS_API_C_FUNC(int) create_dir(const char *path)
 {
 	return CreateDirectory(path, NULL);
 }
+#define TICKS_PER_SECOND 10000000
+#define EPOCH_DIFFERENCE 11644473600LL
+
+void UnixTimeToFileTime(time_t t, LPFILETIME pft)
+{
+	// Note that LONGLONG is a 64-bit value
+	LONGLONG ll;
+
+	ll = Int32x32To64(t, 10000000) + 116444736000000000;
+	pft->dwLowDateTime = (DWORD)ll;
+	pft->dwHighDateTime = ll >> 32;
+}
+
+ctime_t FileTime_to_POSIX(FILETIME ft)
+{
+	FILETIME localFileTime;
+	FileTimeToLocalFileTime(&ft, &localFileTime);
+	SYSTEMTIME sysTime;
+	FileTimeToSystemTime(&localFileTime, &sysTime);
+	struct tm tmtime = { 0 };
+	tmtime.tm_year = sysTime.wYear - 1900;
+	tmtime.tm_mon = sysTime.wMonth - 1;
+	tmtime.tm_mday = sysTime.wDay;
+	tmtime.tm_hour = sysTime.wHour;
+	tmtime.tm_min = sysTime.wMinute;
+	tmtime.tm_sec = sysTime.wSecond;
+	tmtime.tm_wday = 0;
+	tmtime.tm_yday = 0;
+	tmtime.tm_isdst = -1;
+	time_t ret = mktime(&tmtime);
+	return ret;
+}
 OS_API_C_FUNC(int) set_ftime(const char *path,ctime_t time)
 {
 	int ret;
 	HANDLE hFile;
 	FILETIME ft;
-	if ((hFile = CreateFile(path, GENERIC_ALL, FILE_SHARE_READ | FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, 0)) == INVALID_HANDLE_VALUE)
+	SYSTEMTIME st;
+	if ((hFile = CreateFile(path, FILE_WRITE_ATTRIBUTES, 0, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0)) == INVALID_HANDLE_VALUE)
 	{
 		return 0;
 	}
-	ft.dwLowDateTime	= (time&0xFFFFFFFF);
-	ft.dwHighDateTime	= (time>>32);
 
-	ret = SetFileTime(hFile, &ft, NULL, NULL);
+	UnixTimeToFileTime(time, &ft);
+
+	ret = SetFileTime(hFile, &ft, &ft, &ft);
 	CloseHandle(hFile);
 	return ret;
 }
+OS_API_C_FUNC(int) get_ftime(const char *path, ctime_t *time)
+{
+	int ret;
+	HANDLE hFile;
+	FILETIME ft;
+	if ((hFile = CreateFile(path, FILE_WRITE_ATTRIBUTES, 0, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0)) == INVALID_HANDLE_VALUE)
+		return 0;
 
+	ret = GetFileTime(hFile, &ft, NULL, NULL);
+	CloseHandle(hFile);
+	
+	if (ret)
+		*time = FileTime_to_POSIX(ft);
+
+	return ret;
+}
 OS_API_C_FUNC(size_t) file_size(const char *path)
 {
 	OFSTRUCT of;
@@ -98,23 +150,7 @@ OS_API_C_FUNC(size_t) file_size(const char *path)
 	return size;
 }
 
-OS_API_C_FUNC(int) get_ftime(const char *path, ctime_t *time)
-{
-	int ret;
-	OFSTRUCT of;
-	HANDLE hFile;
-	FILETIME ft;
-	if ((hFile = OpenFile(path, &of,0)) == INVALID_HANDLE_VALUE)
-		return 0;
 
-	ret = GetFileTime(hFile, &ft, NULL, NULL);
-	CloseHandle(hFile);
-
-	if (ret)
-		*time = (((uint64_t)(ft.dwHighDateTime)) << 32) | (ft.dwLowDateTime);
-
-	return ret;
-}
 OS_API_C_FUNC(int) del_file(const char *path)
 {
 	return DeleteFile(path);
@@ -285,14 +321,15 @@ OS_API_C_FUNC(int) get_file(const char *path, unsigned char **data, size_t *data
 	if((*data_len)>0)
 	{
 		(*data)		= malloc_c((*data_len)+1);
-		len			= fread((*data),*data_len,1,f);
-		(*data)[*data_len]=0;
+		if ((*data) != PTR_NULL)
+		{
+			len = fread((*data), *data_len, 1, f);
+			(*data)[*data_len] = 0;
+		}
+		else
+			len = 0;
 	}
-	
-
 	fclose(f);
-
-
 	return (int)len;
 
 }
@@ -480,7 +517,7 @@ OS_API_C_FUNC(void	*)kernel_memory_map_c(unsigned int size)
 {
 	return HeapAlloc(GetProcessHeap(),0,size);
 }
-OS_API_C_FUNC(void	*)kernel_memory_free_c(mem_ptr ptr)
+OS_API_C_FUNC(int)kernel_memory_free_c(mem_ptr ptr)
 {
 	return HeapFree(GetProcessHeap(),0,ptr);
 }
@@ -490,7 +527,7 @@ OS_API_C_FUNC(void	*)kernel_memory_free_c(mem_ptr ptr)
 }
 
 
- OS_API_C_FUNC(int) get_cwd(const char *path,size_t len)
+ OS_API_C_FUNC(int) get_cwd(char *path,size_t len)
  {
 	 return GetCurrentDirectory(len,path);
  }

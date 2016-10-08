@@ -26,5 +26,7 @@ LIBC_API int			C_API_FUNC set_ftime(const char *path, ctime_t time);
 LIBC_API int			C_API_FUNC get_ftime(const char *path, ctime_t *time);
 LIBC_API int			C_API_FUNC get_home_dir(struct string *path);
 LIBC_API int			C_API_FUNC set_cwd(const char *path);
-LIBC_API int			C_API_FUNC get_cwd(const char *path, size_t len);
+LIBC_API int			C_API_FUNC get_cwd(char *path, size_t len);
 LIBC_API int			C_API_FUNC rm_dir(const char *dir);
+LIBC_API unsigned int	C_API_FUNC get_tree_mem_area_id(void);
+LIBC_API unsigned int	C_API_FUNC get_mem_area_id(void);

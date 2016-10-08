@@ -432,7 +432,6 @@ OS_API_C_FUNC(mem_size) set_zone_free(mem_zone_ref_ptr ref,zone_free_func_ptr	fr
 
 OS_API_C_FUNC(void) init_default_mem_area(unsigned int size)
 {
-	char path[512];
 	mem_ptr				start,end;
 	unsigned int		default_mem_area_id;
 	

@@ -1,7 +1,7 @@
 <head>
     <style type="text/css">
         #addr_tab {
-            width:45%;
+            width:35%;
             display:inline-block;
             vertical-align:top;
             text-align:center;
@@ -14,19 +14,49 @@
             font-weight:bold;
             cursor:pointer;
         }
+        #left_tab {
+            display:inline-block;
+            width:60%;
+        }
+        #left_tab h2{
+            display:inline-block;
+            cursor:pointer;
+            margin:8px;
+            padding:4px;
+            border:1px solid;
+        }
+
+         #left_tab h2.selected{
+             background-color:#AAA;
+        }
+        
+
         #unspent_tab
         {
             width:45%;
             display:inline-block;
             vertical-align:top;
+            overflow:hidden;
+            border:1px solid;
+            margin:3px;
         }
         .addr_from {
             font-size:1.0em;
             font-weight:bold;
         }
-        .unspent_tx{
-            font-size:0.8em;
+        .unspent_tx,.spent_tx,.recv_tx{
+            font-size:1.0em;
             font-weight:lighter;
+            font-family:monospace;
+        }
+        #spent_tab
+        {
+            width:45%;
+            display:inline-block;
+            vertical-align:top;
+            overflow:hidden;
+            border:1px solid;
+            margin:3px;
         }
       
     </style>
@@ -34,6 +64,8 @@
     <script language="javascript">
         var addrs = null;
         var unspents = null;
+        var recvs = null;
+        var scanTimer = null;
         var unit=1;
         function rpc_call(in_method,in_params,in_success)
         {
@@ -46,29 +78,163 @@
                 error: function (err) { alert("Error"); }
             });
         }
-        function update_unspent() {
+        function timeConverter(UNIX_timestamp) {
+            var a = new Date(UNIX_timestamp * 1000);
+            var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            var year = a.getFullYear();
+            var month = months[a.getMonth()];
+            var date = a.getDate();
+            var hour = a.getHours();
+            var min = a.getMinutes();
+            var sec = a.getSeconds();
+            var time = date + ' ' + month + ' ' + year + ' ' + hour + ':' + min + ':' + sec;
+            return time;
+        }
+        function select_menu(id)
+        {
+            if (id == "tab_unspent")
+                $('#tab_unspent').addClass('selected');
+            else
+                $('#tab_unspent').removeClass('selected');
 
+            if (id == "tab_spent")
+                $('#tab_spent').addClass('selected');
+            else
+                $('#tab_spent').removeClass('selected');
+
+            if (id == "tab_received")
+                $('#tab_received').addClass('selected');
+            else
+                $('#tab_received').removeClass('selected');
+
+        }
+
+        function update_unspent() {
+            var total;
             var num_unspents = unspents.length;
-            old_tbody = document.getElementById("unspent_list_table").tBodies[0];
+
+           
+
+            thead = document.getElementById("list_table").tHead;
+            thead.rows[0].cells[2].innerHTML = 'from';
+
+
+            old_tbody = document.getElementById("list_table").tBodies[0];
             new_tbody = document.createElement('tbody');
 
+            total = 0;
             for (n = 0; n < num_unspents; n++) {
                 var row = new_tbody.insertRow(n);
 
                 cell = row.insertCell(0);
+                cell.className = "time";
+                cell.innerHTML = timeConverter(unspents[n].time);
+                
+                cell = row.insertCell(1);
                 cell.className = "unspent_tx";
                 cell.innerHTML = unspents[n].txid;
 
-                cell = row.insertCell(1);
+                cell = row.insertCell(2);
                 cell.className = "addr_from";
                 cell.innerHTML = unspents[n].address;
 
-                cell = row.insertCell(2);
-                cell.className = "addr_scan";
+                cell = row.insertCell(3);
+                cell.className = "addr_amount";
                 cell.innerHTML = unspents[n].amount / unit;
+
+                cell = row.insertCell(4);
+                cell.className = "tx_conf";
+                cell.innerHTML = unspents[n].confirmations;
+
+                total += unspents[n].amount;
             }
+
+            $('#txtotal').html(total/unit);
             old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
         }
+        function update_spent() {
+            var total;
+            var thead;
+            var num_spents = spents.length;
+
+            thead = document.getElementById("list_table").tHead;
+            thead.rows[0].cells[2].innerHTML = 'to';
+
+            old_tbody = document.getElementById("list_table").tBodies[0];
+            new_tbody = document.createElement('tbody');
+
+            total = 0;
+            for (n = 0; n < num_spents; n++) {
+                var row = new_tbody.insertRow(n);
+
+                cell = row.insertCell(0);
+                cell.className = "time";
+                cell.innerHTML = timeConverter(spents[n].time);
+
+                cell = row.insertCell(1);
+                cell.className = "spent_tx";
+                cell.innerHTML = spents[n].txid;
+
+                cell = row.insertCell(2);
+                cell.className = "addr_to";
+                cell.innerHTML = spents[n].address;
+
+                cell = row.insertCell(3);
+                cell.className = "addr_amount";
+                cell.innerHTML = spents[n].amount / unit;
+
+                cell = row.insertCell(4);
+                cell.className = "tx_conf";
+                cell.innerHTML = spents[n].confirmations;
+
+
+                total += spents[n].amount;
+            }
+            $('#txtotal').html(total / unit);
+            old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
+        }
+        function update_recvs() {
+            var total;
+            var thead;
+            var num_recvs = recvs.length;
+
+            thead = document.getElementById("list_table").tHead;
+            thead.rows[0].cells[2].innerHTML = 'from';
+
+            old_tbody = document.getElementById("list_table").tBodies[0];
+            new_tbody = document.createElement('tbody');
+
+            total = 0;
+            for (n = 0; n < num_recvs; n++) {
+                var row = new_tbody.insertRow(n);
+
+                cell = row.insertCell(0);
+                cell.className = "time";
+                cell.innerHTML = timeConverter(recvs[n].time);
+
+                cell = row.insertCell(1);
+                cell.className = "recv_tx";
+                cell.innerHTML = recvs[n].txid;
+
+                cell = row.insertCell(2);
+                cell.className = "addr_from";
+                cell.innerHTML = recvs[n].address;
+
+                cell = row.insertCell(3);
+                cell.className = "addr_amount";
+                cell.innerHTML = recvs[n].amount / unit;
+
+                cell = row.insertCell(4);
+                cell.className = "tx_conf";
+                cell.innerHTML = recvs[n].confirmations;
+
+
+                total += recvs[n].amount;
+            }
+            $('#txtotal').html(total / unit);
+            old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
+        }
+
         function update_addr_list() {
             var num_addrs = addrs.length;
             old_tbody = document.getElementById("address_list_table").tBodies[0];
@@ -91,49 +257,81 @@
                 cell.innerHTML = '';
             }
             old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
-            $('.address').click(function () { list_unspent($(this).html()); });
+            $('.address').click(function () { select_menu("tab_unspent"); list_unspent($(this).html()); if (scanTimer != null) { clearTimeout(scanTimer); scanTimer = null; } scan_status($(this).html()); });
         }
 
         function list_unspent(address) {
-            $('#unspent_list').empty();
+            var old_tbody = document.getElementById("list_table").tBodies[0];
+            var new_tbody = document.createElement('tbody');
+            old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
             rpc_call('listunspent', [0, 9999999, [address]], function (data) {
                 unspents = data.result.unspents;
                 $('#unspentaddr').html(address);
                 update_unspent();
             });
         }
+        function list_spent(address) {
+            var old_tbody = document.getElementById("list_table").tBodies[0];
+            var new_tbody = document.createElement('tbody');
+            old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
+
+            
+            rpc_call('listspent', [0, 9999999, [address]], function (data) {
+                spents = data.result.spents;
+                $('#unspentaddr').html(address);
+                update_spent();
+            });
+        }
+
+        function list_recvs(address) {
+            var old_tbody = document.getElementById("list_table").tBodies[0];
+            var new_tbody = document.createElement('tbody');
+            old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
+            
+            rpc_call('listreceived', [0, 9999999, [address]], function (data) {
+                recvs = data.result.received;
+                $('#unspentaddr').html(address);
+                update_recvs();
+            });
+        }
         function list_received() {
+            var old_tbody = document.getElementById("list_table").tBodies[0];
+            var new_tbody = document.createElement('tbody');
+            old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
             rpc_call('listreceivedbyaddress', [0, true], function (data) {
                 addrs = data.result.addrs;
                 update_addr_list();
+                select_menu("tab_unspent");
                 list_unspent(addrs[0].addr);
             });
         }
         function scan_status(address) {
             rpc_call('addressscanstatus', [address], function (data) {
                 if (data.error == 0) {
-                    $('#scan_' + address).html(data.result.block);
-                    setTimeout(scan_status, 1000,address);
+                    $('#scanning').html(data.result.block);
+                    scanTimer = setTimeout(scan_status, 1000, address);
+                }
+                else {
+                    $('#scanning').empty();
+                    scanTimer = null;
                 }
             });
         }
         function import_address(address) {
             rpc_call('importaddress', [address], function (data) { });
-
-            scan_status(address);
         }
+
 
         $(document).ready(function(){
             list_received();
-            scan_status("BPkMQCc6sjmbDpwpMNvyzMY7RuEQMAetHM");
-            scan_status("B6bUF4yLhKDFqJMU4BBZFWPRf5WQkfvHyr");
+           
         });
 
      
     </script>
 </head>
 <body>
-    <select onchange="unit = this.options[this.selectedIndex].value; update_addr_list(); update_unspent();" id="units" name="units">
+    <select onchange="unit = this.options[this.selectedIndex].value; update_addr_list(); update_unspent(); update_spent(); update_recvs();" id="units" name="units">
         <option value="1">satoshis</option>
         <option value="1000000">cents</option>
         <option value="100000000">coin</option>
@@ -146,13 +344,20 @@
         </table>
         <div id="newaddr">new addr : <input id="address" type="text" size="34" /> <input type="button" onclick="import_address($('#address').val());" value="import" /></div>        
     </div>
-    <div id="unspent_tab">
-        <h1>unspent</h1>
-        <h2 id="unspentaddr"></h2>
-        <table id="unspent_list_table">
-            <thead><th>tx</th><th>from</th><th>amount</th></thead>
-            <tbody></tbody>
+    <div id="left_tab">
+        <h1 id="unspentaddr"></h1><div id="scanning"></div>
+        <h2 id="tab_unspent" onclick="select_menu('tab_unspent'); list_unspent($('#unspentaddr').html());">unspent</h2><h2 id="tab_spent" onclick="select_menu('tab_spent');list_spent($('#unspentaddr').html());">spent</h2><h2 id="tab_received" onclick="select_menu('tab_received');list_recvs($('#unspentaddr').html());">received</h2>
+        <div> total : <span id="txtotal"></span></div>
+        <table id="list_table">
+            <thead>
+            <th>time</th>
+            <th>tx</th>
+            <th>from</th>
+            <th>amount</th>
+            <th>nconf</th>
+           </thead>
+           <tbody></tbody>
         </table>
-        
+
     </div>
 </body>

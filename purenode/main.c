@@ -27,7 +27,10 @@ struct string		node_hostname = { PTR_INVALID };
 tpo_mod_file		node_mod = { 0xFF };
 tpo_mod_file		pos_kernel = { 0xFF };
 unsigned int		ping_nonce = 0x01;
-
+unsigned int		TargetSpacing = 0xCDCDCDCD;
+unsigned int		nTargetTimespan = 0xCDCDCDCD;
+hash_t				Difflimit = { 0xFF };
+unsigned int		Di = 0xFFFFFF;
 mem_zone_ref		lastBlk = { PTR_INVALID };
 
 
@@ -35,9 +38,14 @@ C_IMPORT int C_API_FUNC compute_block_hash(mem_zone_ref_ptr block, hash_t hash);
 C_IMPORT int C_API_FUNC find_hash(hash_t hash);
 C_IMPORT int  C_API_FUNC load_blk_hdr(mem_zone_ref_ptr hdr, const char *blk_hash);
 C_IMPORT int  C_API_FUNC make_genesis_block(mem_zone_ref_ptr genesis_conf, mem_zone_ref_ptr genesis);
-C_IMPORT int  C_API_FUNC get_block_height();
+C_IMPORT int  C_API_FUNC get_last_block_height();
 C_IMPORT int  C_API_FUNC remove_block(hash_t blk_hash);
 C_IMPORT int	C_API_FUNC rescan_addr(btc_addr_t addr);
+C_IMPORT int			C_API_FUNC		SetCompact(unsigned int bits, hash_t out);
+C_IMPORT int			C_API_FUNC		is_pow_block(const char *blk_hash);
+C_IMPORT unsigned int	C_API_FUNC		calc_new_target(unsigned int nActualSpacing, unsigned int TargetSpacing, unsigned int nTargetTimespan, unsigned int pBits);
+C_IMPORT int			C_API_FUNC		compute_block_pow(mem_zone_ref_ptr block, hash_t hash);
+C_IMPORT int			C_API_FUNC		check_block_pow(mem_zone_ref_ptr hdr, hash_t diff_hash);
 
 typedef int	C_API_FUNC node_init_self_func(mem_zone_ref_ptr out_self_node, mem_zone_ref_ptr node_config);
 typedef int	C_API_FUNC new_peer_node_func(struct host_def *host, mem_zone_ref_ptr peer_nodes);
@@ -459,6 +467,67 @@ unsigned int GetNextTargetRequired(mem_zone_ref_ptr pindexLast, unsigned int bnT
 
 // Get the last pow block and its generation time from a given block
 
+
+
+int get_last_pow_block(mem_zone_ref_ptr pindex, unsigned int *block_time)
+{
+	char			chash[65];
+	int				ret = 0;
+	tree_manager_get_child_value_str(pindex, NODE_HASH("blk hash"), chash, 65, 16);
+	while (!is_pow_block(chash))
+	{
+		tree_manager_get_child_value_str(pindex, NODE_HASH("prev"), chash, 65, 16);
+		if (!load_blk_hdr(pindex, chash))
+			return 0;
+	}
+	if (is_pow_block(chash))
+	{
+		tree_manager_get_child_value_i32(pindex, NODE_HASH("time"), block_time);
+		return 1;
+	}
+	return 0;
+}
+int get_last_pow_diff(mem_zone_ref_ptr lastBlk, unsigned int	*pBits, int64_t *spacing)
+{
+	hash_t				null_hash;
+	mem_zone_ref		prevPOW = { PTR_NULL };
+	unsigned int		prevTime, pprevTime;
+	int					ret;
+	//get last two pos blocks
+
+
+	memset_c(null_hash, 0, sizeof(hash_t));
+	copy_zone_ref(&prevPOW, lastBlk);
+	ret = get_last_pow_block(&prevPOW, &prevTime);
+	if (ret)
+	{
+		char			cpphash[65];
+		mem_zone_ref	pprev = { PTR_NULL };
+
+		tree_manager_get_child_value_i32(&prevPOW, NODE_HASH("bits"), pBits);
+		tree_manager_get_child_value_str(&prevPOW, NODE_HASH("prev"), cpphash, 65, 16);
+		release_zone_ref(&prevPOW);
+		ret = load_blk_hdr(&pprev, cpphash);
+		if (ret)
+		{
+			hash_t pppp;
+			tree_manager_get_child_value_hash(&pprev, NODE_HASH("prev"), pppp);
+
+			if (!memcmp_c(pppp, null_hash, sizeof(hash_t)))
+				ret = 0;
+
+			if (ret)
+				ret = get_last_pow_block(&pprev, &pprevTime);
+
+			if (ret)
+				*spacing = prevTime - pprevTime;
+
+			release_zone_ref(&pprev);
+		}
+	}
+	return ret;
+}
+
 int handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 {
 	hash_t				prevHash, lastHash, blk_hash;
@@ -485,6 +554,38 @@ int handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 
 	if (!tree_manager_find_child_node(payload, NODE_HASH("txs"), NODE_BITCORE_TX_LIST, &tx_list)){ release_zone_ref(&header); return 0; }
 	ret = compute_blk_staking		(&lastBlk, &header, &tx_list, &staking_reward);
+
+	if (staking_reward == 0)
+	{
+		int64_t				nActualSpacing;
+		unsigned int		pBits;
+		//compute current block difficulty
+		if (get_last_pow_diff(&lastBlk, &pBits, &nActualSpacing))
+		{
+			hash_t			out_diff;
+			unsigned int	bits;
+
+			memset_c(out_diff, 0, sizeof(hash_t));
+			if (nActualSpacing > TargetSpacing * 10)
+				nActualSpacing = TargetSpacing * 10;
+
+			bits = calc_new_target(nActualSpacing, TargetSpacing, nTargetTimespan, pBits);
+
+			SetCompact(bits, out_diff);
+
+			if (memcmp_c(out_diff, Difflimit, sizeof(hash_t)) < 0)
+				SetCompact(Di, out_diff);
+
+			ret = check_block_pow(&header, out_diff);
+		}
+		else
+		{
+			hash_t blk_pow;
+			ret=compute_block_pow(&header, blk_pow);
+			if (ret)
+				tree_manager_set_child_value_hash(&header, "blk pow", blk_pow);
+		}
+	}
 	
 	if (ret)
 		ret = node_add_block(&lastBlk,&header, &tx_list, staking_reward);
@@ -847,7 +948,7 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 	else
 		memset_c(&pos_kernel, 0, sizeof(tpo_mod_file));
 	
-	nc =get_block_height();
+	nc =get_last_block_height();
 	if ((nc > 1) && (get_hash_idx("blk_indexes", nc - 1, last_hash)))
 	{
 		char chash[65];
@@ -887,6 +988,16 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 		release_zone_ref(&rpc_wallet_conf);
 	}
 
+	if (!tree_manager_get_child_value_i32(&node_config, NODE_HASH("target spacing"), &TargetSpacing))
+		TargetSpacing = 64;
+
+	if (!tree_manager_get_child_value_i32(&node_config, NODE_HASH("target timespan"), &nTargetTimespan))
+		nTargetTimespan = 16 * 60;  // 16 mins
+
+	if (!tree_manager_get_child_value_i32(&node_config, NODE_HASH("limit"), &Di))
+		Di = 0x1E0FFFFF;
+
+	SetCompact(Di, Difflimit);
 	
 	tree_manager_get_child_at(&peer_nodes, 0, &seed_node);
 	queue_version_message(&seed_node, &user_agent);

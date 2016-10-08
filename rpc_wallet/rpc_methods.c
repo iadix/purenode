@@ -11,7 +11,8 @@
 
 C_IMPORT int			C_API_FUNC list_received(btc_addr_t addr, uint64_t *amount);
 C_IMPORT int			C_API_FUNC list_unspent(btc_addr_t addr, mem_zone_ref_ptr unspents);
-
+C_IMPORT int			C_API_FUNC list_spent(btc_addr_t addr, mem_zone_ref_ptr spents);
+C_IMPORT int			C_API_FUNC list_received(btc_addr_t addr, uint64_t *amount, mem_zone_ref_ptr received);
 
 mem_zone_ref			my_node = { PTR_INVALID };
 
@@ -112,7 +113,67 @@ OS_API_C_FUNC(int) importaddress(mem_zone_ref_const_ptr params, unsigned int rpc
 		
 	return 1;
 }
+OS_API_C_FUNC(int) listreceived(mem_zone_ref_const_ptr params, unsigned int rpc_mode, mem_zone_ref_ptr result)
+{
+	mem_zone_ref minconf = { PTR_NULL }, maxconf = { PTR_NULL }, received = { PTR_NULL }, addrs = { PTR_NULL };
+	mem_zone_ref  my_list = { PTR_NULL };
+	mem_zone_ref_ptr addr;
+	uint64_t		amount;
 
+	if (!tree_manager_create_node("received", NODE_JSON_ARRAY, &received))
+		return 0;
+
+	tree_manager_get_child_at(params, 0, &minconf);
+	tree_manager_get_child_at(params, 1, &maxconf);
+	tree_manager_get_child_at(params, 2, &addrs);
+
+
+	for (tree_manager_get_first_child(&addrs, &my_list, &addr); ((addr != NULL) && (addr->zone != NULL)); tree_manager_get_next_child(&my_list, &addr))
+	{
+		btc_addr_t my_addr;
+		tree_manager_get_node_btcaddr	(addr, 0, my_addr);
+		list_received					(my_addr,&amount, &received);
+	}
+	tree_manager_node_add_child(result, &received);
+	release_zone_ref(&received);
+
+	release_zone_ref(&addrs);
+	release_zone_ref(&maxconf);
+	release_zone_ref(&minconf);
+
+	return 1;
+}
+OS_API_C_FUNC(int) listspent(mem_zone_ref_const_ptr params, unsigned int rpc_mode, mem_zone_ref_ptr result)
+{
+	mem_zone_ref minconf = { PTR_NULL }, maxconf = { PTR_NULL }, spents = { PTR_NULL }, addrs = { PTR_NULL };
+	mem_zone_ref  my_list = { PTR_NULL };
+	mem_zone_ref_ptr addr;
+
+	if (!tree_manager_create_node("spents", NODE_JSON_ARRAY, &spents))
+		return 0;
+
+	tree_manager_get_child_at(params, 0, &minconf);
+	tree_manager_get_child_at(params, 1, &maxconf);
+	tree_manager_get_child_at(params, 2, &addrs);
+
+
+	for (tree_manager_get_first_child(&addrs, &my_list, &addr); ((addr != NULL) && (addr->zone != NULL)); tree_manager_get_next_child(&my_list, &addr))
+	{
+		btc_addr_t my_addr;
+
+		tree_manager_get_node_btcaddr(addr, 0, my_addr);
+		list_spent(my_addr, &spents);
+	}
+
+	tree_manager_node_add_child(result, &spents);
+	release_zone_ref(&spents);
+
+	release_zone_ref(&addrs);
+	release_zone_ref(&maxconf);
+	release_zone_ref(&minconf);
+
+	return 1;
+}
 OS_API_C_FUNC(int) listunspent(mem_zone_ref_const_ptr params, unsigned int rpc_mode, mem_zone_ref_ptr result)
 {
 	mem_zone_ref minconf = { PTR_NULL }, maxconf = { PTR_NULL }, unspents = { PTR_NULL }, addrs = { PTR_NULL };
@@ -178,7 +239,7 @@ OS_API_C_FUNC(int) listreceivedbyaddress(mem_zone_ref_const_ptr params, unsigned
 				uint64_t amount;
 				memcpy_c(addr, optr, sz); addr[34] = 0;
 				
-				list_received					(addr, &amount);
+				list_received					(addr, &amount,PTR_NULL);
 				tree_manager_set_child_value_str(&new_addr, "addr", addr);
 				tree_manager_set_child_value_i64(&new_addr, "amount", amount);
 				release_zone_ref				(&new_addr);
