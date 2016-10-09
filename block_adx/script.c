@@ -181,7 +181,7 @@ int serialize_script(mem_zone_ref_ptr script_node, struct string *script)
 }
 
 
-int get_out_script_address(struct string *script, btc_addr_t addr)
+OS_API_C_FUNC(int) get_out_script_address(struct string *script, btc_addr_t addr)
 {
 	hash_t			tmp_hash, fhash;
 	char			hash[21];

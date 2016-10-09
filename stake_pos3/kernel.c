@@ -20,14 +20,15 @@ static int64_t	nStakeReward= 0xFFFFFFFF;
 C_IMPORT int  C_API_FUNC load_blk_hdr			(mem_zone_ref_ptr hdr, const char *blk_hash);
 C_IMPORT int  C_API_FUNC get_tx_output			(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr vout);
 C_IMPORT int  C_API_FUNC get_tx_input			(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr vin);
-C_IMPORT int  C_API_FUNC compute_block_hash		(mem_zone_ref_ptr hdr, hash_t blk_hash);
-C_IMPORT int  C_API_FUNC compute_block_pow		(mem_zone_ref_ptr block, hash_t hash);
 C_IMPORT int  C_API_FUNC is_tx_null				(mem_zone_ref_const_ptr tx);
 C_IMPORT int  C_API_FUNC is_vout_null			(mem_zone_ref_const_ptr tx, unsigned int idx);
-C_IMPORT int  C_API_FUNC load_tx_input			(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr	vin , mem_zone_ref_ptr tx_out);
-C_IMPORT int  C_API_FUNC load_tx				(mem_zone_ref_ptr tx,hash_t blk_hash, const char *tx_hash);
-C_IMPORT int  C_API_FUNC SetCompact				(unsigned int bits, hash_t out);
+C_IMPORT int  C_API_FUNC load_tx_input			(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr	vin, mem_zone_ref_ptr tx_out);
+C_IMPORT int  C_API_FUNC load_tx				(mem_zone_ref_ptr tx, hash_t blk_hash, const char *tx_hash);
 C_IMPORT int  C_API_FUNC get_tx_output_amount	(const hash_t tx_hash, unsigned int idx, uint64_t *amount);
+
+C_IMPORT int  C_API_FUNC compute_block_hash		(mem_zone_ref_ptr hdr, hash_t blk_hash);
+C_IMPORT int  C_API_FUNC compute_block_pow		(mem_zone_ref_ptr block, hash_t hash);
+C_IMPORT int  C_API_FUNC SetCompact				(unsigned int bits, hash_t out);
 C_IMPORT void C_API_FUNC mul_compact			(unsigned int nBits, uint64_t op, hash_t hash);
 C_IMPORT int  C_API_FUNC cmp_hashle				(hash_t hash1, hash_t hash2);
 C_IMPORT unsigned int C_API_FUNC calc_new_target(unsigned int nActualSpacing, unsigned int TargetSpacing, unsigned int nTargetTimespan, unsigned int pBits);
@@ -159,7 +160,44 @@ int get_last_pos_block(mem_zone_ref_ptr pindex, unsigned int *block_time)
 
 
 
-OS_API_C_FUNC(int) store_blk_staking(mem_zone_ref_ptr header)
+OS_API_C_FUNC(int) store_tx_staking(mem_zone_ref_ptr tx, const char *tx_hash, btc_addr_t stake_addr, uint64_t	stake_in)
+{
+	mem_zone_ref	 txout_list = { PTR_NULL }, my_list = { PTR_NULL };
+	mem_zone_ref_ptr out = PTR_NULL;
+	uint64_t		 stake_out = 0, staked;
+	struct string	 stake_path = { 0 };
+
+
+	make_string(&stake_path, "adrs");
+	cat_ncstring_p(&stake_path, stake_addr, 34);
+	if (stat_file(stake_path.str) != 0)
+	{
+		free_string(&stake_path);
+		return 0;
+	}
+
+	if (tree_manager_find_child_node(tx, NODE_HASH("txsout"), NODE_BITCORE_VOUTLIST, &txout_list))
+	{
+		for (tree_manager_get_first_child(&txout_list, &my_list, &out); ((out != NULL) && (out->zone != NULL)); tree_manager_get_next_child(&my_list, &out))
+		{
+			uint64_t amount = 0;
+			if (!tree_manager_get_child_value_i64(out, NODE_HASH("value"), &amount))continue;
+			stake_out += amount;
+		}
+		release_zone_ref(&txout_list);
+	}
+	staked = stake_out - stake_in;
+
+	cat_cstring_p(&stake_path, "stake");
+	create_dir(stake_path.str);
+	cat_cstring_p(&stake_path, tx_hash);
+	put_file(stake_path.str, &staked, sizeof(uint64_t));
+	free_string(&stake_path);
+
+	return 1;
+
+}
+OS_API_C_FUNC(int) store_blk_staking(mem_zone_ref_ptr header, mem_zone_ref_ptr tx_list)
 {
 	char blk_hash[65];
 	struct string blk_path = { 0 }, file_path = { 0 };
@@ -197,6 +235,44 @@ OS_API_C_FUNC(int) store_blk_staking(mem_zone_ref_ptr header)
 		free_string(&file_path);
 	}
 	free_string(&blk_path);
+
+
+	if (tx_list != PTR_NULL)
+	{
+		mem_zone_ref tx = { PTR_NULL };
+
+		if (tree_manager_get_child_at(tx_list, 1, &tx))
+		{
+			if (is_vout_null(&tx, 0))
+			{
+				mem_zone_ref vin = { PTR_NULL };
+				btc_addr_t	stake_addr;
+				uint64_t	stake_in;
+				if (get_tx_input(&tx, 0, &vin))
+				{
+					if (tree_manager_get_child_value_btcaddr(&vin, NODE_HASH("src addr"), stake_addr))
+					{
+						char			tchash[65];
+						hash_t			tx_hash;
+						unsigned int	n;
+
+						tree_manager_get_child_value_i64	(&vin, NODE_HASH("amount"), &stake_in);
+						tree_manager_get_child_value_hash	(&tx, NODE_HASH("tx hash"), tx_hash);
+						n = 32;
+						while (n--)
+						{
+							tchash[n * 2 + 0] = hex_chars[tx_hash[n] >> 4];
+							tchash[n * 2 + 1] = hex_chars[tx_hash[n] & 0x0F];
+						}
+						tchash[64] = 0;
+						store_tx_staking(&tx, tchash, stake_addr, stake_in);
+					}
+					release_zone_ref(&vin);
+				}
+			}
+			release_zone_ref(&tx);
+		}
+	}
 
 	return ret;
 }

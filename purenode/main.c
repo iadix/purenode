@@ -40,12 +40,25 @@ C_IMPORT int  C_API_FUNC load_blk_hdr(mem_zone_ref_ptr hdr, const char *blk_hash
 C_IMPORT int  C_API_FUNC make_genesis_block(mem_zone_ref_ptr genesis_conf, mem_zone_ref_ptr genesis);
 C_IMPORT int  C_API_FUNC get_last_block_height();
 C_IMPORT int  C_API_FUNC remove_block(hash_t blk_hash);
-C_IMPORT int	C_API_FUNC rescan_addr(btc_addr_t addr);
+C_IMPORT int	C_API_FUNC add_moneysupply(uint64_t amount);
+C_IMPORT int  C_API_FUNC get_tx_output(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr vout);
+C_IMPORT int  C_API_FUNC get_tx_input(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr vin);
+C_IMPORT int  C_API_FUNC is_tx_null(mem_zone_ref_const_ptr tx);
+C_IMPORT int  C_API_FUNC is_vout_null(mem_zone_ref_const_ptr tx, unsigned int idx);
+C_IMPORT int  C_API_FUNC load_tx_input(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr	vin, mem_zone_ref_ptr tx_out);
+C_IMPORT int  C_API_FUNC load_tx(mem_zone_ref_ptr tx, hash_t blk_hash, const char *tx_hash);
+C_IMPORT int  C_API_FUNC get_tx_output_amount(const hash_t tx_hash, unsigned int idx, uint64_t *amount);
+C_IMPORT uint64_t C_API_FUNC  get_blockreward(uint64_t block);
+
 C_IMPORT int			C_API_FUNC		SetCompact(unsigned int bits, hash_t out);
 C_IMPORT int			C_API_FUNC		is_pow_block(const char *blk_hash);
 C_IMPORT unsigned int	C_API_FUNC		calc_new_target(unsigned int nActualSpacing, unsigned int TargetSpacing, unsigned int nTargetTimespan, unsigned int pBits);
 C_IMPORT int			C_API_FUNC		compute_block_pow(mem_zone_ref_ptr block, hash_t hash);
 C_IMPORT int			C_API_FUNC		check_block_pow(mem_zone_ref_ptr hdr, hash_t diff_hash);
+C_IMPORT int			C_API_FUNC		 get_out_script_address(struct string *script, btc_addr_t addr);
+C_IMPORT int			C_API_FUNC		 add_unspent(btc_addr_t	addr, const char *tx_hash, unsigned int oidx, uint64_t amount, btc_addr_t *src_addrs, unsigned int n_addrs);
+C_IMPORT int			C_API_FUNC		 spend_tx_addr(btc_addr_t addr, const char *tx_hash, unsigned int vin, const char *ptx_hash, unsigned int oidx, btc_addr_t *addrs_to, unsigned int n_addrs_to);
+C_IMPORT int			C_API_FUNC		  get_tx_output_addr(const hash_t tx_hash, unsigned int idx, btc_addr_t addr);
 
 typedef int	C_API_FUNC node_init_self_func(mem_zone_ref_ptr out_self_node, mem_zone_ref_ptr node_config);
 typedef int	C_API_FUNC new_peer_node_func(struct host_def *host, mem_zone_ref_ptr peer_nodes);
@@ -66,11 +79,12 @@ typedef int	C_API_FUNC queue_emitted_element_func(mem_zone_ref_ptr node, mem_zon
 typedef int	C_API_FUNC queue_emitted_message_func(mem_zone_ref_ptr node, mem_zone_ref_ptr msg);
 typedef int	C_API_FUNC node_init_rpc_func(mem_zone_ref_ptr in_config);
 typedef int	C_API_FUNC check_rpc_request_func();
-typedef int	C_API_FUNC scan_addresses_func();
+
 
 
 typedef int	C_API_FUNC	init_pos_func(mem_zone_ref_ptr stake_conf);
-typedef int	C_API_FUNC	store_blk_staking_func(mem_zone_ref_ptr header);
+typedef int	C_API_FUNC	store_blk_staking_func(mem_zone_ref_ptr header,mem_zone_ref_ptr tx_list);
+typedef int	C_API_FUNC	store_tx_staking_func(mem_zone_ref_ptr tx, const char *tx_hash, btc_addr_t stake_addr, uint64_t	stake_in);
 typedef int	C_API_FUNC	compute_blk_staking_func(mem_zone_ref_ptr prev, mem_zone_ref_ptr hdr, mem_zone_ref_ptr tx_list, uint64_t *staking_reward);
 
 
@@ -94,11 +108,11 @@ typedef queue_emitted_element_func			 *queue_emitted_element_func_ptr;
 typedef queue_emitted_message_func			 *queue_emitted_message_func_ptr;
 typedef node_init_rpc_func					 *node_init_rpc_func_ptr;
 typedef check_rpc_request_func				 *check_rpc_request_func_ptr;
-typedef scan_addresses_func				 *scan_addresses_func_ptr;
 
 
 typedef init_pos_func						*init_pos_func_ptr;
 typedef store_blk_staking_func				*store_blk_staking_func_ptr;
+typedef store_tx_staking_func				*store_tx_staking_func_ptr;
 typedef compute_blk_staking_func			*compute_blk_staking_func_ptr;
 
 
@@ -123,12 +137,11 @@ C_IMPORT int			C_API_FUNC		queue_emitted_message(mem_zone_ref_ptr node, mem_zone
 
 C_IMPORT int			C_API_FUNC		node_init_rpc(mem_zone_ref_ptr in_config);
 C_IMPORT int			C_API_FUNC		check_rpc_request();
-C_IMPORT int			C_API_FUNC		scan_addresses();
 
 C_IMPORT int	C_API_FUNC	init_pos(mem_zone_ref_ptr stake_conf);
-C_IMPORT int	C_API_FUNC	store_blk_staking(mem_zone_ref_ptr header);
+C_IMPORT int	C_API_FUNC	store_blk_staking(mem_zone_ref_ptr header, mem_zone_ref_ptr tx_list);
 C_IMPORT int	C_API_FUNC	compute_blk_staking(mem_zone_ref_ptr prev, mem_zone_ref_ptr hdr, mem_zone_ref_ptr tx_list, uint64_t *staking_reward);
-
+C_IMPORT int	C_API_FUNC	store_tx_staking(mem_zone_ref_ptr tx, const char *tx_hash, btc_addr_t stake_addr, uint64_t	stake_in);
 
 node_init_self_func_ptr						_node_init_self=PTR_INVALID;
 new_peer_node_func_ptr						_new_peer_node=PTR_INVALID;
@@ -151,8 +164,8 @@ node_init_rpc_func_ptr						_node_init_rpc = PTR_INVALID;
 check_rpc_request_func_ptr					_check_rpc_request = PTR_INVALID;
 init_pos_func_ptr							_init_pos = PTR_INVALID;
 store_blk_staking_func_ptr					_store_blk_staking = PTR_INVALID;
+store_tx_staking_func_ptr					_store_tx_staking = PTR_INVALID;
 compute_blk_staking_func_ptr				_compute_blk_staking = PTR_INVALID;
-scan_addresses_func_ptr						_scan_addresses = PTR_INVALID;
 
 
 #else
@@ -178,8 +191,8 @@ queue_emitted_message_func_ptr				queue_emitted_message = PTR_INVALID;
 
 init_pos_func_ptr							init_pos= PTR_INVALID;
 store_blk_staking_func_ptr					store_blk_staking= PTR_INVALID;
+store_tx_staking_func_ptr					store_tx_staking = PTR_INVALID;
 compute_blk_staking_func_ptr				compute_blk_staking= PTR_INVALID;
-scan_addresses_func_ptr						scan_addresses = PTR_INVALID;
 #endif
 
 
@@ -212,8 +225,6 @@ int read_config(const char *file,struct string *port, struct string *node_hostna
 	
 	return ret;
 }
-
-
 /*
 void dump_tx_list(mem_zone_ref_ptr tx_list)
 {
@@ -280,6 +291,322 @@ void dump_block_header(mem_zone_ref_ptr hdr)
 	printf("\n");
 }
 */
+
+OS_API_C_FUNC(int) store_tx_wallet(btc_addr_t addr, hash_t tx_hash)
+{
+	char			 tchash[65];
+	hash_t			 blk_hash;
+	btc_addr_t	 	 to_addr_list[16];
+	btc_addr_t		 src_addr_list[16];
+	struct string	 tx_path = { 0 };
+	mem_zone_ref	 txin_list = { PTR_NULL }, txout_list = { PTR_NULL }, my_list = { PTR_NULL }, tx = { PTR_NULL };
+	mem_zone_ref_ptr input = PTR_NULL, out = PTR_NULL;
+	unsigned int	 n, oidx, iidx;
+	unsigned int	 n_to_addrs;
+	unsigned int	 n_in_addr;
+
+	if (!load_tx(&tx, blk_hash, tx_hash))return 0;
+	if (is_tx_null(&tx))
+	{
+		release_zone_ref(&tx);
+		return 0;
+	}
+	if (!tree_manager_find_child_node(&tx, NODE_HASH("txsin"), NODE_BITCORE_VINLIST, &txin_list))return 0;
+	if (!tree_manager_find_child_node(&tx, NODE_HASH("txsout"), NODE_BITCORE_VOUTLIST, &txout_list)){ release_zone_ref(&txin_list); return 0; }
+
+	n = 0;
+	while (n < 32)
+	{
+		tchash[n * 2 + 0] = hex_chars[tx_hash[n] >> 4];
+		tchash[n * 2 + 1] = hex_chars[tx_hash[n] & 0x0F];
+		n++;
+	}
+	tchash[64] = 0;
+
+	n_to_addrs = 0;
+	for (tree_manager_get_first_child(&txout_list, &my_list, &out); ((out != NULL) && (out->zone != NULL)); tree_manager_get_next_child(&my_list, &out))
+	{
+		struct string script = { 0 };
+		if (!tree_manager_get_child_value_istr(out, NODE_HASH("script"), &script, 16))continue;
+		if (script.len == 0){ free_string(&script); continue; }
+		if (get_out_script_address(&script, to_addr_list[n_to_addrs]))
+		{
+			unsigned int n, f;
+			f = 0;
+			for (n = 0; n < n_to_addrs; n++)
+			{
+				if (!memcmp_c(to_addr_list[n_to_addrs], to_addr_list[n], sizeof(btc_addr_t)))
+				{
+					f = 1;
+					break;
+				}
+			}
+			if (f == 0)
+				n_to_addrs++;
+		}
+		free_string(&script);
+	}
+
+
+	n_in_addr = 0;
+	for (iidx = 0, tree_manager_get_first_child(&txin_list, &my_list, &input); ((input != NULL) && (input->zone != NULL)); tree_manager_get_next_child(&my_list, &input), iidx++)
+	{
+		char			ptchash[65];
+		hash_t			prev_hash = { 0xFF };
+		struct string	out_path = { 0 };
+		int				n, my_addr;
+		uint64_t		amount;
+
+		tree_manager_get_child_value_hash(input, NODE_HASH("tx hash"), prev_hash);
+		tree_manager_get_child_value_i32(input, NODE_HASH("idx"), &oidx);
+
+		my_addr = 0;
+
+		//coin base
+		if (!memcmp_c(prev_hash, null_hash, sizeof(hash_t)))
+		{
+			memset_c(src_addr_list[0], '0', sizeof(btc_addr_t));
+			n_in_addr = 1;
+			continue;
+		}
+
+
+		if (get_tx_output_addr(prev_hash, oidx, src_addr_list[n_in_addr]))
+		{
+			unsigned int nn, f;
+			f = 0;
+			for (nn = 0; nn < n_in_addr; nn++)
+			{
+				if (!memcmp_c(src_addr_list[n_in_addr], src_addr_list[nn], sizeof(btc_addr_t)))
+				{
+					f = 1;
+					break;
+				}
+			}
+
+			if (!memcmp_c(addr, src_addr_list[n_in_addr], sizeof(btc_addr_t)))
+				my_addr = 1;
+
+			if (f == 0)
+				n_in_addr++;
+
+		}
+
+		if (my_addr)
+		{
+			n = 0;
+			while (n < 32)
+			{
+				ptchash[n * 2 + 0] = hex_chars[prev_hash[n] >> 4];
+				ptchash[n * 2 + 1] = hex_chars[prev_hash[n] & 0x0F];
+				n++;
+			}
+			ptchash[64] = 0;
+			spend_tx_addr(addr, tchash, iidx, ptchash, oidx, to_addr_list, n_to_addrs);
+
+			if (get_tx_output_amount(prev_hash, oidx, &amount))
+				tree_manager_set_child_value_i64(input, "amount", amount);
+			tree_manager_set_child_value_btcaddr(input, "src addr", addr);
+		}
+	}
+
+
+	out = PTR_NULL;
+	release_zone_ref(&my_list);
+
+	for (oidx = 0, tree_manager_get_first_child(&txout_list, &my_list, &out); ((out != NULL) && (out->zone != NULL)); oidx++, tree_manager_get_next_child(&my_list, &out))
+	{
+		btc_addr_t		out_addr = { 0 };
+		struct string	out_path = { 0 }, script = { 0 };
+		uint64_t		amount = 0;
+		int				ret;
+
+		tree_manager_get_child_value_istr(out, NODE_HASH("script"), &script, 0);
+		ret = get_out_script_address(&script, out_addr);
+		free_string(&script);
+
+		if (ret)
+		{
+			make_string(&out_path, "adrs");
+			cat_ncstring_p(&out_path, out_addr, 34);
+
+			/*
+			if (is_coinbase(&tx))
+			create_dir(out_path.str);
+			*/
+			if ((stat_file(out_path.str) == 0) && (!memcmp_c(addr, out_addr, sizeof(btc_addr_t))))
+			{
+				tree_manager_get_child_value_i64(out, NODE_HASH("value"), &amount);
+				add_unspent(out_addr, tchash, oidx, amount, src_addr_list, n_in_addr);
+			}
+			free_string(&out_path);
+		}
+	}
+	if (is_vout_null(&tx, 0))
+	{
+		mem_zone_ref	vin = { PTR_NULL };
+		btc_addr_t		stake_addr = { 0 };
+		uint64_t		stake_in = 0;
+
+		if (tree_manager_get_child_at(&txin_list, 0, &vin))
+		{
+			tree_manager_get_child_value_btcaddr(&vin, NODE_HASH("src addr"), stake_addr);
+			tree_manager_get_child_value_i64(&vin, NODE_HASH("amount"), &stake_in);
+			release_zone_ref(&vin);
+		}
+		release_zone_ref(&txin_list);
+
+		if (!memcmp_c(stake_addr, addr, sizeof(btc_addr_t)))
+			store_tx_staking(&tx, tchash, stake_addr, stake_in);
+	}
+
+	release_zone_ref(&txin_list);
+	release_zone_ref(&txout_list);
+	release_zone_ref(&tx);
+
+	return 1;
+
+}
+void reset_addr_scan()
+{
+	struct string	dir_list = { PTR_NULL };
+	size_t			cur, nfiles;
+
+	nfiles = get_sub_dirs("adrs", &dir_list);
+	if (nfiles > 0)
+	{
+		const char		*ptr, *optr;
+		unsigned int	dir_list_len;
+
+		dir_list_len = dir_list.len;
+		optr = dir_list.str;
+		cur = 0;
+		while (cur < nfiles)
+		{
+			struct string adr_path = { PTR_NULL };
+			mem_zone_ref	new_addr = { PTR_NULL };
+			size_t			sz;
+
+			ptr = memchr_c	(optr, 10, dir_list_len);
+			sz = mem_sub	(optr, ptr);
+
+
+			make_string(&adr_path, "adrs");
+			cat_ncstring_p(&adr_path, optr, 34);
+			cat_cstring_p(&adr_path, "scan");
+			del_file(adr_path.str);
+			free_string(&adr_path);
+			
+			cur++;
+			optr = ptr + 1;
+			dir_list_len -= sz;
+		}
+	}
+	free_string(&dir_list);
+
+}
+OS_API_C_FUNC(int) rescan_addr(btc_addr_t addr)
+{
+	char			chash[65];
+	struct string	scan_path = { 0 }, adr_path = { 0 };
+	unsigned int	n_blks, last_blk;
+	unsigned char	*data;
+	size_t			data_len;
+
+
+	n_blks = 0;
+	make_string(&adr_path, "adrs");
+	cat_ncstring_p(&adr_path, addr, 34);
+
+	clone_string(&scan_path, &adr_path);
+	cat_cstring_p(&scan_path, "scan");
+	if (get_file(scan_path.str, &data, &data_len)>0)
+	{
+		if (data_len >= 4)
+			n_blks = (*((unsigned int *)(data))) * 32;
+		else
+			del_file(scan_path.str);
+
+		free_c(data);
+	}
+	else if (stat_file(adr_path.str) == 0)
+	{
+		struct string path = { 0 };
+		clone_string(&path, &adr_path);
+		cat_cstring_p(&path, "spent");
+		rm_dir(path.str);
+		free_string(&path);
+
+		clone_string(&path, &adr_path);
+		cat_cstring_p(&path, "unspent");
+		rm_dir(path.str);
+		free_string(&path);
+
+		clone_string(&path, &adr_path);
+		cat_cstring_p(&path, "stake");
+		rm_dir(path.str);
+		free_string(&path);
+	}
+
+	if (!get_file("./blk_indexes", &data, &data_len))
+	{
+		free_string(&scan_path);
+		free_string(&adr_path);
+		return 0;
+	}
+
+
+	last_blk = 0;
+	while (n_blks<data_len)
+	{
+		struct string blk_path = { 0 };
+		int		n;
+		unsigned char *tx_list;
+		unsigned int  txs_len, ntx;
+
+		n = 0;
+		while (n<32)
+		{
+			chash[n * 2 + 0] = hex_chars[data[n_blks + n] >> 4];
+			chash[n * 2 + 1] = hex_chars[data[n_blks + n] & 0x0F];
+			n++;
+		}
+		chash[64] = 0;
+
+		make_string(&blk_path, "blks");
+		cat_ncstring_p(&blk_path, chash + 0, 2);
+		cat_ncstring_p(&blk_path, chash + 2, 2);
+		cat_cstring_p(&blk_path, chash);
+		cat_cstring_p(&blk_path, "txs");
+		if (get_file(blk_path.str, &tx_list, &txs_len) >0)
+		{
+			ntx = 0;
+			while (ntx < txs_len)
+			{
+				store_tx_wallet(addr, &tx_list[ntx]);
+				
+				ntx += 32;
+			}
+			free_c(tx_list);
+		}
+		n_blks += 32;
+		free_string(&blk_path);
+
+		if ((n_blks - last_blk) >= 100 * 32)
+		{
+			unsigned int bl = n_blks / 32;
+			put_file(scan_path.str, &bl, sizeof(unsigned int));
+			last_blk = n_blks;
+		}
+	}
+	free_c(data);
+	del_file(scan_path.str);
+	free_string(&scan_path);
+	free_string(&adr_path);
+
+	return 1;
+}
+
 
 
 int handle_version(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
@@ -530,6 +857,7 @@ int get_last_pow_diff(mem_zone_ref_ptr lastBlk, unsigned int	*pBits, int64_t *sp
 
 int handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 {
+	size_t				nblks;
 	hash_t				prevHash, lastHash, blk_hash;
 	mem_zone_ref		header = { PTR_NULL }, tx_list = { PTR_NULL };
 	int					ret;
@@ -593,25 +921,31 @@ int handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 	if (ret)
 	{
 		mem_zone_ref	log = { PTR_NULL };
-		size_t			size,nz=0;
+		size_t nz=0;
 
 		if (strlen_c(pos_kernel.name) > 0)
-			store_blk_staking(&header);
+			store_blk_staking(&header,&tx_list);
 #ifdef _DEBUG
 		nz = find_zones_used(3);
 #endif
-		size = file_size("./blk_indexes") / 32;
+		nblks = get_last_block_height();
 		tree_manager_create_node("log", NODE_LOG_PARAMS, &log);
-		tree_manager_set_child_value_i32(&log, "nblocks", size);
+		tree_manager_set_child_value_i32(&log, "nblocks", nblks);
 		tree_manager_set_child_value_i32(&log, "zones", nz);
 		log_message("block height : %nblocks% , %zones%\n", &log);
 		release_zone_ref(&log);
 		tree_manager_set_child_value_i64(node, "next_check", get_time_c() + 10);
 	}
-
 	
 	if (ret)
+	{
+		if (staking_reward == 0)
+			add_moneysupply	(get_blockreward(nblks));
+		else
+			add_moneysupply	(staking_reward);
+
 		copy_zone_ref(&lastBlk, &header);
+	}
 
 	release_zone_ref(&header);
 	release_zone_ref(&tx_list);
@@ -745,6 +1079,44 @@ int update_nodes()
 	}
 	return 1;
 }
+
+
+int C_API_FUNC scanaddr_func(mem_zone_ref_ptr p, unsigned int *status)
+{
+	btc_addr_t			new_addr;
+	tree_manager_init(1024 * 1024);
+	tree_manager_get_node_btcaddr(p, 0, new_addr);
+	*status = 1;
+	rescan_addr(new_addr);
+	tree_manager_free();
+
+	return 1;
+}
+OS_API_C_FUNC(int) scan_addresses()
+{
+	mem_zone_ref scan_list = { PTR_NULL };
+
+	if (tree_manager_find_child_node(&self_node, NODE_HASH("addr scan list"), NODE_BITCORE_WALLET_ADDR_LIST, &scan_list))
+	{
+		mem_zone_ref_ptr	addr = PTR_NULL;
+		mem_zone_ref		my_list = { PTR_NULL };
+		for (tree_manager_get_first_child(&scan_list, &my_list, &addr); ((addr != NULL) && (addr->zone != NULL)); tree_manager_get_next_child(&my_list, &addr))
+		{
+
+			mem_zone_ref new_addr = { PTR_NULL };
+			if (tree_manager_find_child_node(addr, NODE_HASH("addr"), NODE_BITCORE_WALLET_ADDR, &new_addr))
+			{
+				background_func(scanaddr_func, &new_addr);
+			}
+			tree_manager_set_child_value_i32(addr, "done", 1);
+		}
+		tree_remove_child_by_member_value_dword(&scan_list, NODE_BITCORE_WALLET_ADDR, "done", 1);
+		release_zone_ref(&scan_list);
+	}
+
+	return 1;
+}
+
 int process_nodes()
 {
 	mem_zone_ref_ptr	node = PTR_NULL;
@@ -789,10 +1161,13 @@ int load_pos_module(const char *staking_kernel,tpo_mod_file *tpomod)
 #ifdef _DEBUG
 	_init_pos = get_tpo_mod_exp_addr_name(tpomod, "init_pos", 0);
 	_store_blk_staking = get_tpo_mod_exp_addr_name(tpomod, "store_blk_staking", 0);
+	_store_tx_staking  = get_tpo_mod_exp_addr_name(tpomod, "store_tx_staking", 0);
+	
 	_compute_blk_staking = get_tpo_mod_exp_addr_name(tpomod, "compute_blk_staking", 0);
 #else
 	init_pos = get_tpo_mod_exp_addr_name(tpomod, "init_pos", 0);
 	store_blk_staking = get_tpo_mod_exp_addr_name(tpomod, "store_blk_staking", 0);
+	store_tx_staking = get_tpo_mod_exp_addr_name(tpomod, "store_tx_staking", 0);
 	compute_blk_staking = get_tpo_mod_exp_addr_name(tpomod, "compute_blk_staking", 0);
 #endif
 	return ret;
@@ -824,7 +1199,6 @@ void load_node_module(mem_zone_ref_ptr node_config)
 	_queue_send_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_send_message", 0);
 	_queue_emitted_element = get_tpo_mod_exp_addr_name(&node_mod, "queue_emitted_element", 0);
 	_queue_emitted_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_emitted_message", 0);
-	_scan_addresses= get_tpo_mod_exp_addr_name(&node_mod, "scan_addresses", 0);
 
 #else
 	node_init_self = get_tpo_mod_exp_addr_name(&node_mod, "node_init_self", 0);
@@ -846,7 +1220,6 @@ void load_node_module(mem_zone_ref_ptr node_config)
 	queue_send_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_send_message", 0);
 	queue_emitted_element = get_tpo_mod_exp_addr_name(&node_mod, "queue_emitted_element", 0);
 	queue_emitted_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_emitted_message", 0);
-	scan_addresses = get_tpo_mod_exp_addr_name(&node_mod, "scan_addresses", 0);
 #endif
 }
 
@@ -941,7 +1314,7 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 		if (load_pos_module(staking_kernel, &pos_kernel))
 		{
 			init_pos(&stake_conf);
-			store_blk_staking(&genesis);
+			store_blk_staking(&genesis,PTR_NULL);
 		}
 		release_zone_ref(&stake_conf);
 	}
@@ -981,6 +1354,8 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 		return 0;
 	}
 	free_host_def(seed_host);
+
+	reset_addr_scan();
 		
 	if (tree_manager_find_child_node(&node_config, NODE_HASH("rpc_wallet"), 0xFFFFFFFF, &rpc_wallet_conf))
 	{

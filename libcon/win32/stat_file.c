@@ -269,8 +269,15 @@ OS_API_C_FUNC(int) truncate_file(const char *path, unsigned int ofset,const void
 
 	ret = fopen_s(&f, path, "ab+");
 	if (f == NULL)return 0;
-	fseek(f, ofset, SEEK_SET);
-	len = fwrite(data, data_len, 1, f);
+	
+	if (data != PTR_NULL)
+	{
+		fseek		(f, ofset, SEEK_SET);
+		len = fwrite(data, data_len, 1, f);
+	}
+	else
+		_chsize_s(_fileno(f), ofset);
+
 	fclose(f);
 	return 1;
 
