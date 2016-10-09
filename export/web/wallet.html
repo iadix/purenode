@@ -64,6 +64,9 @@
     <script language="javascript">
         var addrs = null;
         var unspents = null;
+	   var moneysupply=null;
+
+
         var recvs = null;
         var scanTimer = null;
         var blockTimer = null;
@@ -112,6 +115,8 @@
 
         function update_unspent() {
             var total;
+		if(unspents==null)return;
+
             var num_unspents = unspents.length;
 
            
@@ -162,6 +167,8 @@
             old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
         }
         function update_spent() {
+		if(spents==null)return;
+
             var total;
             var thead;
             var num_spents = spents.length;
@@ -211,6 +218,8 @@
             old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
         }
         function update_recvs() {
+		if(recvs==null)return;
+
             var total;
             var thead;
             var num_recvs = recvs.length;
@@ -262,6 +271,7 @@
         }
 
         function update_addr_list() {
+		 if(addrs==null)return;
             var num_addrs = addrs.length;
             old_tbody = document.getElementById("address_list_table").tBodies[0];
             new_tbody = document.createElement('tbody');
@@ -337,10 +347,13 @@
         }
         function get_infos() {
             rpc_call('getinfos', [], function (data) {
+
+			moneysupply=data.result.moneysupply;
                 $('#node_ip').html(data.result.ip);
                 $('#node_port').html(data.result.p2pport);
                 $('#node_paytxfee').html(data.result.paytxfee);
                 $('#node_balance').html(data.result.balance);
+                $('#node_supply').html(moneysupply/unit);
                 
                 $('#node_version').html(data.result.version);
                 $('#protocol_version').html(data.result.protocolversion);
@@ -381,12 +394,12 @@
 </head>
 <body>
     <div>
-        <div><span>Units : </span><select onchange="unit = this.options[this.selectedIndex].value; update_addr_list(); update_unspent(); update_spent(); update_recvs();" id="units" name="units"><option value="1">satoshis</option><option value="1000000">cents</option><option value="100000000">coin</option></select></div>
+        <div><span>Units : </span><select onchange="unit = this.options[this.selectedIndex].value; $('#node_supply').html(moneysupply/unit); update_addr_list(); update_unspent(); update_spent(); update_recvs();" id="units" name="units"><option value="1">satoshis</option><option value="1000000">cents</option><option value="100000000">coin</option></select></div>
         <div>block height : <span id="blockcount"></span></div>
         <div>
             <div><span id="node_version"></span><span id="node_ip"></span>:<span id="node_port"></span>&nbsp;protocol : <span id="protocol_version"></span>&nbsp;wallet: <span id="protocol_walletversion"></span></div>
             <div>tx fees:<span id="node_paytxfee"></span></div>
-            <div>balance:<span id="node_balance"></span></div>
+            <div>supply:<span id="node_supply"></span><br/>balance:<span id="node_balance"></span></div>
             
             
             
