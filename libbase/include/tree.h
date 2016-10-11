@@ -174,6 +174,7 @@ LIBBASE_API  unsigned int	C_API_FUNC	tree_manager_node_add_child				(mem_zone_re
 LIBBASE_API  int			C_API_FUNC	tree_manager_node_dup					(mem_zone_ref_ptr new_parent,mem_zone_ref_ptr src_ref_ptr,mem_zone_ref_ptr new_ref_ptr);
 LIBBASE_API  int			C_API_FUNC	tree_manager_node_dup_one				(mem_zone_ref_ptr src_ref_ptr,mem_zone_ref_ptr new_ref_ptr);
 LIBBASE_API  int			C_API_FUNC	tree_manager_copy_children				(mem_zone_ref_ptr dest_ref_ptr,mem_zone_ref_const_ptr src_ref_ptr);
+LIBBASE_API  int			C_API_FUNC	tree_manager_copy_children_ref			(mem_zone_ref_ptr dest_ref_ptr, mem_zone_ref_const_ptr src_ref_ptr);
 LIBBASE_API  int			C_API_FUNC	tree_manager_get_child_at				(mem_zone_ref_const_ptr parent_ref_ptr	,unsigned int index,mem_zone_ref_ptr ref_ptr);
 LIBBASE_API  int			C_API_FUNC	tree_manager_find_child_node			(mem_zone_ref_const_ptr parent_ref_ptr	,unsigned int crc_name,unsigned int type,mem_zone_ref_ptr ref_ptr);
 

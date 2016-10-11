@@ -141,7 +141,7 @@ OS_API_C_FUNC(size_t) file_size(const char *path)
 	OFSTRUCT of;
 	size_t size;
 	HANDLE h;
-	if ((h = OpenFile(path, &of, 0)) == INVALID_HANDLE_VALUE)
+	if ((h = CreateFile(path, FILE_WRITE_ATTRIBUTES, 0, 0, OPEN_EXISTING, 0, 0)) == INVALID_HANDLE_VALUE)
 		return 0;
 
 	size = GetFileSize(h, NULL);

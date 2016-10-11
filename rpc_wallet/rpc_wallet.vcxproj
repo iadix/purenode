@@ -61,7 +61,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libbase_d.lib;libcon_d.lib;block_adx_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libbase_d.lib;libcon_d.lib;block_adx_d.lib;stake_pos3_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)export\</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>

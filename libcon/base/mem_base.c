@@ -10,6 +10,8 @@
 #include "tpo_mod.h"
 #include "fsio.h"
 
+#include <math.h>
+
 
  LIBC_API void	*	C_API_FUNC kernel_memory_map_c				(unsigned int size);
  LIBC_API void		C_API_FUNC kernel_memory_free_c				(mem_ptr ptr);
@@ -541,9 +543,8 @@ OS_API_C_FUNC(void) init_mem_system()
 	sys_add_tpo_mod_func_name("libcon", "mul64", mul64, 0);
 	sys_add_tpo_mod_func_name("libcon", "shl64", shl64, 0);
 	sys_add_tpo_mod_func_name("libcon", "shr64", shr64, 0);
-
-
-	
+	sys_add_tpo_mod_func_name("libcon", "big128_mul", big128_mul, 0);
+		
 
 	sys_add_tpo_mod_func_name("libcon", "calc_crc32_c", calc_crc32_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "compare_z_exchange_c", compare_z_exchange_c, 0);
@@ -1594,4 +1595,40 @@ OS_API_C_FUNC(uint64_t) muldiv64(uint64_t a, uint64_t b, uint64_t c)
 	tmp = a	* b;
 	tmp = tmp / c;
 	return tmp;
+}
+
+#define UINT32_MAX 0xFFFFFFFF
+
+OS_API_C_FUNC(void) big128_mul(unsigned int x, struct big64 y, struct big128 *out)
+{
+	/* x * y = (z2 << 64) + (z1 << 32) + z0
+	* where z2 = x1 * y1
+	*       z1 = x0 * y1 + x1 * y0
+	*       z0 = x0 * y0
+	*/
+	uint64_t x0 = x, x1 = 0, y0 = y.v[0], y1 = y.v[1];
+	uint64_t z0 = x0 * y0;
+	uint64_t z1a = x1 * y0;
+	uint64_t z1b = x0 * y1;
+	uint64_t z2 = x1 * y1;
+
+	unsigned int z0l = z0 & UINT32_MAX;
+	unsigned int z0h = z0 >> 32u;
+
+	uint64_t z1al = z1a & UINT32_MAX;
+	uint64_t z1bl = z1b & UINT32_MAX;
+	uint64_t z1l = z1al + z1bl + z0h;
+
+	uint64_t z1h = (z1a >> 32u) + (z1b >> 32u) + (z1l >> 32u);
+	z2 += z1h;
+
+	out->v[0] = z0l;
+	out->v[1] = z1l & UINT32_MAX;
+	out->v[2] = z2 & UINT32_MAX;
+	out->v[3] = z2 >> 32u;
+}
+
+OS_API_C_FUNC(double) exp_c(double a)
+{
+	return exp(a);
 }
