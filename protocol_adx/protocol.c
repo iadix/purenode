@@ -1084,7 +1084,7 @@ OS_API_C_FUNC(int) create_verack_message(mem_zone_ref_ptr node, mem_zone_ref_ptr
 
 OS_API_C_FUNC(int) create_getdata_message(mem_zone_ref_ptr node, mem_zone_ref_ptr hash_list, mem_zone_ref_ptr blk_hdr_pack)
 {
-	mem_zone_ref		inv_vec = { PTR_NULL },payload = { PTR_NULL };
+	mem_zone_ref		inv_vec = { PTR_NULL }, payload = { PTR_NULL }, nhashl = { PTR_NULL };
 	size_t				pl_size;
 	int					cnt;
 
@@ -1093,8 +1093,10 @@ OS_API_C_FUNC(int) create_getdata_message(mem_zone_ref_ptr node, mem_zone_ref_pt
 
 	cnt = tree_manager_get_node_num_children(hash_list);
 
-	tree_manager_add_child_node(blk_hdr_pack, "payload", NODE_BITCORE_PAYLOAD, &payload);
-	tree_manager_node_add_child(&payload, hash_list);
+	tree_manager_add_child_node		(blk_hdr_pack, "payload", NODE_BITCORE_PAYLOAD, &payload);
+	tree_manager_add_child_node		(&payload, "hash list", NODE_BITCORE_HASH_LIST, &nhashl);
+	tree_manager_copy_children		(&nhashl, hash_list);
+	release_zone_ref				(&nhashl);
 	pl_size = compute_payload_size(&payload);
 	release_zone_ref(&payload);
 

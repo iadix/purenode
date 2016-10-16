@@ -530,6 +530,9 @@ OS_API_C_FUNC(void) init_mem_system()
 	sys_add_tpo_mod_func_name("libcon", "strlen_c", strlen_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "strlpos_c", strlpos_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "strtol_c", strtol_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "strtoll_c", strtoll_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "str_replace_char_c", str_replace_char_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "parseDate", parseDate, 0);
 	sys_add_tpo_mod_func_name("libcon", "strtoul_c", strtoul_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "stricmp_c", stricmp_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "uitoa_s", uitoa_s, 0);

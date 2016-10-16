@@ -584,3 +584,29 @@ OS_API_C_FUNC(int)kernel_memory_free_c(mem_ptr ptr)
 	 free_string(&dir_list);
 	 return del_dir(dir);
  }
+ int extractDate(const char * s){
+	 unsigned int	y, m, d;
+	 struct tm t;
+
+	 y = strtoul(s, PTR_NULL, 10);
+	 m = strtoul(&s[5], PTR_NULL, 10);
+	 d = strtoul(&s[8], PTR_NULL, 10);
+
+	 memset_c(&t, 0, sizeof(struct tm));
+	 
+	t.tm_mday = d;
+	t.tm_mon = m - 1;
+	t.tm_year = y - 1900;
+	t.tm_isdst = -1;
+
+	 // normalize:
+	 return mktime(&t);
+ }
+ OS_API_C_FUNC(unsigned int) parseDate(const char *date)
+ {
+	 int			n;
+	 n		= strlen_c(date);
+	 if (n < 10)return 0;
+	 
+	 return extractDate(date);
+ }

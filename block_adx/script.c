@@ -179,7 +179,37 @@ int serialize_script(mem_zone_ref_ptr script_node, struct string *script)
 	}
 	return 1;
 }
+OS_API_C_FUNC(int) get_in_script_address(struct string *script, btc_addr_t addr)
+{
+	hash_t			tmp_hash, fhash;
+	char			hash[21];
+	unsigned char	hin[32];
+	unsigned char  *p;
+	p = (unsigned char  *)script->str;
 
+	if ((p[0] == 72) && (script->len == 73))
+	{
+		return 0;
+	}
+	else if ((p[0] == 72) && (p[73] == 33) && (script->len == 107))
+	{
+		char		pkey[33];
+		memcpy_c(pkey, &p[73], 33);
+		mbedtls_sha256(script->str + 1, 33, tmp_hash, 0);
+
+		hin[0] = pubKeyPrefix;
+		ripemd160(tmp_hash, 32, &hin[1]);
+
+		mbedtls_sha256(hin, 21, tmp_hash, 0);
+		mbedtls_sha256(tmp_hash, 32, fhash, 0);
+
+		memcpy_c(&hin[21], fhash, 4);
+		base58(hin, addr);
+		return 1;
+	}
+
+	return 0;
+}
 
 OS_API_C_FUNC(int) get_out_script_address(struct string *script, btc_addr_t addr)
 {
@@ -215,7 +245,7 @@ OS_API_C_FUNC(int) get_out_script_address(struct string *script, btc_addr_t addr
 		memcpy_c(hin, hash, 21);
 		memcpy_c(&hin[21], fhash, 4);
 		base58	(hin, addr);
-		return 1;
+		return 2;
 	}
 	return 0;
 }

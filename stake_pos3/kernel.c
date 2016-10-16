@@ -16,7 +16,7 @@ static int64_t	TargetSpacing = 0xFFFFFFFF;
 static int64_t	nTargetTimespan = 0xFFFFFFFF;
 static int64_t	nStakeReward= 0xFFFFFFFF;
 
-
+C_IMPORT int			C_API_FUNC  load_blk_tx_input(const char *blk_hash, unsigned int tx_idx, unsigned int vin_idx, mem_zone_ref_ptr vout);
 C_IMPORT int  C_API_FUNC load_blk_hdr			(mem_zone_ref_ptr hdr, const char *blk_hash);
 C_IMPORT int  C_API_FUNC get_tx_output			(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr vout);
 C_IMPORT int  C_API_FUNC get_tx_input			(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr vin);
@@ -204,7 +204,7 @@ OS_API_C_FUNC(int) load_last_pos_blk(mem_zone_ref_ptr header)
 
 
 
-OS_API_C_FUNC(int) store_tx_staking(mem_zone_ref_ptr tx, const char *tx_hash, btc_addr_t stake_addr, uint64_t	stake_in)
+OS_API_C_FUNC(int) store_tx_staking(mem_zone_ref_ptr tx, hash_t tx_hash, btc_addr_t stake_addr, uint64_t	stake_in)
 {
 	mem_zone_ref	 txout_list = { PTR_NULL }, my_list = { PTR_NULL };
 	mem_zone_ref_ptr out = PTR_NULL;
@@ -232,11 +232,19 @@ OS_API_C_FUNC(int) store_tx_staking(mem_zone_ref_ptr tx, const char *tx_hash, bt
 	}
 	staked = stake_out - stake_in;
 
+
+	cat_cstring_p(&stake_path, "stakes");
+	append_file	(stake_path.str, &staked, sizeof(uint64_t));
+	append_file	(stake_path.str, tx_hash, sizeof(hash_t));
+	free_string(&stake_path);
+
+	/*
 	cat_cstring_p(&stake_path, "stake");
 	create_dir(stake_path.str);
 	cat_cstring_p(&stake_path, tx_hash);
 	put_file(stake_path.str, &staked, sizeof(uint64_t));
 	free_string(&stake_path);
+	*/
 
 	return 1;
 
@@ -294,20 +302,12 @@ OS_API_C_FUNC(int) store_blk_staking(mem_zone_ref_ptr header, mem_zone_ref_ptr t
 				{
 					if (tree_manager_get_child_value_btcaddr(&vin, NODE_HASH("src addr"), stake_addr))
 					{
-						char			tchash[65];
 						hash_t			tx_hash;
-						unsigned int	n;
-
+						
 						tree_manager_get_child_value_i64	(&vin, NODE_HASH("amount"), &stake_in);
 						tree_manager_get_child_value_hash	(&tx, NODE_HASH("tx hash"), tx_hash);
-						n = 32;
-						while (n--)
-						{
-							tchash[n * 2 + 0] = hex_chars[tx_hash[n] >> 4];
-							tchash[n * 2 + 1] = hex_chars[tx_hash[n] & 0x0F];
-						}
-						tchash[64] = 0;
-						store_tx_staking(&tx, tchash, stake_addr, stake_in);
+			
+						store_tx_staking(&tx, tx_hash, stake_addr, stake_in);
 					}
 					release_zone_ref(&vin);
 				}
@@ -334,7 +334,7 @@ OS_API_C_FUNC(int) get_pos_block(const char *blk_hash, hash_t pos)
 	{
 		if (len >= sizeof(hash_t))
 		{
-			memcpy(pos, data, sizeof(hash_t));
+			memcpy_c(pos, data, sizeof(hash_t));
 			ret = 1;
 		}
 		free_c(data);
@@ -342,20 +342,45 @@ OS_API_C_FUNC(int) get_pos_block(const char *blk_hash, hash_t pos)
 	return ret;
 }
 
-OS_API_C_FUNC(int) get_blk_staking_infos(mem_zone_ref_ptr blk,const char *blk_hash, mem_zone_ref_ptr infos)
+OS_API_C_FUNC(int) get_blk_staking_infos(mem_zone_ref_ptr blk, const char *blk_hash, mem_zone_ref_ptr infos)
 {
-	hash_t stakemod;
-	unsigned int staketime;
-	unsigned char *data;
+	hash_t stakemod, rdiff, diff;
+	mem_zone_ref vout = { PTR_NULL };
+	unsigned int staketime, nBits;
+	unsigned char *data, n;
+	uint64_t weight;
 	size_t len;
 	struct string blk_path = { 0 }, file_path = { 0 };
-	hash_t hash;
+
+	tree_manager_get_child_value_i32(blk, NODE_HASH("bits"), &nBits);
+
+	tree_manager_set_child_value_i64(infos, "reward", nStakeReward);
 
 	if (get_last_stake_modifier(blk, stakemod, &staketime))
 		tree_manager_set_child_value_hash(infos, "stakemodifier2", stakemod);
 	else
 		tree_manager_set_child_value_hash(infos, "stakemodifier2", nullhash);
 
+	if (load_blk_tx_input(blk_hash, 1, 0, &vout))
+	{
+		tree_manager_get_child_value_i64(&vout, NODE_HASH("value"), &weight);
+		tree_manager_set_child_value_i64(infos, "stake weight", weight);
+		release_zone_ref(&vout);
+		mul_compact(nBits, weight, rdiff);
+	}
+	else
+	{
+		SetCompact(nBits, diff);
+		n = 32;
+		while (n--)
+		{
+			rdiff[n] = diff[31 - n];
+		}
+
+	}
+
+
+	tree_manager_set_child_value_hash(infos, "hbits", rdiff);
 
 	make_string(&blk_path, "blks");
 	cat_ncstring_p(&blk_path, blk_hash + 0, 2);
@@ -373,6 +398,9 @@ OS_API_C_FUNC(int) get_blk_staking_infos(mem_zone_ref_ptr blk,const char *blk_ha
 		free_c(data);
 	}
 	free_string(&file_path);
+	free_string(&blk_path);
+
+	return 1;
 
 }
 

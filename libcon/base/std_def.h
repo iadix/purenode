@@ -37,8 +37,14 @@
 	#ifndef UINT_MAX		
 		#define LONG_MAX		0x7FFFFFFFL
 		#define LONG_MIN		((long) 0x80000000L)
+		#define LONGLONG_MAX	0x7FFFFFFFFFFFFFFFL
+		#define LONGLONG_MIN	((long) 0x80000000L)
+
 
 		#define UINT_MAX		0xffffffffUL
+		#define ULONG64_MAX		0xFFFFFFFFFFFFFFFFUL
+		#define ULONG64_MIN		0x00000000L
+
 		#define ULONG_MAX		0xffffffffUL
 		#define ULONG_MIN		0x00000000L
 		#define CHAR_BIT		8						/* number of bits in a char */

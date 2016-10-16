@@ -28,7 +28,6 @@ tpo_mod_file		node_mod = { 0xFF };
 tpo_mod_file		pos_kernel = { 0xFF };
 unsigned int		ping_nonce = 0x01;
 
-
 C_EXPORT int _fltused = 0;
 C_EXPORT mod_name_decoration_t	 mod_name_deco_type = MOD_NAME_DECO;
 
@@ -44,7 +43,6 @@ C_IMPORT int			C_API_FUNC is_tx_null(mem_zone_ref_const_ptr tx);
 C_IMPORT int			C_API_FUNC is_vout_null(mem_zone_ref_const_ptr tx, unsigned int idx);
 C_IMPORT int			C_API_FUNC load_tx(mem_zone_ref_ptr tx, hash_t blk_hash, const char *tx_hash);
 C_IMPORT int			C_API_FUNC get_tx_output_amount(const hash_t tx_hash, unsigned int idx, uint64_t *amount);
-C_IMPORT uint64_t		C_API_FUNC get_blockreward(uint64_t block);
 C_IMPORT int			C_API_FUNC	SetCompact(unsigned int bits, hash_t out);
 C_IMPORT int			C_API_FUNC	is_pow_block(const char *blk_hash);
 C_IMPORT unsigned int	C_API_FUNC	calc_new_target(unsigned int nActualSpacing, unsigned int TargetSpacing, unsigned int nTargetTimespan, unsigned int pBits);
@@ -79,6 +77,7 @@ typedef int				C_API_FUNC queue_emitted_element_func(mem_zone_ref_ptr node, mem_
 typedef int				C_API_FUNC queue_emitted_message_func(mem_zone_ref_ptr node, mem_zone_ref_ptr msg);
 typedef int				C_API_FUNC node_init_rpc_func(mem_zone_ref_ptr in_config,tpo_mod_file *pos);
 typedef int				C_API_FUNC check_rpc_request_func();
+typedef int				C_API_FUNC node_init_block_explorer_func(mem_zone_ref_ptr in_config, tpo_mod_file *pos_mod);
 
 typedef node_init_self_func					 *node_init_self_func_ptr;
 typedef node_set_last_block_func			 *node_set_last_block_func_ptr;
@@ -103,6 +102,7 @@ typedef queue_emitted_element_func			 *queue_emitted_element_func_ptr;
 typedef queue_emitted_message_func			 *queue_emitted_message_func_ptr;
 typedef node_init_rpc_func					 *node_init_rpc_func_ptr;
 typedef check_rpc_request_func				 *check_rpc_request_func_ptr;
+typedef node_init_block_explorer_func		 *node_init_block_explorer_func_ptr;
 
 
 
@@ -111,7 +111,7 @@ typedef check_rpc_request_func				 *check_rpc_request_func_ptr;
 //POS kernel module
 typedef int				C_API_FUNC	init_pos_func(mem_zone_ref_ptr stake_conf);
 typedef int				C_API_FUNC	store_blk_staking_func(mem_zone_ref_ptr header,mem_zone_ref_ptr tx_list);
-typedef int				C_API_FUNC	store_tx_staking_func(mem_zone_ref_ptr tx, const char *tx_hash, btc_addr_t stake_addr, uint64_t	stake_in);
+typedef int				C_API_FUNC	store_tx_staking_func(mem_zone_ref_ptr tx, hash_t tx_hash, btc_addr_t stake_addr, uint64_t	stake_in);
 typedef int				C_API_FUNC	compute_blk_staking_func(mem_zone_ref_ptr prev, mem_zone_ref_ptr prevPOS, mem_zone_ref_ptr hdr, mem_zone_ref_ptr tx_list, uint64_t *staking_reward);
 typedef int				C_API_FUNC	compute_last_pos_diff_func(mem_zone_ref_ptr lastPOS, unsigned int *nBits);
 typedef unsigned int	C_API_FUNC	get_current_pos_difficulty_func();
@@ -153,6 +153,7 @@ C_IMPORT int			C_API_FUNC		queue_send_message(mem_zone_ref_ptr node, mem_zone_re
 C_IMPORT int			C_API_FUNC		queue_emitted_element(mem_zone_ref_ptr node, mem_zone_ref_ptr element);
 C_IMPORT int			C_API_FUNC		queue_emitted_message(mem_zone_ref_ptr node, mem_zone_ref_ptr msg);
 C_IMPORT int			C_API_FUNC		node_init_rpc(mem_zone_ref_ptr in_config, tpo_mod_file *pos);
+C_IMPORT int			C_API_FUNC		node_init_block_explorer(mem_zone_ref_ptr in_config, tpo_mod_file *pos_mod);
 C_IMPORT int			C_API_FUNC		check_rpc_request();
 
 
@@ -160,7 +161,7 @@ C_IMPORT int			C_API_FUNC		init_pos(mem_zone_ref_ptr stake_conf);
 C_IMPORT int			C_API_FUNC		store_blk_staking(mem_zone_ref_ptr header, mem_zone_ref_ptr tx_list);
 C_IMPORT int			C_API_FUNC		compute_blk_staking(mem_zone_ref_ptr prev, mem_zone_ref_ptr prevPOS, mem_zone_ref_ptr hdr, mem_zone_ref_ptr tx_list, uint64_t *staking_reward);
 C_IMPORT int			C_API_FUNC		compute_last_pos_diff(mem_zone_ref_ptr lastPOS, unsigned int *nBits);
-C_IMPORT int			C_API_FUNC		store_tx_staking(mem_zone_ref_ptr tx, const char *tx_hash, btc_addr_t stake_addr, uint64_t	stake_in);
+C_IMPORT int			C_API_FUNC		store_tx_staking(mem_zone_ref_ptr tx, hash_t tx_hash, btc_addr_t stake_addr, uint64_t	stake_in);
 C_IMPORT unsigned int	C_API_FUNC		get_current_pos_difficulty();
 C_IMPORT int			C_API_FUNC		load_last_pos_blk(mem_zone_ref_ptr header);
 C_IMPORT int			C_API_FUNC		store_last_pos_hash(hash_t hash);
@@ -189,7 +190,7 @@ queue_emitted_element_func_ptr				_queue_emitted_element=PTR_INVALID;
 queue_emitted_message_func_ptr				_queue_emitted_message=PTR_INVALID;
 node_init_rpc_func_ptr						_node_init_rpc = PTR_INVALID;
 check_rpc_request_func_ptr					_check_rpc_request = PTR_INVALID;
-
+node_init_block_explorer_func_ptr			_node_init_block_explorer = PTR_INVALID;
 
 
 
@@ -241,6 +242,7 @@ get_current_pos_difficulty_func_ptr			get_current_pos_difficulty = PTR_INVALID;
 load_last_pos_blk_func_ptr					load_last_pos_blk = PTR_INVALID;
 store_last_pos_hash_func_ptr				store_last_pos_hash = PTR_INVALID;
 find_last_pos_block_func_ptr				find_last_pos_block = PTR_INVALID;
+node_init_block_explorer_func_ptr			node_init_block_explorer;
 #endif
 
 
@@ -499,7 +501,7 @@ OS_API_C_FUNC(int) store_tx_wallet(btc_addr_t addr, hash_t tx_hash)
 		release_zone_ref(&txin_list);
 
 		if (!memcmp_c(stake_addr, addr, sizeof(btc_addr_t)))
-			store_tx_staking(&tx, tchash, stake_addr, stake_in);
+			store_tx_staking(&tx, tx_hash, stake_addr, stake_in);
 	}
 
 	release_zone_ref(&txin_list);
@@ -598,6 +600,11 @@ OS_API_C_FUNC(int) rescan_addr(btc_addr_t addr)
 		clone_string(&path, &adr_path);
 		cat_cstring_p(&path, "stake");
 		rm_dir(path.str);
+		free_string(&path);
+
+		clone_string(&path, &adr_path);
+		cat_cstring_p(&path, "stakes");
+		del_file(path.str);
 		free_string(&path);
 	}
 
@@ -874,13 +881,22 @@ int compute_last_pow_diff(mem_zone_ref_ptr lastPOWBlk,unsigned int *nBits)
 	return 0;
 }
 
+OS_API_C_FUNC(uint64_t) get_blockreward(uint64_t block)
+{
+	uint64_t block_reward;
+	tree_manager_get_child_value_i64(&self_node, NODE_HASH("block reward"), &block_reward);
+	return block_reward;
+}
+
 int handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 {
-	
 	hash_t				blk_hash;;
 	mem_zone_ref		header = { PTR_NULL }, lastPOSBlk = { PTR_NULL }, lastPOWBlk = { PTR_NULL }, tx_list = { PTR_NULL }, lastBlk = { PTR_NULL };
-	int					ret=1;
-	uint64_t			staking_reward=0;
+	mem_zone_ref		log = { PTR_NULL };
+	uint64_t			block_reward=0,staking_reward = 0;
+	size_t				nz1 = 0, nz2 = 0, nblks;
+	int					ret=1,is_staking;
+	
 	
 	
 	if (!tree_manager_find_child_node(payload, NODE_HASH("header"), NODE_BITCORE_BLK_HDR, &header))return 0;
@@ -895,92 +911,108 @@ int handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 		remove_block(blk_hash);
 
 	if (!tree_manager_find_child_node(payload, NODE_HASH("txs"), NODE_BITCORE_TX_LIST, &tx_list)){ release_zone_ref(&lastBlk); release_zone_ref(&header); return 0; }
+
+	nblks = get_last_block_height();
 	
 	if (strlen_c(pos_kernel.name) > 0)
 	{
 		tree_manager_find_child_node	(&self_node, NODE_HASH("last pos block"), NODE_BITCORE_BLK_HDR, &lastPOSBlk);
-		ret = compute_blk_staking		(&lastBlk, &lastPOSBlk, &header, &tx_list, &staking_reward);
+		ret = compute_blk_staking(&lastBlk, &lastPOSBlk, &header, &tx_list, &block_reward);
 		release_zone_ref				(&lastPOSBlk);
-		
 	}
 
-	if ((ret)&&(staking_reward == 0))
+	if (ret)
 	{
-		hash_t out_diff;
+		hash_t				out_diff;
 		unsigned int		powbits;
-		
-		if (!tree_manager_get_child_value_i32(&self_node, NODE_HASH("current pow diff"), &powbits))
-			tree_manager_get_child_value_i32(&header, NODE_HASH("bits"), &powbits);
 
-		SetCompact				(powbits, out_diff);
-		ret = check_block_pow	(&header, out_diff);
+		if (block_reward == 0)
+		{
+
+			if (!tree_manager_get_child_value_i32(&self_node, NODE_HASH("current pow diff"), &powbits))
+				tree_manager_get_child_value_i32(&header, NODE_HASH("bits"), &powbits);
+
+			SetCompact(powbits, out_diff);
+			ret = check_block_pow(&header, out_diff);
+			if (ret)
+				block_reward = get_blockreward(nblks);
+
+			is_staking = 0;
+		}
+		else
+		{
+			is_staking = 1;
+		}
 	}
 
 	if (ret)
-		ret = node_add_block(&header, &tx_list, staking_reward);
+		ret = node_add_block(&header, &tx_list, block_reward);
 
 	if (ret)
 	{
-		mem_zone_ref	log = { PTR_NULL };
-		size_t nz1 = 0, nz2 = 0, nblks;
-
-		
 
 		if (strlen_c(pos_kernel.name) > 0)
-		{
 			store_blk_staking(&header, &tx_list);
 
-			if (staking_reward > 0)
-			{
-				mem_zone_ref last_blk = { PTR_NULL };
-				unsigned int pBits;
-				
-				store_last_pos_hash(blk_hash);
-				
-				if (!tree_manager_find_child_node(&self_node, NODE_HASH("last pos block"), NODE_BITCORE_BLK_HDR, &last_blk))
-					tree_manager_add_child_node(&self_node, "last pos block", NODE_BITCORE_BLK_HDR, &last_blk);
+		if (is_staking)
+		{
+			mem_zone_ref last_blk = { PTR_NULL };
+			unsigned int pBits;
+			
+			store_last_pos_hash(blk_hash);
+			
+			if (!tree_manager_find_child_node(&self_node, NODE_HASH("last pos block"), NODE_BITCORE_BLK_HDR, &last_blk))
+				tree_manager_add_child_node(&self_node, "last pos block", NODE_BITCORE_BLK_HDR, &last_blk);
 
-				tree_manager_copy_children_ref	(&last_blk, &header);
-				release_zone_ref				(&last_blk);
+			tree_manager_copy_children_ref	(&last_blk, &header);
+			release_zone_ref				(&last_blk);
 
-				if(compute_last_pos_diff				(&header, &pBits))
-					tree_manager_set_child_value_i32	(&self_node, "current pos diff", pBits);
-				else
-					tree_manager_set_child_value_i32	(&self_node, "current pos diff", 0x1FFFFFFF);
-			}
+			if(compute_last_pos_diff				(&header, &pBits))
+				tree_manager_set_child_value_i32	(&self_node, "current pos diff", pBits);
 			else
-			{
-				unsigned int powbits;
-				
-				if(compute_last_pow_diff				(&header, &powbits))
-					tree_manager_set_child_value_i32	(&self_node, "current pow diff", powbits);
-				else
-				{
-					tree_manager_get_child_value_i32(&header, NODE_HASH("bits"), &powbits);
-					tree_manager_set_child_value_i32(&self_node, "current pow diff", powbits);
-				}
-					
-			}
-
-			nblks = get_last_block_height();
-			if (staking_reward == 0)
-				add_moneysupply(get_blockreward(nblks));
-			else
-				add_moneysupply(staking_reward);
+				tree_manager_set_child_value_i32	(&self_node, "current pos diff", 0x1FFFFFFF);
 		}
-#ifdef _DEBUG
-		nz1 = find_zones_used(2);
-		nz2 = find_zones_used(1);
-#endif
+		else
+		{
+			unsigned int powbits;
+			
+			if(compute_last_pow_diff				(&header, &powbits))
+				tree_manager_set_child_value_i32	(&self_node, "current pow diff", powbits);
+			else
+			{
+				tree_manager_get_child_value_i32	(&header, NODE_HASH("bits"), &powbits);
+				tree_manager_set_child_value_i32	(&self_node, "current pow diff", powbits);
+			}
+				
+		}
+
+		nblks = get_last_block_height();
 		
-		tree_manager_create_node("log", NODE_LOG_PARAMS, &log);
-		tree_manager_set_child_value_i32(&log, "nblocks", nblks);
-		tree_manager_set_child_value_i32(&log, "zones1", nz1);
-		tree_manager_set_child_value_i32(&log, "zones2", nz2);
-		log_message("block height : %nblocks% , %zones1% - %zones2%\n", &log);
-		release_zone_ref(&log);
+		add_moneysupply(block_reward);
+
 		tree_manager_set_child_value_i64(node, "next_check", get_time_c() + 10);
+		log_message("accepted block: %blk hash% , %time% - %version% %merkle_root%\n", &header);
 	}
+	else
+	{
+		nblks = get_last_block_height();
+
+		log_message("rejected block: %blk hash% , %time% - %version% %merkle_root%\n", &header);
+	}
+
+	
+	tree_manager_create_node		("log", NODE_LOG_PARAMS, &log);
+	tree_manager_set_child_value_i32(&log, "nblocks", nblks);
+#ifdef _DEBUG
+	nz1 = find_zones_used(2);
+	nz2 = find_zones_used(1);
+	tree_manager_set_child_value_i32(&log, "zones1", nz1);
+	tree_manager_set_child_value_i32(&log, "zones2", nz2);
+	log_message						("block height : %nblocks% , %zones1% - %zones2%\n", &log);
+#else
+	log_message("block height : %nblocks%\n", &log);
+#endif
+	release_zone_ref				(&log);
 
 	release_zone_ref(&lastBlk);
 	release_zone_ref(&header);
@@ -1009,7 +1041,7 @@ int handle_message(mem_zone_ref_ptr node,const char *cmd,mem_zone_ref_ptr payloa
 
 int handle_element(mem_zone_ref_ptr node, mem_zone_ref_ptr element)
 {
-	mem_zone_ref log = { PTR_NULL };
+	
 
 	switch (tree_mamanger_get_node_type(element))
 	{
@@ -1019,6 +1051,7 @@ int handle_element(mem_zone_ref_ptr node, mem_zone_ref_ptr element)
 			uint64_t		services;
 			ipv4_t			ip;
 			unsigned short	port;
+			mem_zone_ref	log = { PTR_NULL };
 
 			tree_manager_get_child_value_i32(element, NODE_HASH("time"), &time);
 			tree_manager_get_child_value_i64(element, NODE_HASH("services"), &services);
@@ -1033,6 +1066,7 @@ int handle_element(mem_zone_ref_ptr node, mem_zone_ref_ptr element)
 			tree_manager_set_child_value_str(&log, "services", services ? "network" : "no services");
 			tree_manager_set_child_value_i32(&log, "time", time);
 			log_message("new address %ip%:%port% %time% %services%\n", &log);
+			release_zone_ref(&log);
 			return 1;
 		}
 		break;
@@ -1076,6 +1110,7 @@ OS_API_C_FUNC(int) scan_addresses()
 			if (tree_manager_find_child_node(addr, NODE_HASH("addr"), NODE_BITCORE_WALLET_ADDR, &new_addr))
 			{
 				background_func(scanaddr_func, &new_addr);
+				release_zone_ref(&new_addr);
 			}
 			tree_manager_set_child_value_i32(addr, "done", 1);
 		}
@@ -1112,7 +1147,8 @@ int process_node_messages(mem_zone_ref_ptr node)
 		release_zone_ref(&payload_node);
 	}
 	
-	tree_remove_child_by_member_value_dword(&msg_list, NODE_BITCORE_MSG, "handled", 1);
+	//tree_remove_child_by_member_value_dword(&msg_list, NODE_BITCORE_MSG, "handled", 1);
+	tree_remove_children(&msg_list);
 	nc = tree_manager_get_node_num_children(&msg_list);
 	release_zone_ref(&msg_list);
 	return 1;
@@ -1233,6 +1269,7 @@ void load_node_module(mem_zone_ref_ptr node_config)
 	_node_load_last_blks = get_tpo_mod_exp_addr_name(&node_mod, "node_load_last_blks", 0);
 	_node_init_rpc = get_tpo_mod_exp_addr_name(&node_mod, "node_init_rpc", 0);
 	_check_rpc_request = get_tpo_mod_exp_addr_name(&node_mod, "check_rpc_request", 0);
+	_node_init_block_explorer= get_tpo_mod_exp_addr_name(&node_mod, "node_init_block_explorer", 0);
 	_new_peer_node = get_tpo_mod_exp_addr_name(&node_mod, "new_peer_node", 0);
 	_node_add_block = get_tpo_mod_exp_addr_name(&node_mod, "node_add_block", 0);
 	_read_node_msg = get_tpo_mod_exp_addr_name(&node_mod, "read_node_msg", 0);
@@ -1257,6 +1294,7 @@ void load_node_module(mem_zone_ref_ptr node_config)
 	node_load_last_blks = get_tpo_mod_exp_addr_name(&node_mod, "node_load_last_blks", 0);
 	node_is_next_block = get_tpo_mod_exp_addr_name(&node_mod, "node_is_next_block", 0);
 	node_init_rpc = get_tpo_mod_exp_addr_name(&node_mod, "node_init_rpc", 0);
+	node_init_block_explorer = get_tpo_mod_exp_addr_name(&node_mod, "node_init_block_explorer", 0);
 	check_rpc_request = get_tpo_mod_exp_addr_name(&node_mod, "check_rpc_request", 0);
 	new_peer_node = get_tpo_mod_exp_addr_name(&node_mod, "new_peer_node", 0);
 	node_add_block = get_tpo_mod_exp_addr_name(&node_mod, "node_add_block", 0);
@@ -1346,7 +1384,7 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 {
 	mem_zone_ref		genesis = { PTR_NULL };
 	mem_zone_ref		log = { PTR_NULL };
-	mem_zone_ref		seed_node = { PTR_NULL }, rpc_wallet_conf = { PTR_NULL }, genesis_conf = { PTR_NULL }, stake_conf = { PTR_NULL };
+	mem_zone_ref		seed_node = { PTR_NULL }, rpc_wallet_conf = { PTR_NULL }, block_explorer_conf = { PTR_NULL }, genesis_conf = { PTR_NULL }, stake_conf = { PTR_NULL };
 	struct host_def		*seed_host;
 	int					nc;
 
@@ -1378,6 +1416,10 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 	release_zone_ref(&genesis_conf);
 	release_zone_ref(&genesis);
 
+
+
+	
+
 	seed_host = make_host_def(node_hostname.str, seed_port);
 	tree_manager_create_node("peer nodes", NODE_BITCORE_NODE_LIST, &peer_nodes);
 	if (!new_peer_node(seed_host, &peer_nodes))
@@ -1397,7 +1439,13 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 		release_zone_ref(&rpc_wallet_conf);
 	}
 
+	if (tree_manager_find_child_node(&node_config, NODE_HASH("block_explorer"), 0xFFFFFFFF, &block_explorer_conf))
+	{
+		node_init_block_explorer(&block_explorer_conf, &pos_kernel);
+		release_zone_ref		(&block_explorer_conf);
+	}
 
+	
 		
 	if (nc > 1)
 	{

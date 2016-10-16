@@ -1,3 +1,6 @@
+#ifndef LIBBASE_API
+#define LIBBASE_API C_IMPORT
+#endif
 struct http_hdr
 {
 	char			key[64];

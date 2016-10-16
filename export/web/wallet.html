@@ -29,7 +29,13 @@
          #left_tab h2.selected{
              background-color:#AAA;
         }
-        
+
+        .addr_send {
+            color:#ff0000;
+        }
+        .addr_recv {
+            color:#4cff00;
+        }
 
         #unspent_tab
         {
@@ -80,9 +86,10 @@
     <script language="javascript">
         var addrs = null;
         var unspents = null;
+        var spents = null;
 	   var moneysupply=null;
 
-
+	   var txs= null;
         var recvs = null;
         var scanTimer = null;
         var blockTimer = null;
@@ -127,6 +134,10 @@
             else
                 $('#tab_received').removeClass('selected');
 
+            if (id == "tab_txs")
+                $('#tab_txs').addClass('selected');
+            else
+                $('#tab_txs').removeClass('selected');
         }
 
         function update_unspent() {
@@ -286,6 +297,50 @@
             old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
         }
 
+        function update_txs() {
+            if (txs == null) return;
+
+            var total;
+            var thead;
+            var num_txs = txs.length;
+
+            thead = document.getElementById("list_table").tHead;
+            thead.rows[0].cells[2].innerHTML = 'category';
+
+            old_tbody = document.getElementById("list_table").tBodies[0];
+            new_tbody = document.createElement('tbody');
+
+            total = 0;
+            for (n = 0; n < num_txs; n++) {
+                var row = new_tbody.insertRow(n);
+                cell = row.insertCell(0);
+                cell.className = "time";
+                cell.innerHTML = timeConverter(txs[n].time);
+
+                cell = row.insertCell(1);
+                cell.className = "recv_tx";
+                cell.innerHTML = txs[n].txid;
+
+                cell = row.insertCell(2);
+                cell.className = "recv_tx";
+                cell.innerHTML = txs[n].category;
+
+                cell = row.insertCell(3);
+
+                if (txs[n].category == "send") {
+                    cell.className = "addr_send";
+                    cell.innerHTML = "-"+txs[n].amount/unit;
+                }
+                else {
+                    cell.className = "addr_recv";
+                    cell.innerHTML = "+" + txs[n].amount / unit;
+                }
+
+            }
+            $('#txtotal').html(total / unit);
+            old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
+        }
+        
         function update_addr_list() {
 		 if(addrs==null)return;
             var num_addrs = addrs.length;
@@ -304,7 +359,7 @@
                 cell.innerHTML = '<span>' + addrs[n].amount / unit + '</span>';
             }
             old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
-            $('.address').click(function () { list_unspent($(this).html()); if (scanTimer != null) { clearTimeout(scanTimer); scanTimer = null; } scan_status($(this).html()); });
+            $('.address').click(function () { list_txs($(this).html()); if (scanTimer != null) { clearTimeout(scanTimer); scanTimer = null; } scan_status($(this).html()); });
         }
 
         function list_unspent(address) {
@@ -348,6 +403,20 @@
                 select_menu("tab_received");
             });
         }
+
+        function list_txs(address) {
+            var old_tbody = document.getElementById("list_table").tBodies[0];
+            var new_tbody = document.createElement('tbody');
+            old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
+
+            rpc_call('listtransactions', [[address]], function (data) {
+                txs = data.result.txs;
+                txs.sort(function (a, b) { return (b.time - a.time); });
+                $('#unspentaddr').html(address);
+                update_txs();
+                select_menu("tab_txs");
+            });
+        }
         function list_received() {
             var old_tbody = document.getElementById("list_table").tBodies[0];
             var new_tbody = document.createElement('tbody');
@@ -355,7 +424,7 @@
             rpc_call('listreceivedbyaddress', [0, true], function (data) {
                 addrs = data.result.addrs;
                 update_addr_list();
-                list_unspent(addrs[0].addr);
+                list_txs(addrs[0].addr);
             });
         }
 
@@ -375,7 +444,7 @@
 
                 
 
-                $("#bits").html('0x'+data.result.bits.toString(16));
+                
                 $("#confirmations").html(data.result.confirmations);
                 $("#difficulty").html(data.result.difficulty);
                 $("#hash").html(data.result.hash);
@@ -384,6 +453,8 @@
                 $("#nextblockhash").html(data.result.nextblockhash);
                 $("#nonce").html(data.result.nonce);
                 $("#size").html(data.result.size);
+                $("#bits").html('0x' + data.result.bits.toString(16));
+                $("#diffhash").html(data.result.hbits);
                 $("#proofhash").html(data.result.proofhash);
                 $("#stakemodifier2").html(data.result.stakemodifier2);
                 $("#time").html(timeConverter(data.result.time));
@@ -455,7 +526,7 @@
     </script>
 </head>
 <body>
-    <div><span>Units : </span><select onchange="unit = this.options[this.selectedIndex].value; $('#node_supply').html(moneysupply/unit); update_addr_list(); update_unspent(); update_spent(); update_recvs();" id="units" name="units"><option value="1">satoshis</option><option value="1000000">cents</option><option value="100000000">coin</option></select></div>
+    <div><span>Units : </span><select onchange="unit = this.options[this.selectedIndex].value; $('#node_supply').html(moneysupply / unit); update_addr_list(); update_unspent(); update_spent(); update_recvs(); update_txs();" id="units" name="units"><option value="1">satoshis</option><option value="1000000">cents</option><option value="100000000">coin</option></select></div>
     <div id="nodeinfos">
         <div><h1>node info</h1></div>
         <div>block height : <span id="blockcount"></span></div>
@@ -470,7 +541,7 @@
         <div><h1>last block</h1></div>
         <table id="tblblock">
             
-            <tr><td class="lbl">bits : </td><td id="bits"></td></tr>
+            
             <tr><td class="lbl">confirmations :</td> <td id="confirmations"></td></tr>
             <tr><td class="lbl">difficulty :</td> <td id="difficulty"></td></tr>
             <tr><td class="lbl">hash :</td> <td id="hash"></td></tr>
@@ -478,6 +549,8 @@
             <tr><td class="lbl">merkleroot :</td> <td id="merkleroot"></td></tr>
             <tr><td class="lbl">nextblockhash :</td> <td id="nextblockhash"></td></tr>
             <tr><td class="lbl">nonce :</td> <td id="nonce"></td></tr>
+            <tr><td class="lbl">bits : </td><td id="bits"></td></tr>
+            <tr><td class="lbl">difficulty hash :</td> <td id="diffhash"></td></tr>
             <tr><td class="lbl">proofhash :</td> <td id="proofhash"></td></tr>
             <tr><td class="lbl">size :</td> <td id="size"></td></tr>
             <tr><td class="lbl">stakemodifier2 :</td> <td id="stakemodifier2"></td></tr>
@@ -496,8 +569,8 @@
     </div>
     <div id="left_tab">
         <h1 id="unspentaddr"></h1><div id="scanning"></div>
-        <h2 id="tab_unspent" onclick="list_unspent($('#unspentaddr').html());">unspent</h2><h2 id="tab_spent" onclick="list_spent($('#unspentaddr').html());">spent</h2><h2 id="tab_received" onclick="list_recvs($('#unspentaddr').html());">received</h2>
-        <div> total : <span id="txtotal"></span></div>
+        <h2 id="tab_txs" onclick="list_txs($('#unspentaddr').html());">txs</h2><h2 id="tab_unspent" onclick="list_unspent($('#unspentaddr').html());">unspent</h2><h2 id="tab_spent" onclick="list_spent($('#unspentaddr').html());">spent</h2><h2 id="tab_received" onclick="list_recvs($('#unspentaddr').html());">received</h2>
+           <div> total : <span id="txtotal"></span></div>
         <table id="list_table">
             <thead>
             <th>time</th>

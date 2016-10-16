@@ -11,7 +11,7 @@
 #include <tpo_mod.h>
 #include <fsio.h>
 
-//#define _DEBUG
+#define _DEBUG
 
 #ifdef _DEBUG
 C_IMPORT int C_API_FUNC app_init(mem_zone_ref_ptr params);
@@ -34,7 +34,7 @@ int main(int argc, char **argv)
 {
 	int done = 0;
 	init_mem_system			();
-	init_default_mem_area	(8 * 1024 * 1024);
+	init_default_mem_area	(4 * 1024 * 1024);
 	network_init			();
 	
 	set_exe_path			();
