@@ -120,6 +120,7 @@
             old_tbody = document.getElementById(tbl_name).tBodies[0];
             new_tbody = document.createElement('tbody');
 
+            txs.sort(function (a, b) { return (b.blocktime - a.blocktime); });
 
             for (n = 0; n < num_txs; n++) {
                 var row = new_tbody.insertRow(n * 2);
@@ -135,7 +136,10 @@
 
                 row = new_tbody.insertRow(n * 2 + 1);
 
-                if (!txs[n].isCoinBase) {
+                cell = row.insertCell(0);
+                cell.className = "txins";
+
+                if (txs[n].isCoinBase==false) {
                     var nins, nouts;
                     var html = '';
 
@@ -143,19 +147,22 @@
                     for (nn = 0; nn < nins; nn++) {
                         html += '#' + txs[n].vin[nn].n + ' <span onclick="selectAddress(\'' + txs[n].vin[nn].addresses[0] + '\');" class="tx_address">' + txs[n].vin[nn].addresses[0] + '</span>' + txs[n].vin[nn].value / unit + '  <br/>';
                     }
-                    cell = row.insertCell(0);
-                    cell.className = "txins";
-                    cell.innerHTML = html;
-
-                    html = '';
-                    nouts = txs[n].vout.length;
-                    for (nn = 0; nn < nouts; nn++) {
-                        html += '#' + txs[n].vout[nn].n + ' <span onclick="selectAddress(\'' + txs[n].vout[nn].addresses[0] + '\');" class="tx_address">' + txs[n].vout[nn].addresses[0] + '</span> ' + txs[n].vout[nn].value / unit + ' <br/>';
-                    }
-                    cell = row.insertCell(1);
-                    cell.className = "txouts";
                     cell.innerHTML = html;
                 }
+                else
+                {
+                    cell.innerHTML = 'coinbase';
+                }
+                cell = row.insertCell(1);
+                cell.className = "txouts";
+
+                html = '';
+                nouts = txs[n].vout.length;
+                for (nn = 0; nn < nouts; nn++) {
+                    html += '#' + txs[n].vout[nn].n + ' <span onclick="selectAddress(\'' + txs[n].vout[nn].addresses[0] + '\');" class="tx_address">' + txs[n].vout[nn].addresses[0] + '</span> ' + txs[n].vout[nn].value / unit + ' <br/>';
+                }
+
+                cell.innerHTML = html;
             }
             old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
 
@@ -246,7 +253,7 @@
 
         function list_addr_txs(addr) {
             api_call('txs', '?address=' + addr, function (data) {
-                data.txs.sort(function (a, b) { return (b.time - a.time); });
+               
                 update_txs(data.txs,'addr_list');
             });
         }
