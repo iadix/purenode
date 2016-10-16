@@ -11,7 +11,7 @@
 #include <tpo_mod.h>
 #include <fsio.h>
 
-#define _DEBUG
+//#define _DEBUG
 
 #ifdef _DEBUG
 C_IMPORT int C_API_FUNC app_init(mem_zone_ref_ptr params);
