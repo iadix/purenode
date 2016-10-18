@@ -917,7 +917,7 @@ int handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 	if (strlen_c(pos_kernel.name) > 0)
 	{
 		tree_manager_find_child_node	(&self_node, NODE_HASH("last pos block"), NODE_BITCORE_BLK_HDR, &lastPOSBlk);
-		ret = compute_blk_staking(&lastBlk, &lastPOSBlk, &header, &tx_list, &block_reward);
+		ret = compute_blk_staking		(&lastBlk, &lastPOSBlk, &header, &tx_list, &block_reward);
 		release_zone_ref				(&lastPOSBlk);
 	}
 

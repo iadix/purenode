@@ -61,7 +61,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libbase_d.lib;libcon_d.lib;block_adx_d.lib;stake_pos3_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>protocol_adx_d.lib;libbase_d.lib;libcon_d.lib;block_adx_d.lib;stake_pos3_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)export\</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
@@ -87,7 +87,7 @@
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>libbase.lib;libcon.lib;block_adx.lib</AdditionalDependencies>
+      <AdditionalDependencies>protocol_adx.lib;libbase.lib;libcon.lib;block_adx.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)export\</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
     </Link>

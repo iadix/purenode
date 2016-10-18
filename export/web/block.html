@@ -1,0 +1,278 @@
+<head>
+    <style type="text/css">
+        #header {
+            width:100%;
+            display:block;
+            background-color:#0a1f5a;
+            vertical-align:bottom;
+            height:128px;
+        }
+        #lastblock {
+            display:block;
+            margin:4px;
+            border:1px solid;
+            border-radius:2px;
+           vertical-align: top;
+         }
+
+        .lbl {
+            text-align:right;
+        }
+       .tx_address {
+            font-size:1.2em;
+            font-weight:lighter;
+            cursor:pointer;
+            font-style:italic;
+            text-decoration:underline;
+        }
+        .block_hash{
+            font-size:1.0em;
+            font-weight:lighter;
+            font-family:monospace;
+
+        }
+        .clickable {
+            cursor:pointer;
+            font-style:italic;
+            text-decoration:underline;
+        }
+
+        
+        .tx_hash{
+            font-size:1.0em;
+            font-weight:lighter;
+            font-family:monospace;
+            border-bottom:1px solid #000;
+        }
+
+        .txhdr{
+            font-size:1.0em;
+            font-weight:normal;
+            font-family:monospace;
+            background-color:#808080;
+            border:1px solid;
+            border-color:#000;
+        }
+        #blockhash{
+            font-size:0.6em;
+            font-weight:lighter;
+            font-family:monospace;
+        }
+    </style>
+    <script src="/jquery-3.1.1.min.js"></script>
+    <script language="javascript">
+        var block = null;
+ 	    var txs= null;
+ 	    var blockTimer = null;
+
+        var unit=1;
+        function api_call(in_method,in_params,in_success)
+        {
+            $.ajax({
+                url: '/api/' + in_method+in_params,
+                type: "GET",
+                dataType: "json",
+                success: in_success,
+                error: function (err) { alert("Error"); }
+            });
+        }
+        function timeConverter(UNIX_timestamp) {
+            var a = new Date(UNIX_timestamp * 1000);
+            var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            var year = a.getFullYear();
+            var month = months[a.getMonth()];
+            var date = a.getDate();
+            var hour = a.getHours();
+            var min = a.getMinutes();
+            var sec = a.getSeconds();
+            var time = date + ' ' + month + ' ' + year + ' ' + hour + ':' + min + ':' + sec;
+            return time;
+        }
+
+        function dateConverter(UNIX_timestamp) {
+            var a = new Date(UNIX_timestamp * 1000);
+            var months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
+            var year = a.getFullYear();
+            var month = months[a.getMonth()];
+            var date = a.getDate();
+            var time = year + '-' +month + '-' + date;
+            return time;
+        }
+
+       
+        function update_txs(txs,tbl_name) {
+            var num_txs = txs.length;
+            old_tbody = document.getElementById(tbl_name).tBodies[0];
+            new_tbody = document.createElement('tbody');
+
+            txs.sort(function (a, b) { return (b.blocktime - a.blocktime); });
+
+            for (n = 0; n < num_txs; n++) {
+                var row = new_tbody.insertRow(n * 2);
+                row.className = "txhdr";
+               
+                cell = row.insertCell(0);
+                cell.className = "tx_hash";
+                cell.innerHTML = '<a href="/tx.html#'+txs[n].txid+'">'+txs[n].txid+'</a>';
+                
+
+                cell = row.insertCell(1);
+                cell.className = "txmine";
+                cell.innerHTML = 'mined on ' + timeConverter(txs[n].blocktime);
+
+                row = new_tbody.insertRow(n * 2 + 1);
+
+
+                if (txs[n].isNull == true) {
+                    cell = row.insertCell(0);
+                    cell.className = "txins";
+                    cell.innerHTML = '#0 null <br/>';
+                    cell = row.insertCell(1);
+                    cell.className = "txouts";
+                    cell.innerHTML = '#0 null <br/>';
+                }
+                else {
+                    cell = row.insertCell(0);
+                    cell.className = "txins";
+                    if (txs[n].isCoinBase == false) {
+                        var nins, nouts;
+                        var html = '';
+
+                        nins = txs[n].vin.length;
+                        for (nn = 0; nn < nins; nn++) {
+                            html += '#' + txs[n].vin[nn].n + '<a class="tx_address" href="/address.html#' +  txs[n].vin[nn].addresses[0] + '">' +  txs[n].vin[nn].addresses[0] + '</a>' + txs[n].vin[nn].value / unit + '  <br/>';
+                        }
+                        cell.innerHTML = html;
+                    }
+                    else {
+                        cell.innerHTML = 'coin base' + txs[n].vin[0].coinbase;
+                    }
+                    cell = row.insertCell(1);
+                    cell.className = "txouts";
+
+                    html = '';
+                    nouts = txs[n].vout.length;
+                    for (nn = 0; nn < nouts; nn++) {
+                        if (txs[n].vout[nn].isNull == true)
+                            html += '#0 null <br/>';
+                        else
+                            html += '#' + txs[n].vout[nn].n + '<a class="tx_address" href="/address.html#' + txs[n].vout[nn].addresses[0] + '">' + txs[n].vout[nn].addresses[0] + '</a>' + txs[n].vout[nn].value / unit + ' <br/>';
+                    }
+
+                    cell.innerHTML = html;
+                }
+            }
+            old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
+        }
+        
+
+
+        function updateblock()
+        {
+            $("#confirmations").html(block.confirmations);
+            $("#difficulty").html(block.difficulty);
+            $("#hash").html(block.hash);
+            $("#height").html(block.height);
+            $("#merkleroot").html(block.merkleroot);
+
+            
+            $("#prevblockhash").html(block.previousblockhash);
+            $("#nextblockhash").html(block.nextblockhash);
+            
+
+            if (/^0*$/.test(block.nextblockhash))
+                $("#nextblockhash").removeClass('clickable');
+            else
+                $("#nextblockhash").addClass('clickable');
+
+            if (/^0*$/.test(block.previousblockhash))
+                $("#prevblockhash").removeClass('clickable');
+            else
+                $("#prevblockhash").addClass('clickable');
+
+
+            
+            $("#nonce").html(block.nonce);
+            $("#reward").html(block.reward/unit);
+            
+            $("#size").html(block.size);
+            $("#bits").html('0x' + block.bits.toString(16));
+            $("#diffhash").html(block.hbits);
+            $("#proofhash").html(block.proofhash);
+            $("#stakemodifier2").html(block.stakemodifier2);
+            $("#time").html(timeConverter(block.time));
+            $("#version").html(block.version);
+
+            $("#txs").empty();
+            if (block.tx) {
+                ntx = block.tx.length;
+                for (n = 0; n < ntx; n++) {
+                    $("#txs").append('<div>' + block.tx[n] + '</div>');
+                }
+            }
+            $("#blockhash").html(block.hash);
+        }
+        function list_txs(hash) {
+            api_call('txs', '?block=' + hash, function (data) {
+                txs = data.txs;
+                update_txs(txs,'tx_list');
+            });
+        }
+        function selectBlock(hash) {
+            if (/^0*$/.test(hash)) return;
+            api_call('block', '/' + hash, function (data) {
+                block = data;
+                updateblock();
+                list_txs(block.hash);
+                window.location.href = '/block.html#' + block.hash;
+            });
+        }
+        function get_lastblock() {
+            api_call('block', '', function (data) {
+                block = data;
+                updateblock();
+            });
+        }
+        $(document).ready(function () {
+
+            var arr = document.URL.match(/block.html#([A-Fa-f0-9]+)/);
+            var hash = arr[1];
+            if (arr[1].length >= 64)
+                selectBlock(hash);
+            else
+                get_lastblock();
+        });
+    </script>
+</head>
+<body>
+    <div id="header"><div style="vertical-align:bottom;"><span>Units : </span><select onchange="unit = this.options[this.selectedIndex].value; updateblock(); update_txs(txs, 'tx_list');" id="units" name="units"><option value="1">satoshis</option><option value="1000000">cents</option><option value="100000000">coin</option></select></div><a href="/blocks.html">blocks</a></div>
+    <div id="lastblock">
+       <input type="text" id="imp_hash" size="64" name="imp_hash" value="" /><input type="button" value="search" onclick="selectBlock( $('#imp_hash').val());" />
+
+       <div><h1>block&nbsp;<span id="blockhash"></span></h1></div>
+       <table id="tblblock">
+           <tr><td class="lbl">height :</td> <td id="height"></td></tr>
+           <tr><td class="lbl">hash :</td> <td id="hash"></td></tr>
+           <tr><td class="lbl">prevblockhash :</td> <td onclick="selectBlock(this.innerHTML);" class="block_hash" id="prevblockhash"></td></tr>
+           <tr><td class="lbl">nextblockhash :</td> <td onclick="selectBlock(this.innerHTML);" class="block_hash" id="nextblockhash"></td></tr>
+           <tr><td class="lbl">time :</td> <td id="time"></td></tr>
+           <tr><td class="lbl">reward:</td> <td id="reward"></td></tr>
+           <tr><td class="lbl">confirmations :</td> <td id="confirmations"></td></tr>
+           <tr><td class="lbl">difficulty :</td> <td id="difficulty"></td></tr>
+           <tr><td class="lbl">merkleroot :</td> <td id="merkleroot"></td></tr>
+           <tr><td class="lbl">nextblockhash :</td> <td id="nextblockhash"></td></tr>
+           <tr><td class="lbl">nonce :</td> <td id="nonce"></td></tr>
+           <tr><td class="lbl">bits : </td><td id="bits"></td></tr>
+           <tr><td class="lbl">difficulty hash :</td> <td id="diffhash"></td></tr>
+           <tr><td class="lbl">proofhash :</td> <td id="proofhash"></td></tr>
+           <tr><td class="lbl">size :</td> <td id="size"></td></tr>
+           <tr><td class="lbl">stakemodifier2 :</td> <td id="stakemodifier2"></td></tr>
+           <tr><td class="lbl">version :</td> <td id="version"></td></tr>
+           <tr><td class="lbl">txs :</td> <td id="txs"></td></tr>
+       </table>
+       <table id="tx_list" cellpadding="0" cellspacing="0" border="0">
+           <thead><tr><th colspan="2"><h1>transactions</h1></th></tr></thead>
+           <tbody></tbody>
+       </table>
+    </div>
+</body>

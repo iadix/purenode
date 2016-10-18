@@ -46,6 +46,9 @@ C_IMPORT int			C_API_FUNC     get_tx_output(mem_zone_ref_const_ptr tx, unsigned 
 C_IMPORT int			C_API_FUNC      get_tx_input(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr vout);
 C_IMPORT int			C_API_FUNC	  get_blk_txs(const char* blk_hash, mem_zone_ref_ptr txs);
 C_IMPORT int			C_API_FUNC	  blk_load_tx_hash(const char *blk_hash, const char *tx_hash, mem_zone_ref_ptr tx);
+C_IMPORT int			C_API_FUNC is_tx_null(mem_zone_ref_const_ptr tx);
+C_IMPORT size_t			C_API_FUNC	  get_node_size(mem_zone_ref_ptr key);
+
 unsigned int			WALLET_VERSION = 60000;
 mem_zone_ref			my_node = { PTR_INVALID };
 
@@ -101,7 +104,7 @@ OS_API_C_FUNC(int) block_index(const char *params, const struct http_req *req, m
 OS_API_C_FUNC(int) block(const char *params, const struct http_req *req, mem_zone_ref_ptr result)
 {
 	char   chash[65];
-	hash_t merkle, proof, nullhash, rdiff, hdiff, prev;
+	hash_t merkle, proof, nullhash, nexthash, rdiff, hdiff, prev;
 	hash_t block_hash;
 	mem_zone_ref block = { PTR_NULL }, txs = { PTR_NULL };
 	size_t n = 0;
@@ -170,6 +173,11 @@ OS_API_C_FUNC(int) block(const char *params, const struct http_req *req, mem_zon
 
 	get_blk_height(chash, &height);
 
+	if(get_hash_idx("blk_indexes", height + 1, nexthash)<=0)
+		memcpy_c(nexthash, nullhash,sizeof(hash_t));
+
+
+
 	tree_manager_set_child_value_i64(result, "height", height);
 	tree_manager_set_child_value_i32(result, "size", size);
 	tree_manager_set_child_value_hash(result, "hash", block_hash);
@@ -180,7 +188,7 @@ OS_API_C_FUNC(int) block(const char *params, const struct http_req *req, mem_zon
 	tree_manager_set_child_value_i32(result, "nonce", nonce);
 	tree_manager_set_child_value_hash(result, "merkleroot", merkle);
 	tree_manager_set_child_value_hash(result, "previousblockhash", prev);
-	tree_manager_set_child_value_hash(result, "nextblockhash", nullhash);
+	tree_manager_set_child_value_hash(result, "nextblockhash", nexthash);
 	tree_manager_set_child_value_float(result, "difficulty", GetDifficulty(bits));
 
 	if (is_pow_block(chash))
@@ -232,11 +240,12 @@ OS_API_C_FUNC(int) block(const char *params, const struct http_req *req, mem_zon
 }
 OS_API_C_FUNC(int) tx(const char *params, const struct http_req *req, mem_zone_ref_ptr result)
 {
+	char hexscript[2048];
 	hash_t blk_hash, tx_hash, nullhash;
 	mem_zone_ref my_tx = { PTR_NULL }, txout_list = { PTR_NULL }, txin_list = { PTR_NULL };
 	uint64_t height, blk_time, ttx_time;
 	unsigned int version, locktime, nblks, n, tx_time;
-	size_t		 nxt_prm_pos;
+	size_t		 nxt_prm_pos, size;
 
 	nxt_prm_pos = strlpos_c(params, 0, '/');
 	if (nxt_prm_pos == INVALID_SIZE)
@@ -256,6 +265,8 @@ OS_API_C_FUNC(int) tx(const char *params, const struct http_req *req, mem_zone_r
 	}
 	if (!load_tx(&my_tx, blk_hash, tx_hash))return 0;
 
+	size = get_node_size(&my_tx);
+
 	memset_c(nullhash, 0, sizeof(hash_t));
 
 	get_tx_blk_height(tx_hash, &height, &blk_time, &ttx_time);
@@ -271,7 +282,16 @@ OS_API_C_FUNC(int) tx(const char *params, const struct http_req *req, mem_zone_r
 	tree_manager_set_child_value_i64 (result, "blockheight", height);
 	tree_manager_set_child_value_i64 (result, "confirmations", nblks- height);
 	tree_manager_set_child_value_i32 (result, "blocktime", blk_time);
+	tree_manager_set_child_value_i32(result, "size", size);
 	
+	tree_manager_set_child_value_i32 (result, "time", tx_time);
+
+	if (is_tx_null(&my_tx))
+	{
+		tree_manager_set_child_value_bool(result, "isNull", 1);
+		release_zone_ref(&my_tx);
+		return 1;
+	}
 	if (tree_manager_find_child_node(&my_tx, NODE_HASH("txsin"), NODE_BITCORE_VINLIST, &txin_list))
 	{
 		mem_zone_ref my_list = { PTR_NULL }, vin_list = { PTR_NULL };
@@ -296,8 +316,23 @@ OS_API_C_FUNC(int) tx(const char *params, const struct http_req *req, mem_zone_r
 
 				if (!memcmp_c(phash, nullhash, 32))
 				{
-					tree_manager_set_child_value_str(&new_vin, "coinbase", "");
-					tree_manager_set_child_value_bool(result, "isCoinBase", 1);
+					tree_manager_get_child_value_istr(in, NODE_HASH("script"), &script,0);
+
+					if (script.len > 0)
+					{
+						unsigned char *p = (unsigned char *)script.str;
+						n = 0;	
+						while (n<script.len)
+						{
+							hexscript[n * 2 + 0] = hex_chars[p[n] >> 4];
+							hexscript[n * 2 + 1] = hex_chars[p[n] & 0x0F];
+							n++;
+						}
+						hexscript[n * 2] = 0;
+						tree_manager_set_child_value_str(&new_vin, "coinbase", hexscript);
+						tree_manager_set_child_value_bool(result, "isCoinBase", 1);
+					}
+					free_string(&script);
 				}
 				else
 				{
@@ -340,7 +375,7 @@ OS_API_C_FUNC(int) tx(const char *params, const struct http_req *req, mem_zone_r
 					tree_manager_set_child_value_i32(&new_vin, "idx", idx);
 					tree_manager_set_child_value_bool(result, "isCoinBase", 0);
 				}
-				free_string(&script);
+				
 				tree_manager_set_child_value_i32(&new_vin, "n", nin);
 				tree_manager_set_child_value_i32(&new_vin, "sequence", seq);
 				release_zone_ref(&new_vin);
@@ -366,11 +401,7 @@ OS_API_C_FUNC(int) tx(const char *params, const struct http_req *req, mem_zone_r
 			tree_manager_get_child_value_i64(out, NODE_HASH("value"), &value);
 			tree_manager_get_child_value_istr(out, NODE_HASH("script"), &script, 0);
 
-			if ((value == 0) && (script.len == 0))
-			{
-				free_string(&script);
-				continue;
-			}
+	
 
 			if (tree_manager_add_child_node(&vout_list, "vout", NODE_GFX_OBJECT, &new_vout))
 			{
@@ -379,47 +410,54 @@ OS_API_C_FUNC(int) tx(const char *params, const struct http_req *req, mem_zone_r
 				tree_manager_set_child_value_i64(&new_vout, "value" , value);
 				tree_manager_set_child_value_i32(&new_vout, "n"		, nout);
 
-				if (tree_manager_add_child_node(&new_vout, "scriptPubKey", NODE_GFX_OBJECT, &scriptkey))
+				if ((value == 0) && (script.len == 0))
 				{
-					mem_zone_ref addrs = { PTR_NULL };
-					unsigned char *p = script.str;
-					char hexscript[2048];
-					
-					n = 0;
-					while (n<script.len)
-					{
-						hexscript[n * 2 + 0] = hex_chars[p[n] >> 4];
-						hexscript[n * 2 + 1] = hex_chars[p[n] & 0x0F];
-						n++;
-					}
-					hexscript[n * 2] = 0;
-					tree_manager_set_child_value_str(&scriptkey, "hex", hexscript);
-					
-
-					if (tree_manager_add_child_node(&new_vout, "addresses", NODE_JSON_ARRAY, &addrs))
-					{
-						btc_addr_t addr;
-						mem_zone_ref ad = { PTR_NULL };
-						int ret;
-						
-						ret	=	get_out_script_address(&script, addr);
-
-						if (ret	== 1)
-							tree_manager_set_child_value_str(&scriptkey, "type", "pubkeyhash");
-
-						if (ret == 2)
-							tree_manager_set_child_value_str(&scriptkey, "type", "paytoscript");
-
-						if (tree_manager_add_child_node(&addrs, "addr", NODE_BITCORE_WALLET_ADDR, &ad))
-						{
-							tree_manager_write_node_btcaddr(&ad,0, addr);
-							release_zone_ref(&ad);
-						}
-						release_zone_ref(&addrs);
-					}
-					release_zone_ref(&scriptkey);
+					tree_manager_set_child_value_bool(&new_vout, "isNull", 1);
 				}
+				else
+				{
+					tree_manager_set_child_value_bool(&new_vout, "isNull", 0);
+					if (tree_manager_add_child_node(&new_vout, "scriptPubKey", NODE_GFX_OBJECT, &scriptkey))
+					{
+						mem_zone_ref addrs = { PTR_NULL };
+						unsigned char *p = script.str;
 
+
+						n = 0;
+						while (n < script.len)
+						{
+							hexscript[n * 2 + 0] = hex_chars[p[n] >> 4];
+							hexscript[n * 2 + 1] = hex_chars[p[n] & 0x0F];
+							n++;
+						}
+						hexscript[n * 2] = 0;
+						tree_manager_set_child_value_str(&scriptkey, "hex", hexscript);
+
+
+						if (tree_manager_add_child_node(&new_vout, "addresses", NODE_JSON_ARRAY, &addrs))
+						{
+							btc_addr_t addr;
+							mem_zone_ref ad = { PTR_NULL };
+							int ret;
+
+							ret = get_out_script_address(&script, addr);
+
+							if (ret == 1)
+								tree_manager_set_child_value_str(&scriptkey, "type", "pubkeyhash");
+
+							if (ret == 2)
+								tree_manager_set_child_value_str(&scriptkey, "type", "paytoscript");
+
+							if (tree_manager_add_child_node(&addrs, "addr", NODE_BITCORE_WALLET_ADDR, &ad))
+							{
+								tree_manager_write_node_btcaddr(&ad, 0, addr);
+								release_zone_ref(&ad);
+							}
+							release_zone_ref(&addrs);
+						}
+						release_zone_ref(&scriptkey);
+					}
+				}
 				free_string(&script);
 				release_zone_ref(&new_vout);
 			}

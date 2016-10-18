@@ -11,14 +11,25 @@
             display:inline-block;
             vertical-align: top;
         }
-        #lastblock {
+        #right_tab {
             display:inline-block;
+            vertical-align: top;
+            float:right;
+        }
+        #lastblock {
+            display:block;
             margin:4px;
             border:1px solid;
             border-radius:2px;
            vertical-align: top;
-           float:right;
          }
+        #address_txs {
+            display:block;
+            margin:4px;
+            border:1px solid;
+            border-radius:2px;
+           vertical-align: top;
+        }
         .lbl {
             text-align:right;
         }
@@ -136,33 +147,45 @@
 
                 row = new_tbody.insertRow(n * 2 + 1);
 
-                cell = row.insertCell(0);
-                cell.className = "txins";
 
-                if (txs[n].isCoinBase==false) {
-                    var nins, nouts;
-                    var html = '';
+                if (txs[n].isNull == true) {
+                    cell = row.insertCell(0);
+                    cell.className = "txins";
+                    cell.innerHTML = '#0 null <br/>';
+                    cell = row.insertCell(1);
+                    cell.className = "txouts";
+                    cell.innerHTML = '#0 null <br/>';
+                }
+                else {
+                    cell = row.insertCell(0);
+                    cell.className = "txins";
+                    if (txs[n].isCoinBase == false) {
+                        var nins, nouts;
+                        var html = '';
 
-                    nins = txs[n].vin.length;
-                    for (nn = 0; nn < nins; nn++) {
-                        html += '#' + txs[n].vin[nn].n + ' <span onclick="selectAddress(\'' + txs[n].vin[nn].addresses[0] + '\');" class="tx_address">' + txs[n].vin[nn].addresses[0] + '</span>' + txs[n].vin[nn].value / unit + '  <br/>';
+                        nins = txs[n].vin.length;
+                        for (nn = 0; nn < nins; nn++) {
+                            html += '#' + txs[n].vin[nn].n + ' <span onclick="selectAddress(\'' + txs[n].vin[nn].addresses[0] + '\');" class="tx_address">' + txs[n].vin[nn].addresses[0] + '</span>' + txs[n].vin[nn].value / unit + '  <br/>';
+                        }
+                        cell.innerHTML = html;
                     }
+                    else {
+                        cell.innerHTML = 'coin base' + txs[n].vin[0].coinbase;
+                    }
+                    cell = row.insertCell(1);
+                    cell.className = "txouts";
+
+                    html = '';
+                    nouts = txs[n].vout.length;
+                    for (nn = 0; nn < nouts; nn++) {
+                        if (txs[n].vout[nn].isNull == true)
+                            html += '#0 null <br/>';
+                        else
+                            html += '#' + txs[n].vout[nn].n + ' <span onclick="selectAddress(\'' + txs[n].vout[nn].addresses[0] + '\');" class="tx_address">' + txs[n].vout[nn].addresses[0] + '</span> ' + txs[n].vout[nn].value / unit + ' <br/>';
+                    }
+
                     cell.innerHTML = html;
                 }
-                else
-                {
-                    cell.innerHTML = 'coinbase';
-                }
-                cell = row.insertCell(1);
-                cell.className = "txouts";
-
-                html = '';
-                nouts = txs[n].vout.length;
-                for (nn = 0; nn < nouts; nn++) {
-                    html += '#' + txs[n].vout[nn].n + ' <span onclick="selectAddress(\'' + txs[n].vout[nn].addresses[0] + '\');" class="tx_address">' + txs[n].vout[nn].addresses[0] + '</span> ' + txs[n].vout[nn].value / unit + ' <br/>';
-                }
-
-                cell.innerHTML = html;
             }
             old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
 
@@ -307,46 +330,46 @@
     </script>
 </head>
 <body>
-    <div id="header"><div style="vertical-align:bottom;"><span>Units : </span><select onchange="unit = this.options[this.selectedIndex].value; update_blocks(); update_txs(txs, 'tx_list');" id="units" name="units"><option value="1">satoshis</option><option value="1000000">cents</option><option value="100000000">coin</option></select></div></div>
+    <div id="header"><div style="vertical-align:bottom;"><span>Units : </span><select onchange="unit = this.options[this.selectedIndex].value; update_blocks(); update_txs(txs, 'tx_list');" id="units" name="units"><option value="1">satoshis</option><option value="1000000">cents</option><option value="100000000">coin</option></select></div><a href="/blocks.html">blocks</a></div>
   
-      <div id="left_tab">
+    <div id="left_tab">
         <h1><span id="blocklistdate"></span></h1>
         <table id="list_table">
             <thead><tr><th>height</th><th>hash</th><th>time</th><th>reward</th><th>ntx</th><th>size</th></tr></thead>
             <tbody></tbody>
         </table>
     </div>
-    <div id="lastblock">
-        <div><h1>block&nbsp;<span id="blockhash"></span></h1></div>
-        <table id="tblblock" >
-
-            <tr><td class="lbl">height :</td> <td id="height"></td></tr>
-            <tr><td class="lbl">hash :</td> <td id="hash"></td></tr>
-            <tr><td class="lbl">time :</td> <td id="time"></td></tr>
-            <tr><td class="lbl">confirmations :</td> <td id="confirmations"></td></tr>
-            <tr><td class="lbl">difficulty :</td> <td id="difficulty"></td></tr>
-            <tr><td class="lbl">merkleroot :</td> <td id="merkleroot"></td></tr>
-            <tr><td class="lbl">nextblockhash :</td> <td id="nextblockhash"></td></tr>
-            <tr><td class="lbl">nonce :</td> <td id="nonce"></td></tr>
-            <tr><td class="lbl">bits : </td><td id="bits"></td></tr>
-            <tr><td class="lbl">difficulty hash :</td> <td id="diffhash"></td></tr>
-            <tr><td class="lbl">proofhash :</td> <td id="proofhash"></td></tr>
-            <tr><td class="lbl">size :</td> <td id="size"></td></tr>
-            <tr><td class="lbl">stakemodifier2 :</td> <td id="stakemodifier2"></td></tr>
-
-            <tr><td class="lbl">version :</td> <td id="version"></td></tr>
-            <tr><td class="lbl">txs :</td> <td id="txs"></td></tr>
-        </table>
-        <table id="tx_list" cellpadding="0" cellspacing="0" border="0">
-            <thead><tr><th colspan="2"><h1>transactions</h1></th></tr></thead>
-            <tbody></tbody>
-        </table>
-
-        <div><h1>address&nbsp;<span id="address_list"></span></h1></div>
-
-        <table id="addr_list" cellpadding="0" cellspacing="0" border="0">
-            <thead><tr><th colspan="2"><h1>transactions</h1></th></tr></thead>
-            <tbody></tbody>
-        </table>
+    <div id="right_tab">
+        <div id="lastblock">
+            <div><h1>block&nbsp;<span id="blockhash"></span></h1></div>
+            <table id="tblblock">
+                <tr><td class="lbl">height :</td> <td id="height"></td></tr>
+                <tr><td class="lbl">hash :</td> <td id="hash"></td></tr>
+                <tr><td class="lbl">time :</td> <td id="time"></td></tr>
+                <tr><td class="lbl">confirmations :</td> <td id="confirmations"></td></tr>
+                <tr><td class="lbl">difficulty :</td> <td id="difficulty"></td></tr>
+                <tr><td class="lbl">merkleroot :</td> <td id="merkleroot"></td></tr>
+                <tr><td class="lbl">nextblockhash :</td> <td id="nextblockhash"></td></tr>
+                <tr><td class="lbl">nonce :</td> <td id="nonce"></td></tr>
+                <tr><td class="lbl">bits : </td><td id="bits"></td></tr>
+                <tr><td class="lbl">difficulty hash :</td> <td id="diffhash"></td></tr>
+                <tr><td class="lbl">proofhash :</td> <td id="proofhash"></td></tr>
+                <tr><td class="lbl">size :</td> <td id="size"></td></tr>
+                <tr><td class="lbl">stakemodifier2 :</td> <td id="stakemodifier2"></td></tr>
+                <tr><td class="lbl">version :</td> <td id="version"></td></tr>
+                <tr><td class="lbl">txs :</td> <td id="txs"></td></tr>
+            </table>
+            <table id="tx_list" cellpadding="0" cellspacing="0" border="0">
+                <thead><tr><th colspan="2"><h1>transactions</h1></th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <div id="address_txs">
+            <div><h1>address&nbsp;<span id="address_list"></span></h1></div>
+            <table id="addr_list" cellpadding="0" cellspacing="0" border="0">
+                <thead><tr><th colspan="2"><h1>transactions</h1></th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
     </div>
 </body>
