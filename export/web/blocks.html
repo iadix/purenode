@@ -30,24 +30,39 @@
             border-radius:2px;
            vertical-align: top;
         }
+        .block_hash{
+            font-size:1.0em;
+            font-weight:normal;
+            font-family:monospace;
+            cursor:pointer;
+            text-decoration:underline;
+        }
+        
+        .selected {
+             font-size:1.0em;
+             font-weight:900;
+             text-shadow:2px 2px 2px #333;
+        }
+        #list_table td{
+            padding : 12px;
+            border-bottom:1px solid;
+
+        }
+
+        .block_infos {
+            font-family: Ubuntu,sans-serif;
+        }
         .lbl {
             text-align:right;
         }
        .tx_address {
-            font-size:1.2em;
+            font-size:1.1em;
             font-weight:lighter;
             cursor:pointer;
             font-style:italic;
             text-decoration:underline;
         }
-        .block_hash{
-            font-size:1.0em;
-            font-weight:lighter;
-            font-family:monospace;
-            cursor:pointer;
-            font-style:italic;
-            text-decoration:underline;
-        }
+
         .tx_hash{
             font-size:1.0em;
             font-weight:lighter;
@@ -61,6 +76,10 @@
             background-color:#808080;
             border:1px solid;
             border-color:#000;
+            
+        }
+        .txhdr td {
+            padding: 8px;
         }
         .txmine {
             text-align:right;
@@ -78,8 +97,9 @@
         var blocks = null;
  	    var txs= null;
  	    var blockTimer = null;
+ 	    var selectedhash = null;
 
-        var unit=1;
+ 	    var unit = 100000000;
         function api_call(in_method,in_params,in_success)
         {
             $.ajax({
@@ -139,7 +159,7 @@
                
                 cell = row.insertCell(0);
                 cell.className = "tx_hash";
-                cell.innerHTML = txs[n].txid;
+                cell.innerHTML = '<a href="/tx.html#'+txs[n].txid+'">'+txs[n].txid+'</a>';
 
                 cell = row.insertCell(1);
                 cell.className = "txmine";
@@ -165,7 +185,13 @@
 
                         nins = txs[n].vin.length;
                         for (nn = 0; nn < nins; nn++) {
-                            html += '#' + txs[n].vin[nn].n + ' <span onclick="selectAddress(\'' + txs[n].vin[nn].addresses[0] + '\');" class="tx_address">' + txs[n].vin[nn].addresses[0] + '</span>' + txs[n].vin[nn].value / unit + '  <br/>';
+                            var hh;
+
+                            if (tbl_name == 'tx_list')
+                                hh = ' <span onclick="selectAddress(\'' + txs[n].vin[nn].addresses[0] + '\');" class="tx_address">' + txs[n].vin[nn].addresses[0] + '</span>';
+                            else
+                                hh = txs[n].vin[nn].addresses[0];
+                            html += '#' + txs[n].vin[nn].n + '&nbsp' + hh + '&nbsp' + txs[n].vin[nn].value / unit + '  <br/>';
                         }
                         cell.innerHTML = html;
                     }
@@ -180,8 +206,16 @@
                     for (nn = 0; nn < nouts; nn++) {
                         if (txs[n].vout[nn].isNull == true)
                             html += '#0 null <br/>';
-                        else
-                            html += '#' + txs[n].vout[nn].n + ' <span onclick="selectAddress(\'' + txs[n].vout[nn].addresses[0] + '\');" class="tx_address">' + txs[n].vout[nn].addresses[0] + '</span> ' + txs[n].vout[nn].value / unit + ' <br/>';
+                        else {
+                            var hh;
+
+                            if (tbl_name == 'tx_list')
+                                hh = ' <span onclick="selectAddress(\'' + txs[n].vout[nn].addresses[0] + '\');" class="tx_address">' + txs[n].vout[nn].addresses[0] + '</span> ';
+                            else
+                                hh = txs[n].vout[nn].addresses[0];
+
+                            html += '#' + txs[n].vout[nn].n + '&nbsp' + hh + '&nbsp' + txs[n].vout[nn].value / unit + ' <br/>';
+                        }
                     }
 
                     cell.innerHTML = html;
@@ -208,32 +242,45 @@
                 var row = new_tbody.insertRow(nrow);
 
                 cell = row.insertCell(0);
-                cell.className = "height";
-                cell.innerHTML = blocks[n].height;
+                cell.className = "block_info";
+                cell.innerHTML = '#'+blocks[n].height;
                 
-                cell = row.insertCell(1);
+                cell = row.insertCell(1); //selected
+
+                cell.id = 'block_' + blocks[n].hash;
                 cell.className = "block_hash";
                 cell.innerHTML = blocks[n].hash;
 
                 cell = row.insertCell(2);
-                cell.className = "time";
+                cell.className = "block_info";
                 cell.innerHTML = timeConverter(blocks[n].time);
 
                 cell = row.insertCell(3);
-                cell.className = "reward";
+                cell.className = "block_info";
 
                 if(blocks[n].isCoinbase)
-                    cell.innerHTML = blocks[n].reward / unit + '(mined)';
+                    cell.innerHTML = blocks[n].reward / unit;
                 else
-                    cell.innerHTML = blocks[n].reward / unit + '(staked)';
+                    cell.innerHTML = blocks[n].reward / unit;
 
                 cell = row.insertCell(4);
-                cell.className = "ntx";
+                
+                if (blocks[n].isCoinbase) {
+                    cell.className = "block_info mined";
+                    cell.innerHTML = 'mined';
+                }
+                else {
+                    cell.className = "block_info staked";
+                    cell.innerHTML = 'staked';
+                }
+                
+                cell = row.insertCell(5);
+                cell.className = "block_info";
                 if (blocks[n].tx)
                     cell.innerHTML = blocks[n].tx.length;
 
-                cell = row.insertCell(5);
-                cell.className = "size";
+                cell = row.insertCell(6);
+                cell.className = "block_info";
                 cell.innerHTML = blocks[n].size;
 
 
@@ -249,12 +296,13 @@
 
         function updateblock(block)
         {
+            $("#height").html(block.height);
+            $("#hash").html(block.hash);
+            $("#previousblockhash").html(block.previousblockhash);
+            $("#nextblockhash").html(block.nextblockhash);
+            $("#merkleroot").html(block.merkleroot);
             $("#confirmations").html(block.confirmations);
             $("#difficulty").html(block.difficulty);
-            $("#hash").html(block.hash);
-            $("#height").html(block.height);
-            $("#merkleroot").html(block.merkleroot);
-            $("#nextblockhash").html(block.nextblockhash);
             $("#nonce").html(block.nonce);
             $("#size").html(block.size);
             $("#bits").html('0x' + block.bits.toString(16));
@@ -307,11 +355,18 @@
         }
         function selectBlock(hash) {
             api_call('block', '/'+hash, function (data) {
-                var ntx;
-                var date;
-                lastblock = data.result;
+                lastblock = data;
+
+                if(selectedhash != null)
+                    $('#block_' + selectedhash).removeClass("selected");
+                selectedhash = data.hash;
+                $('#block_' + hash).addClass("selected");
+
                 updateblock     (data);
                 list_txs        (data.hash);
+
+                
+
             });
         }
         function get_lastblock() {
@@ -325,31 +380,33 @@
             });
         }
         $(document).ready(function () {
+            //list_blocks('2016-07-01');
             get_lastblock();
         });
     </script>
 </head>
 <body>
-    <div id="header"><div style="vertical-align:bottom;"><span>Units : </span><select onchange="unit = this.options[this.selectedIndex].value; update_blocks(); update_txs(txs, 'tx_list');" id="units" name="units"><option value="1">satoshis</option><option value="1000000">cents</option><option value="100000000">coin</option></select></div><a href="/blocks.html">blocks</a></div>
+    <div id="header"><div style="vertical-align:bottom;"><span>Units : </span><select onchange="unit = this.options[this.selectedIndex].value; update_blocks(); update_txs(txs, 'tx_list');" id="units" name="units"><option value="1">satoshis</option><option value="1000000">cents</option><option  selected="selected" value="100000000">coin</option></select></div><a href="/blocks.html">blocks</a></div>
   
     <div id="left_tab">
-        <h1><span id="blocklistdate"></span></h1>
-        <table id="list_table">
-            <thead><tr><th>height</th><th>hash</th><th>time</th><th>reward</th><th>ntx</th><th>size</th></tr></thead>
+        <h1>Block from day <span id="blocklistdate"></span></h1>
+        <table id="list_table" cellpadding="0" cellspacing="0" border="0">
+            <thead><tr><th>height</th><th>hash</th><th>time</th><th>reward</th><th>type</th><th>ntx</th><th>size</th></tr></thead>
             <tbody></tbody>
         </table>
     </div>
     <div id="right_tab">
         <div id="lastblock">
             <div><h1>block&nbsp;<span id="blockhash"></span></h1></div>
-            <table id="tblblock">
+            <table id="tblblock" cellpadding="0" cellspacing="0" border="0">
                 <tr><td class="lbl">height :</td> <td id="height"></td></tr>
-                <tr><td class="lbl">hash :</td> <td id="hash"></td></tr>
                 <tr><td class="lbl">time :</td> <td id="time"></td></tr>
+                <tr><td class="lbl">hash :</td> <td id="hash"></td></tr>
+                <tr><td class="lbl">previousblockhash :</td> <td onclick="selectBlock(this.innerHTML);" class="block_hash" id="previousblockhash"></td></tr>
+                <tr><td class="lbl">nextblockhash :</td> <td onclick="selectBlock(this.innerHTML);" class="block_hash" id="nextblockhash"></td></tr>
                 <tr><td class="lbl">confirmations :</td> <td id="confirmations"></td></tr>
                 <tr><td class="lbl">difficulty :</td> <td id="difficulty"></td></tr>
                 <tr><td class="lbl">merkleroot :</td> <td id="merkleroot"></td></tr>
-                <tr><td class="lbl">nextblockhash :</td> <td id="nextblockhash"></td></tr>
                 <tr><td class="lbl">nonce :</td> <td id="nonce"></td></tr>
                 <tr><td class="lbl">bits : </td><td id="bits"></td></tr>
                 <tr><td class="lbl">difficulty hash :</td> <td id="diffhash"></td></tr>

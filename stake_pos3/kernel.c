@@ -386,7 +386,7 @@ OS_API_C_FUNC(int) get_blk_staking_infos(mem_zone_ref_ptr blk, const char *blk_h
 	cat_ncstring_p(&blk_path, blk_hash + 0, 2);
 	cat_ncstring_p(&blk_path, blk_hash + 2, 2);
 	cat_cstring_p(&blk_path, blk_hash);
-
+	
 
 	clone_string(&file_path, &blk_path);
 	cat_cstring_p(&file_path, "pos");

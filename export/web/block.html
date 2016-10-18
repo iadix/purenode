@@ -15,6 +15,7 @@
            vertical-align: top;
          }
 
+
         .lbl {
             text-align:right;
         }
@@ -250,7 +251,7 @@
        <input type="text" id="imp_hash" size="64" name="imp_hash" value="" /><input type="button" value="search" onclick="selectBlock( $('#imp_hash').val());" />
 
        <div><h1>block&nbsp;<span id="blockhash"></span></h1></div>
-       <table id="tblblock">
+       <table id="tblblock" cellpadding="0" cellspacing="0" border="0">
            <tr><td class="lbl">height :</td> <td id="height"></td></tr>
            <tr><td class="lbl">hash :</td> <td id="hash"></td></tr>
            <tr><td class="lbl">prevblockhash :</td> <td onclick="selectBlock(this.innerHTML);" class="block_hash" id="prevblockhash"></td></tr>
