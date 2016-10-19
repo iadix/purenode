@@ -540,6 +540,7 @@ OS_API_C_FUNC(int) load_blk_tx(mem_zone_ref_ptr tx, const char *blk_hash, unsign
 		}
 		free_c(tx_list);
 	}
+	free_string(&blk_path);
 	return ret;
 }
 
@@ -954,101 +955,6 @@ OS_API_C_FUNC(int) get_hash_list(mem_zone_ref_ptr hdr_list, mem_zone_ref_ptr has
 	return n;
 }
 
-OS_API_C_FUNC(int) load_block_indexes(mem_zone_ref_ptr hdr_list)
-{
-	char			idx[16];
-	unsigned int	n;
-
-	unsigned char	*data;
-	size_t			data_len;
-
-	if (!get_file("./blk_indexes", &data, &data_len))return 0;
-
-	n = (data_len > (32 * 1000)) ? (data_len - 32 * 1000) : 0;
-	while (n < data_len)
-	{
-		mem_zone_ref list = { PTR_NULL }, header = { PTR_NULL };
-
-		memset_c(idx, 0, 16);
-		uitoa_s(n / 32, idx, 16, 16);
-
-		if (!tree_manager_add_child_node(hdr_list, idx, NODE_BITCORE_BLK_HDR, &header))
-		{
-			//printf("error import %d block \n",n);
-			break;
-		}
-		tree_manager_set_child_value_bhash(&header, "blk hash", data + n);
-		release_zone_ref(&header);
-
-		n += 32;
-	}
-	free_c(data);
-	return 1;
-}
-
-OS_API_C_FUNC(int) last_block_locator_index(mem_zone_ref_ptr node, mem_zone_ref_ptr hash_list)
-{
-	hash_t hash;
-	mem_zone_ref hash_node = { PTR_NULL };
-	size_t nc;
-
-	if (!tree_manager_create_node("locator", NODE_BITCORE_LOCATOR, hash_list))return 0;
-	nc = file_size("./blk_indexes") / 32;
-	get_hash_idx("./blk_indexes", nc - 1, hash);
-
-	tree_manager_add_child_node(hash_list, "hash", NODE_BITCORE_HASH, &hash_node);
-	tree_manager_write_node_hash(&hash_node, 0, hash);
-	release_zone_ref(&hash_node);
-
-	return 1;
-}
-
-OS_API_C_FUNC(int) block_locator_indexes(mem_zone_ref_ptr node, size_t top_height, mem_zone_ref_ptr hash_list)
-{
-	hash_t hash;
-	mem_zone_ref n = { PTR_NULL };
-	mem_zone_ref hash_node = { PTR_NULL };
-	int64_t index;
-	int64_t cnt = 0;
-	// Modify the step in the iteration.
-	int64_t step = 1;
-	int	cn = 0;
-
-	if (!tree_manager_create_node("locator", NODE_BITCORE_LOCATOR, hash_list))return 0;
-	// Start at the top of the chain and work backwards.
-	for (cn = 0, index = (int64_t)top_height; index > 0; cn++, index -= step)
-	{
-		char idx[32];
-		if (!get_hash_idx("./blk_indexes", index, hash))continue;
-
-		strcpy_c(idx, "hash_");
-		uitoa_s(cn, &idx[5], 27, 10);
-
-
-		tree_manager_add_child_node(hash_list, idx, NODE_BITCORE_HASH, &hash_node);
-		tree_manager_write_node_hash(&hash_node, 0, hash);
-		release_zone_ref(&hash_node);
-
-		// Push top 10 indexes first, then back off exponentially.
-		cnt++;
-		if (cnt == 10)
-		{
-			step = mul64(step, 2);
-			cnt = 0;
-		}
-	}
-
-	log_message("block locator:\n%hash_0%\n%hash_1%\n", hash_list);
-	//  Push the genesis block index.
-	if (get_hash_idx("./blk_indexes", 0, hash))
-	{
-		tree_manager_add_child_node(hash_list, "hash", NODE_BITCORE_HASH, &hash_node);
-		tree_manager_write_node_hash(&hash_node, 0, hash);
-		release_zone_ref(&hash_node);
-	}
-	return 1;
-}
-
 
 OS_API_C_FUNC(int) get_moneysupply(uint64_t *amount)
 {
@@ -1347,6 +1253,8 @@ OS_API_C_FUNC(int) get_pow_block(const char *blk_hash, hash_t pow)
 		}
 		free_c(data);
 	}
+
+	free_string(&file_path);
 	return ret;
 }
 OS_API_C_FUNC(int) check_block_pow(mem_zone_ref_ptr hdr,hash_t diff_hash)
@@ -1413,7 +1321,7 @@ void make_blk_path(const char *chash, struct string *blk_path)
 OS_API_C_FUNC(int)  get_prev_block_time(mem_zone_ref_ptr header, ctime_t *time)
 {
 	char prevHash[65];
-	struct string blk_path;
+	struct string blk_path = { 0 };
 	int ret;
 
 	if (!tree_manager_get_child_value_str(header, NODE_HASH("prev"), prevHash,65,16))
@@ -1537,11 +1445,10 @@ OS_API_C_FUNC(int) get_block_size(const char *blk_hash,size_t *size)
 	size_t			len;
 
 
-	make_string(&blk_path, "blks");
-	cat_ncstring_p(&blk_path, blk_hash + 0, 2);
-	cat_ncstring_p(&blk_path, blk_hash + 2, 2);
-	cat_cstring_p(&blk_path, blk_hash);
-
+	make_string		(&blk_path, "blks");
+	cat_ncstring_p	(&blk_path, blk_hash + 0, 2);
+	cat_ncstring_p	(&blk_path, blk_hash + 2, 2);
+	cat_cstring_p	(&blk_path, blk_hash);
 	clone_string	(&blk_data_path, &blk_path);
 	cat_cstring_p	(&blk_data_path, "header");
 	*size = file_size(blk_data_path.str)-24;
@@ -1579,6 +1486,7 @@ OS_API_C_FUNC(int) get_block_size(const char *blk_hash,size_t *size)
 			cur  += 32;
 			free_string(&blk_data_path);
 		}
+		free_c(txs);
 	}
 	free_string(&blk_data_path);
 	free_string(&blk_path);
@@ -1608,7 +1516,7 @@ OS_API_C_FUNC(int) get_blk_txs(const char* blk_hash,mem_zone_ref_ptr txs)
 			release_zone_ref(&tx);
 			ntx += 32;
 		}
-		free_c(ptxs);
+		free_c(ptxs); 
 	}
 	free_string(&blk_path);
 	
@@ -1850,8 +1758,7 @@ OS_API_C_FUNC(int) load_tx_addresses(btc_addr_t addr, mem_zone_ref_ptr tx_hashes
 	cat_ncstring_p(&tx_file, &addr[31], 2);
 	if (get_file(tx_file.str, &data, &len) > 0)
 	{
-		size_t idx_sz, ftidx;
-		size_t n = 0, idx = 0;
+		size_t idx_sz,n = 0, idx = 0;
 		uint64_t ftx, ttx, ntx = 0, aidx;
 		unsigned char *first_tx;
 
@@ -2225,9 +2132,6 @@ OS_API_C_FUNC(int) store_block(mem_zone_ref_ptr header, mem_zone_ref_ptr tx_list
 		put_file		(blk_data_path.str, pow, sizeof(hash_t));
 		free_string		(&blk_data_path);
 	}
-
-	append_file("./blk_indexes", blk_hash, 32);
-
 	free_string(&blk_path);
 
 	return 1;
