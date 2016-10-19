@@ -78,6 +78,7 @@ typedef int				C_API_FUNC queue_emitted_message_func(mem_zone_ref_ptr node, mem_
 typedef int				C_API_FUNC node_init_rpc_func(mem_zone_ref_ptr in_config,tpo_mod_file *pos);
 typedef int				C_API_FUNC check_rpc_request_func();
 typedef int				C_API_FUNC node_init_block_explorer_func(mem_zone_ref_ptr in_config, tpo_mod_file *pos_mod);
+typedef int				C_API_FUNC node_add_block_index_func(hash_t hash, unsigned int time);
 
 typedef node_init_self_func					 *node_init_self_func_ptr;
 typedef node_set_last_block_func			 *node_set_last_block_func_ptr;
@@ -103,6 +104,8 @@ typedef queue_emitted_message_func			 *queue_emitted_message_func_ptr;
 typedef node_init_rpc_func					 *node_init_rpc_func_ptr;
 typedef check_rpc_request_func				 *check_rpc_request_func_ptr;
 typedef node_init_block_explorer_func		 *node_init_block_explorer_func_ptr;
+typedef node_add_block_index_func			 *node_add_block_index_func_ptr;
+
 
 
 
@@ -135,6 +138,7 @@ C_IMPORT int			C_API_FUNC		node_init_self(mem_zone_ref_ptr out_self_node, mem_zo
 C_IMPORT int			C_API_FUNC		node_set_last_block(mem_zone_ref_ptr header);
 C_IMPORT int			C_API_FUNC		node_find_last_pow_block(mem_zone_ref_ptr pindex, unsigned int *block_time);
 C_IMPORT int			C_API_FUNC		node_load_last_blks();
+C_IMPORT int			C_API_FUNC		node_add_block_index(hash_t hash,unsigned int time);
 C_IMPORT int			C_API_FUNC		node_is_next_block(mem_zone_ref_const_ptr header, mem_zone_ref_ptr lastBlk);
 C_IMPORT int			C_API_FUNC		new_peer_node(struct host_def *host, mem_zone_ref_ptr peer_nodes);
 C_IMPORT int			C_API_FUNC		node_add_block(mem_zone_ref_ptr header, mem_zone_ref_ptr txs, uint64_t staking_reward);
@@ -170,6 +174,7 @@ C_IMPORT int			C_API_FUNC		find_last_pos_block(mem_zone_ref_ptr pindex, unsigned
 node_init_self_func_ptr						_node_init_self=PTR_INVALID;
 node_set_last_block_func_ptr				_node_set_last_block = PTR_INVALID;
 node_load_last_blks_func_ptr				_node_load_last_blks = PTR_INVALID;
+node_add_block_index_func_ptr				_node_add_block_index = PTR_INVALID;
 node_load_last_blks_func_ptr				_node_find_last_pow_block = PTR_INVALID;
 node_is_next_block_func_ptr					_node_is_next_block = PTR_INVALID;
 new_peer_node_func_ptr						_new_peer_node=PTR_INVALID;
@@ -212,6 +217,7 @@ find_last_pos_block_func_ptr				_find_last_pos_block = PTR_INVALID;
 node_init_self_func_ptr						node_init_self = PTR_INVALID;
 node_set_last_block_func_ptr				node_set_last_block = PTR_INVALID;
 node_load_last_blks_func_ptr				node_load_last_blks = PTR_INVALID;
+node_add_block_index_func_ptr				node_add_block_index = PTR_INVALID;
 node_find_last_pow_block_func_ptr			node_find_last_pow_block = PTR_INVALID;
 node_is_next_block_func_ptr					node_is_next_block = PTR_INVALID;
 node_init_rpc_func_ptr						node_init_rpc = PTR_INVALID;
@@ -893,8 +899,8 @@ int handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 	hash_t				blk_hash;;
 	mem_zone_ref		header = { PTR_NULL }, lastPOSBlk = { PTR_NULL }, lastPOWBlk = { PTR_NULL }, tx_list = { PTR_NULL }, lastBlk = { PTR_NULL };
 	mem_zone_ref		log = { PTR_NULL };
-	uint64_t			block_reward=0,staking_reward = 0;
-	size_t				nz1 = 0, nz2 = 0, nblks;
+	uint64_t			block_reward = 0, staking_reward = 0, nblks;
+	size_t				nz1 = 0, nz2 = 0;
 	int					ret=1,is_staking;
 	
 	
@@ -912,7 +918,7 @@ int handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 
 	if (!tree_manager_find_child_node(payload, NODE_HASH("txs"), NODE_BITCORE_TX_LIST, &tx_list)){ release_zone_ref(&lastBlk); release_zone_ref(&header); return 0; }
 
-	nblks = get_last_block_height();
+	tree_manager_get_child_value_i64(&self_node, NODE_HASH("block height"), &nblks);
 	
 	if (strlen_c(pos_kernel.name) > 0)
 	{
@@ -950,9 +956,12 @@ int handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 
 	if (ret)
 	{
+		unsigned int blocktime = 0;
 
 		if (strlen_c(pos_kernel.name) > 0)
 			store_blk_staking(&header, &tx_list);
+
+		tree_manager_get_child_value_i32(&header, NODE_HASH("time"), &blocktime);
 
 		if (is_staking)
 		{
@@ -985,21 +994,18 @@ int handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 			}
 				
 		}
-
-		nblks = get_last_block_height();
-		
-		add_moneysupply(block_reward);
+		node_add_block_index			(blk_hash,blocktime);
+		add_moneysupply					(block_reward);
 
 		tree_manager_set_child_value_i64(node, "next_check", get_time_c() + 10);
-		log_message("accepted block: %blk hash% , %time% - %version% %merkle_root%\n", &header);
+		log_message						("accepted block: %blk hash% , %time% - %version% %merkle_root%\n", &header);
 	}
 	else
 	{
-		nblks = get_last_block_height();
-
-		log_message("rejected block: %blk hash% , %time% - %version% %merkle_root%\n", &header);
+		log_message						("rejected block: %blk hash% , %time% - %version% %merkle_root%\n", &header);
 	}
 
+	tree_manager_get_child_value_i64(&self_node, NODE_HASH("block height"), &nblks);
 	
 	tree_manager_create_node		("log", NODE_LOG_PARAMS, &log);
 	tree_manager_set_child_value_i32(&log, "nblocks", nblks);
@@ -1267,6 +1273,8 @@ void load_node_module(mem_zone_ref_ptr node_config)
 	_node_find_last_pow_block = get_tpo_mod_exp_addr_name(&node_mod, "node_find_last_pow_block ", 0);
 	_node_is_next_block = get_tpo_mod_exp_addr_name(&node_mod, "node_is_next_block ", 0);
 	_node_load_last_blks = get_tpo_mod_exp_addr_name(&node_mod, "node_load_last_blks", 0);
+	_node_add_block_index = get_tpo_mod_exp_addr_name(&node_mod, "node_add_block_index", 0);
+	
 	_node_init_rpc = get_tpo_mod_exp_addr_name(&node_mod, "node_init_rpc", 0);
 	_check_rpc_request = get_tpo_mod_exp_addr_name(&node_mod, "check_rpc_request", 0);
 	_node_init_block_explorer= get_tpo_mod_exp_addr_name(&node_mod, "node_init_block_explorer", 0);
@@ -1292,6 +1300,7 @@ void load_node_module(mem_zone_ref_ptr node_config)
 	node_set_last_block = get_tpo_mod_exp_addr_name(&node_mod, "node_set_last_block", 0);
 	node_find_last_pow_block = get_tpo_mod_exp_addr_name(&node_mod, "node_find_last_pow_block", 0);
 	node_load_last_blks = get_tpo_mod_exp_addr_name(&node_mod, "node_load_last_blks", 0);
+	node_add_block_index = get_tpo_mod_exp_addr_name(&node_mod, "node_add_block_index", 0);
 	node_is_next_block = get_tpo_mod_exp_addr_name(&node_mod, "node_is_next_block", 0);
 	node_init_rpc = get_tpo_mod_exp_addr_name(&node_mod, "node_init_rpc", 0);
 	node_init_block_explorer = get_tpo_mod_exp_addr_name(&node_mod, "node_init_block_explorer", 0);
@@ -1393,7 +1402,7 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 		log_message("no genesis block in node config\n", PTR_NULL);
 		return 0;
 	}
-
+		
 	make_genesis_block(&genesis_conf, &genesis);
 	if (tree_manager_find_child_node(&node_config, NODE_HASH("staking"), 0xFFFFFFFF, &stake_conf))
 	{
@@ -1411,14 +1420,16 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 
 	nc = get_last_block_height();
 	if (nc < 1)
-		node_set_last_block		(&genesis);
-	
+	{
+		hash_t h;
+		unsigned int t;
+		tree_manager_get_child_value_hash	(&genesis, NODE_HASH("blk hash"), h);
+		tree_manager_get_child_value_i32	(&genesis, NODE_HASH("blk hash"), &t);
+		node_set_last_block					(&genesis);
+		node_add_block_index				(h,t);
+	}
 	release_zone_ref(&genesis_conf);
 	release_zone_ref(&genesis);
-
-
-
-	
 
 	seed_host = make_host_def(node_hostname.str, seed_port);
 	tree_manager_create_node("peer nodes", NODE_BITCORE_NODE_LIST, &peer_nodes);

@@ -392,11 +392,8 @@ void init_threads()
 }
 unsigned int new_thread(unsigned int h)
 {
-	int				i;
 	unsigned int	n;
-
 	n = 0;
-
 	while (n<16)
 	{
 		if (compare_z_exchange_c(&threads[n].h,h))

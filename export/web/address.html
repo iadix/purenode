@@ -142,25 +142,38 @@
 
                         nins = txs[n].vin.length;
                         for (nn = 0; nn < nins; nn++) {
-                            html += '#' + txs[n].vin[nn].n + ' <span class="tx_address">' + txs[n].vin[nn].addresses[0] + '</span>' + txs[n].vin[nn].value / unit + '  <br/>';
+                            html += '#' + txs[n].vin[nn].n;
+
+                            if (txs[n].vin[nn].addresses)
+                                html += ' <span class="tx_address">' + txs[n].vin[nn].addresses[0] + '</span> ';
+
+                            html += txs[n].vin[nn].value / unit + '  <br/>';
                             sent += txs[n].vin[nn].value;
                         }
                         cell.innerHTML = html;
                     }
-                    else {
+                    else if ((txs[n].vin) && (txs[n].vin.length > 0)) {
                         cell.innerHTML = 'coin base' + txs[n].vin[0].coinbase;
                     }
                     cell = row.insertCell(1);
                     cell.className = "txouts";
 
                     html = '';
-                    nouts = txs[n].vout.length;
-                    for (nn = 0; nn < nouts; nn++) {
-                        if (txs[n].vout[nn].isNull == true)
-                            html += '#0 null <br/>';
-                        else {
-                            html += '#' + txs[n].vout[nn].n + ' <span class="tx_address">' + txs[n].vout[nn].addresses[0] + '</span> ' + txs[n].vout[nn].value / unit + ' <br/>';
-                            recv += txs[n].vout[nn].value;
+
+                    if (txs[n].vout) {
+                        nouts = txs[n].vout.length;
+                        for (nn = 0; nn < nouts; nn++) {
+                            if (txs[n].vout[nn].isNull == true)
+                                html += '#0 null <br/>';
+                            else {
+                                html += '#' + txs[n].vout[nn].n;
+
+                                if (txs[n].vout[nn].addresses)
+                                    html += ' <span class="tx_address">' + txs[n].vout[nn].addresses[0] + '</span> ';
+                                html += txs[n].vout[nn].value / unit + ' <br/>';
+
+                                recv += txs[n].vout[nn].value;
+                            }
                         }
                     }
 

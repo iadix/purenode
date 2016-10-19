@@ -339,6 +339,7 @@ OS_API_C_FUNC(int) get_pos_block(const char *blk_hash, hash_t pos)
 		}
 		free_c(data);
 	}
+	free_string(&file_path);
 	return ret;
 }
 

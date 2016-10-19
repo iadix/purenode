@@ -595,17 +595,20 @@ OS_API_C_FUNC(int) txs(const char *params, const struct http_req *req, mem_zone_
 
 OS_API_C_FUNC(int) blocks(const char *params, const struct http_req *req, mem_zone_ref_ptr result)
 {
+	hash_t			nullhash;
 	char			chash[65], prm[65];
-	mem_zone_ref	 block_index_node = { PTR_NULL }, new_block = { PTR_NULL }, block_list = { PTR_NULL };
+	mem_zone_ref	time_index_node = { PTR_NULL }, block_index_node = { PTR_NULL }, new_block = { PTR_NULL }, block_list = { PTR_NULL };
 	struct string	blk_path = { PTR_NULL };
-	ctime_t			ctime,time;
-	uint64_t			nblks;
+	ctime_t			time;
+	uint64_t			nblks=0;
 	unsigned int	 block_time, limit, num, idx,n;
 	const struct http_hdr *blockdate;
 
 	tree_manager_find_child_node		(&my_node, NODE_HASH("block index"), NODE_BITCORE_HASH, &block_index_node);
+	tree_manager_find_child_node		(&my_node, NODE_HASH("block time"), NODE_GFX_INT, &time_index_node);
 	tree_manager_get_child_value_i64	(&my_node, NODE_HASH("block height"), &nblks);
 	
+	memset_c(nullhash, 0, sizeof(hash_t));
 	
 	if ((blockdate = find_key(req->query_vars, "BlockDate")) != PTR_NULL)
 		time = parseDate(blockdate->value.str);
@@ -620,81 +623,66 @@ OS_API_C_FUNC(int) blocks(const char *params, const struct http_req *req, mem_zo
 	if ((limit < 1) || (limit > 100))
 		limit = 100;
 
-	block_time	 = 0xFFFFFFFF;
-	idx			 = nblks;
-
-	while ((idx--)&&(block_time > (time + 24 * 3600)))
+	block_time = 0xFFFFFFFF;
+	
+	idx = nblks;
+	while ((block_time > (time + 24 * 3600))&&(idx>1))
 	{
-		hash_t hash;
-		if (!tree_manager_get_node_hash(&block_index_node, idx*32, hash))
+		if (!tree_mamanger_get_node_dword(&time_index_node, (--idx) * 4, &block_time))
 			break;
-		n = 0;
-		while (n<32)
-		{
-			chash[n * 2 + 0] = hex_chars[hash[n] >> 4];
-			chash[n * 2 + 1] = hex_chars[hash[n] & 0x0F];
-			n++;
-		}
-		chash[64] = 0;
-		make_string		(&blk_path , "blks");
-		cat_ncstring_p	(&blk_path , chash, 2);
-		cat_ncstring_p	(&blk_path , chash+ 2, 2);
-		cat_cstring_p	(&blk_path , chash);
-
-		if (!get_ftime(blk_path.str, &ctime))
-			ctime = 0;
-
-		free_string(&blk_path);
-		block_time = ctime;
 	}
-
-	tree_manager_add_child_node		 (result, "blocks", NODE_JSON_ARRAY, &block_list);
+	tree_manager_add_child_node(result, "blocks", NODE_JSON_ARRAY, &block_list);
+	if (idx == 1)
+	{
+		/*
+		tree_manager_add_child_node		(&block_list, "block", NODE_GFX_OBJECT, &new_block);
+		tree_manager_set_child_value_str(&new_block , "blk hash", nullhash);
+		release_zone_ref				(&new_block);
+		*/
+		release_zone_ref				(&block_list);
+		release_zone_ref				(&block_index_node);
+		release_zone_ref				(&time_index_node);
+		return 1;
+	}
+	
+	tree_manager_get_node_str(&block_index_node, idx * 32, chash, 65, 0);
 	n = 0;
 	while (n<32)
 	{
 		prm[(31 - n) * 2 + 0] = chash[n * 2 + 0];
-		prm[(31 - n) * 2 + 1] = chash[n * 2 + 0];
+		prm[(31 - n) * 2 + 1] = chash[n * 2 + 1];
 		n++;
 	}
 	prm[64] = 0;
-	
 	num = 0;
-
-	while ((idx--) && (num<limit) && (block_time>time))
+	while ((num<limit) && (block_time>=time))
 	{
-		hash_t hash;
 		tree_manager_add_child_node	(&block_list, "block", NODE_GFX_OBJECT, &new_block);
 		block						(prm, req, &new_block);
 		release_zone_ref			(&new_block);
 		num++;
-
-		if (!tree_manager_get_node_hash(&block_index_node, idx*32, hash))
+		idx--;
+		if (!tree_mamanger_get_node_dword(&time_index_node, idx * 4, &block_time))
 			break;
+
+		if (!tree_manager_get_node_str(&block_index_node, idx * 32, chash,65,0))
+			break;
+
 		n = 0;
 		while (n<32)
 		{
-			prm[(31 - n) * 2 + 0] = hex_chars[hash[n] >> 4];
-			prm[(31 - n) * 2 + 1] = hex_chars[hash[n] & 0x0F];
+			prm[(31 - n) * 2 + 0] = chash[n * 2 + 0];
+			prm[(31 - n) * 2 + 1] = chash[n * 2 + 1];
 			n++;
 		}
 		prm[64] = 0;
-
-		make_string(&blk_path, "blks");
-		cat_ncstring_p(&blk_path, chash, 2);
-		cat_ncstring_p(&blk_path, chash + 2, 2);
-		cat_cstring_p(&blk_path, chash);
-
-		if (!get_ftime(blk_path.str, &ctime))
-			ctime = 0;
-
-		free_string(&blk_path);
-		block_time = ctime;
+		
 	}
 	tree_manager_set_child_value_i32(result, "length", num);
 
 	release_zone_ref(&block_list);
 	release_zone_ref(&block_index_node);
-
+	release_zone_ref(&time_index_node);
 
 	return 1;
 	

@@ -37,6 +37,15 @@
             cursor:pointer;
             text-decoration:underline;
         }
+        dt,dd {
+            display:inline-block;
+            margin-left:4px;
+        }
+
+        dd {
+            border:2px solid;
+            padding:8px;
+        }
         
         .selected {
              font-size:1.0em;
@@ -97,6 +106,7 @@
         var blocks = null;
  	    var txs= null;
  	    var blockTimer = null;
+ 	    var CurrentTime = null;
  	    var selectedhash = null;
 
  	    var unit = 100000000;
@@ -186,35 +196,37 @@
                         nins = txs[n].vin.length;
                         for (nn = 0; nn < nins; nn++) {
                             var hh;
-
                             if (tbl_name == 'tx_list')
                                 hh = ' <span onclick="selectAddress(\'' + txs[n].vin[nn].addresses[0] + '\');" class="tx_address">' + txs[n].vin[nn].addresses[0] + '</span>';
-                            else
+                            else if (txs[n].vin[nn].addresses)
                                 hh = txs[n].vin[nn].addresses[0];
                             html += '#' + txs[n].vin[nn].n + '&nbsp' + hh + '&nbsp' + txs[n].vin[nn].value / unit + '  <br/>';
                         }
                         cell.innerHTML = html;
                     }
-                    else {
+                    else if((txs[n].vin)&&(txs[n].vin.length>0)){
                         cell.innerHTML = 'coin base' + txs[n].vin[0].coinbase;
                     }
                     cell = row.insertCell(1);
                     cell.className = "txouts";
 
                     html = '';
-                    nouts = txs[n].vout.length;
-                    for (nn = 0; nn < nouts; nn++) {
-                        if (txs[n].vout[nn].isNull == true)
-                            html += '#0 null <br/>';
-                        else {
-                            var hh;
+                    if (txs[n].vout) {
+                        nouts = txs[n].vout.length;
+                        for (nn = 0; nn < nouts; nn++) {
+                            
+                            if (txs[n].vout[nn].isNull == true)
+                                html += '#0 null <br/>';
+                            else {
+                                var hh;
 
-                            if (tbl_name == 'tx_list')
-                                hh = ' <span onclick="selectAddress(\'' + txs[n].vout[nn].addresses[0] + '\');" class="tx_address">' + txs[n].vout[nn].addresses[0] + '</span> ';
-                            else
-                                hh = txs[n].vout[nn].addresses[0];
+                                if (tbl_name == 'tx_list')
+                                    hh = ' <span onclick="selectAddress(\'' + txs[n].vout[nn].addresses[0] + '\');" class="tx_address">' + txs[n].vout[nn].addresses[0] + '</span> ';
+                                else if (txs[n].vout[nn].addresses)
+                                    hh = txs[n].vout[nn].addresses[0];
 
-                            html += '#' + txs[n].vout[nn].n + '&nbsp' + hh + '&nbsp' + txs[n].vout[nn].value / unit + ' <br/>';
+                                html += '#' + txs[n].vout[nn].n + '&nbsp' + hh + '&nbsp' + txs[n].vout[nn].value / unit + ' <br/>';
+                            }
                         }
                     }
 
@@ -229,67 +241,100 @@
        
         function update_blocks() {
             var nrow;
-		    if(blocks==null)return;
+            var num_blocks;
+		    if(blocks!=null)
+		        num_blocks = blocks.length;
+            else
+                num_blocks = 0;
 
-		    var num_blocks = blocks.length;
             thead = document.getElementById("list_table").tHead;
             old_tbody = document.getElementById("list_table").tBodies[0];
             new_tbody = document.createElement('tbody');
 
-            nrow = 0;
-            for (n = 0; n < num_blocks; n++) {
-                if (!blocks[n].height) continue;
+            if (num_blocks == 0) {
                 var row = new_tbody.insertRow(nrow);
 
                 cell = row.insertCell(0);
                 cell.className = "block_info";
-                cell.innerHTML = '#'+blocks[n].height;
-                
-                cell = row.insertCell(1); //selected
+                cell.innerHTML = '#none';
 
-                cell.id = 'block_' + blocks[n].hash;
+                cell = row.insertCell(1); //selected
                 cell.className = "block_hash";
-                cell.innerHTML = blocks[n].hash;
+                cell.innerHTML = '';
 
                 cell = row.insertCell(2);
                 cell.className = "block_info";
-                cell.innerHTML = timeConverter(blocks[n].time);
+                cell.innerHTML = 0;
 
                 cell = row.insertCell(3);
                 cell.className = "block_info";
-
-                if(blocks[n].isCoinbase)
-                    cell.innerHTML = blocks[n].reward / unit;
-                else
-                    cell.innerHTML = blocks[n].reward / unit;
+                cell.innerHTML = '';
 
                 cell = row.insertCell(4);
-                
-                if (blocks[n].isCoinbase) {
-                    cell.className = "block_info mined";
-                    cell.innerHTML = 'mined';
-                }
-                else {
-                    cell.className = "block_info staked";
-                    cell.innerHTML = 'staked';
-                }
-                
+
+                cell.className = "block_info staked";
+                cell.innerHTML = '---';
+
                 cell = row.insertCell(5);
                 cell.className = "block_info";
-                if (blocks[n].tx)
-                    cell.innerHTML = blocks[n].tx.length;
+                cell.innerHTML = '0';
 
                 cell = row.insertCell(6);
                 cell.className = "block_info";
-                cell.innerHTML = blocks[n].size;
-
-
-                nrow++;
+                cell.innerHTML = '0';
             }
+            else {
+                nrow = 0;
+                for (n = 0; n < num_blocks; n++) {
+                    if (!blocks[n].height) continue;
+                    var row = new_tbody.insertRow(nrow);
 
+                    cell = row.insertCell(0);
+                    cell.className = "block_info";
+                    cell.innerHTML = '#' + blocks[n].height;
+
+                    cell = row.insertCell(1); //selected
+
+                    cell.id = 'block_' + blocks[n].hash;
+                    cell.className = "block_hash";
+                    cell.innerHTML = blocks[n].hash;
+
+                    cell = row.insertCell(2);
+                    cell.className = "block_info";
+                    cell.innerHTML = timeConverter(blocks[n].time);
+
+                    cell = row.insertCell(3);
+                    cell.className = "block_info";
+
+                    if (blocks[n].isCoinbase)
+                        cell.innerHTML = blocks[n].reward / unit;
+                    else
+                        cell.innerHTML = blocks[n].reward / unit;
+
+                    cell = row.insertCell(4);
+
+                    if (blocks[n].isCoinbase) {
+                        cell.className = "block_info mined";
+                        cell.innerHTML = 'mined';
+                    }
+                    else {
+                        cell.className = "block_info staked";
+                        cell.innerHTML = 'staked';
+                    }
+
+                    cell = row.insertCell(5);
+                    cell.className = "block_info";
+                    if (blocks[n].tx)
+                        cell.innerHTML = blocks[n].tx.length;
+
+                    cell = row.insertCell(6);
+                    cell.className = "block_info";
+                    cell.innerHTML = blocks[n].size;
+                    nrow++;
+                }
+            }
             old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
-
-            $('.block_hash').click(function () { selectBlock(this.innerHTML) });
+            $('.block_hash').click(function () { selectBlock(this.innerHTML); });
         }
 
 
@@ -342,6 +387,20 @@
             api_call('blocks', "?BlockDate=" + date, function (data) {
                 blocks = data.blocks;
                 blocks.sort(function (a, b) { return (b.time - a.time); });
+
+                CurrentTime = Math.round(new Date(date).getTime() / 1000);
+                PrevTime    = CurrentTime - 24 * 3600;
+                NextTime    = CurrentTime + 24 * 3600;
+
+                date = dateConverter(CurrentTime);
+                $("#blocklistdate").html(date);
+
+                date = dateConverter(NextTime);
+                $("#blocklistnext").html(date);
+
+                date = dateConverter(PrevTime);
+                $("#blocklistprev").html(date);
+
                 update_blocks();
             });
         }
@@ -364,9 +423,6 @@
 
                 updateblock     (data);
                 list_txs        (data.hash);
-
-                
-
             });
         }
         function get_lastblock() {
@@ -374,13 +430,25 @@
                 var date;
                 lastblock = data;
                 updateblock(data);
-                date = dateConverter(data.time);
+
+                CurrentTime = data.time;
+                PrevTime = data.time - 24 * 3600;
+                NextTime = data.time + 24 * 3600;
+
+                date = dateConverter(CurrentTime);
                 $("#blocklistdate").html(date);
-                list_blocks(date);
+
+                date = dateConverter(NextTime);
+                $("#blocklistnext").html(date);
+
+                date = dateConverter(PrevTime);
+                $("#blocklistprev").html(date);
+
+                list_blocks(dateConverter(CurrentTime));
             });
         }
         $(document).ready(function () {
-            //list_blocks('2016-07-01');
+            //list_blocks('2016-06-29');
             get_lastblock();
         });
     </script>
@@ -389,7 +457,12 @@
     <div id="header"><div style="vertical-align:bottom;"><span>Units : </span><select onchange="unit = this.options[this.selectedIndex].value; update_blocks(); update_txs(txs, 'tx_list');" id="units" name="units"><option value="1">satoshis</option><option value="1000000">cents</option><option  selected="selected" value="100000000">coin</option></select></div><a href="/blocks.html">blocks</a></div>
   
     <div id="left_tab">
-        <h1>Block from day <span id="blocklistdate"></span></h1>
+        <dl>
+            <dt>previous day</dt><dd onclick="list_blocks(this.innerHTML);" id="blocklistprev"></dd>
+            <dt>next day</dt><dd onclick="list_blocks(this.innerHTML);" id="blocklistnext"></dd>
+        </dl>
+        <h1>current day <span id="blocklistdate"></span></h1>
+
         <table id="list_table" cellpadding="0" cellspacing="0" border="0">
             <thead><tr><th>height</th><th>hash</th><th>time</th><th>reward</th><th>type</th><th>ntx</th><th>size</th></tr></thead>
             <tbody></tbody>
