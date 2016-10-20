@@ -1,3 +1,4 @@
+//copyright iadix 2016
 #define		NODE_GFX_STR			 		0x00000001
 #define		NODE_GFX_INT			 		0x00000002
 #define		NODE_GFX_BOOL			 		0x00000004

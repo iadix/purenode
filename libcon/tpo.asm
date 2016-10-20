@@ -1,3 +1,4 @@
+;copyright iadix 2016
 
 [BITS 32]
 

@@ -1,3 +1,4 @@
+//copyright iadix 2016
 #include <time.h>
 #include <stdio.h>
 #define LIBC_API C_EXPORT

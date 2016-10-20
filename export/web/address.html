@@ -63,6 +63,7 @@
     <script language="javascript">
  	    var txs= null;
  	    var blockTimer = null;
+ 	    var currentAddr = null;
 
         var unit=1;
         function api_call(in_method,in_params,in_success)
@@ -185,17 +186,31 @@
                 $("#Received").html(recv / unit);
                 $("#Sent").html(sent / unit);
                 $("#Balance").html(balance / unit);
-                $("#Transactions").html(num_txs);
+              
           
             }
             old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
         }
-        
-        function list_addr_txs(addr) {
-            api_call('txs', '?address=' + addr, function (data) {
-                txs = data.txs;
+        function list_addr_txs(addr, pageNum) {
+            api_call('txs', '?address=' + addr + '&pageNum=' + pageNum, function (data) {
+
+                if (txs == null)
+                    txs = data.txs;
+                else
+                    txs.push.apply(txs, data.txs);
+
                 txs.sort(function (a, b) { return (b.blocktime - a.blocktime); });
+
                 update_txs('tx_list');
+
+                $("#Transactions").html(data.numtx);
+                $("#currentaddrtx").html(txs.length);
+                $("#totaladdrtx").html(data.numtx);
+
+                if (txs.length >= data.numtx)
+                    $('#loadmore').prop("disabled", true);
+                else
+                    $('#loadmore').prop("disabled", false);
 
                 window.location.href = '/address.html#' + addr;
                 $('#address').html(addr);
@@ -204,8 +219,11 @@
         $(document).ready(function () {
 
             var arr = document.URL.match(/address.html#([A-Za-z0-9]+)/);
-            if ((arr) && (arr.length >= 2)&&(arr[1].length >= 34)) 
-                list_addr_txs(arr[1]);
+            page_idx = 0;
+            if ((arr) && (arr.length >= 2) && (arr[1].length >= 34)) {
+                currentaddr = arr[1];
+                list_addr_txs(currentaddr, page_idx);
+            }
        
         });
     </script>
@@ -213,7 +231,7 @@
 <body>
     <div id="header"><div style="vertical-align:bottom;"><span>Units : </span><select onchange="unit = this.options[this.selectedIndex].value; update_txs( 'tx_list');" id="units" name="units"><option value="1">satoshis</option><option value="1000000">cents</option><option value="100000000">coin</option></select></div><a href="/blocks.html">blocks</a></div>
     <div id="lastblock">
-        <input type="text" id="imp_addr" size="64" name="imp_addr" value="" /><input type="button" value="search" onclick="list_addr_txs($('#imp_addr').val());" />
+        <input type="text" id="imp_addr" size="64" name="imp_addr" value="" /><input type="button" value="search" onclick="page_idx = 0; txs = null; list_addr_txs($('#imp_addr').val(), page_idx);" />
 
        <div><h1>address&nbsp;<span id="address"></span></h1></div>
        <table id="tbladddress">
@@ -222,9 +240,14 @@
            <tr><td class="lbl">Final Balance :</td> <td id="Balance"></td></tr>
            <tr><td class="lbl">No. Transactions :</td> <td id="Transactions"></td></tr>
        </table>
-       <table id="tx_list" cellpadding="0" cellspacing="0" border="0">
-           <thead><tr><th colspan="2"><h1>transactions</h1></th></tr></thead>
-           <tbody></tbody>
-       </table>
+
+        <div>
+            <span id="currentaddrtx"></span>/<span id="totaladdrtx"></span>
+            <input type="button" id="loadmore" value="load 10 more" onclick="page_idx++; list_addr_txs(currentaddr, page_idx);" />
+            <table id="tx_list" cellpadding="0" cellspacing="0" border="0">
+                <thead><tr><th colspan="2"><h1>transactions</h1></th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
     </div>
 </body>

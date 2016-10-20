@@ -1,4 +1,4 @@
-
+//copyright iadix 2016
 #include <base/std_def.h>
 #include <base/std_mem.h>
 #include <base/mem_base.h>

@@ -1,4 +1,4 @@
-
+//copyright iadix 2016
 #include <stdio.h>
 #include <string.h>
 #include <malloc.h>

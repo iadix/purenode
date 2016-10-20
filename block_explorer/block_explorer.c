@@ -1,3 +1,4 @@
+//copyright iadix 2016
 #include <base/std_def.h>
 #include <base/std_mem.h>
 #include <base/mem_base.h>
@@ -532,10 +533,21 @@ OS_API_C_FUNC(int) txs(const char *params, const struct http_req *req, mem_zone_
 	mem_zone_ref	  my_list = { PTR_NULL };
 	mem_zone_ref	  txs = { PTR_NULL };
 	mem_zone_ref_ptr  ptx=PTR_NULL;
+	size_t			  cur,idx,page_num, limit;
 
 	tree_manager_add_child_node(result, "txs", NODE_JSON_ARRAY, &tx_list);
 
 	tree_manager_create_node("txs", NODE_BITCORE_HASH_LIST, &txs);
+
+	if ((hdr = find_key(req->query_vars, "pageNum")) != PTR_NULL)
+		page_num = strtoul_c(hdr->value.str,PTR_NULL,10);
+	else
+		page_num = 0;
+
+	if ((hdr = find_key(req->query_vars, "limit")) != PTR_NULL)
+		limit = strtoul_c(hdr->value.str,PTR_NULL,10);
+	else
+		limit = 10;
 
 	if ((hdr = find_key(req->query_vars, "block")) != PTR_NULL)
 	{
@@ -563,16 +575,18 @@ OS_API_C_FUNC(int) txs(const char *params, const struct http_req *req, mem_zone_
 	{
 		load_tx_addresses	(hdr->value.str, &txs);
 	}
+	cur = 0;
 
-	for (tree_manager_get_first_child(&txs, &my_list, &ptx);((ptx != PTR_NULL) && (ptx->zone != PTR_NULL)); tree_manager_get_next_child(&my_list, &ptx))
+	for (idx=0,tree_manager_get_first_child(&txs, &my_list, &ptx);((ptx != PTR_NULL) && (ptx->zone != PTR_NULL)); tree_manager_get_next_child(&my_list, &ptx),idx++)
 	{
 		hash_t			txhash;
 		char			tx_hash[65];
 		mem_zone_ref	my_tx = { PTR_NULL };
 		int				n;
 
+		if (idx < page_num*limit)continue;
+		if (cur >= limit)continue;
 		tree_manager_get_node_hash	(ptx, 0, txhash);
-
 		n = 0;
 		while (n<32)
 		{
@@ -585,7 +599,11 @@ OS_API_C_FUNC(int) txs(const char *params, const struct http_req *req, mem_zone_
 		tree_manager_add_child_node	(&tx_list, "tx", NODE_GFX_OBJECT, &my_tx);
 		tx							(tx_hash, req, &my_tx);
 		release_zone_ref			(&my_tx);
+		cur++;
 	}
+	tree_manager_set_child_value_i32(result, "numtx", idx);
+
+
 	release_zone_ref(&txs);
 	release_zone_ref(&tx_list);
 
@@ -601,15 +619,21 @@ OS_API_C_FUNC(int) blocks(const char *params, const struct http_req *req, mem_zo
 	struct string	blk_path = { PTR_NULL };
 	ctime_t			time;
 	uint64_t			nblks=0;
-	unsigned int	 block_time, limit, num, idx,n;
-	const struct http_hdr *blockdate;
+	size_t			page_num;
+	unsigned int	 block_time, limit, num, idx,tidx,n;
+	const struct http_hdr *blockdate, *pageNum;
 
 	tree_manager_find_child_node		(&my_node, NODE_HASH("block index"), NODE_BITCORE_HASH, &block_index_node);
 	tree_manager_find_child_node		(&my_node, NODE_HASH("block time"), NODE_GFX_INT, &time_index_node);
 	tree_manager_get_child_value_i64	(&my_node, NODE_HASH("block height"), &nblks);
 	
 	memset_c(nullhash, 0, sizeof(hash_t));
-	
+
+	if ((pageNum = find_key(req->query_vars, "pageNum")) != PTR_NULL)
+		page_num = strtoul_c(pageNum->value.str,PTR_NULL,10);
+	else
+		page_num = 0;
+
 	if ((blockdate = find_key(req->query_vars, "BlockDate")) != PTR_NULL)
 		time = parseDate(blockdate->value.str);
 	else
@@ -620,8 +644,8 @@ OS_API_C_FUNC(int) blocks(const char *params, const struct http_req *req, mem_zo
 	else
 		limit = 0;
 
-	if ((limit < 1) || (limit > 100))
-		limit = 100;
+	if ((limit < 1) || (limit > 10))
+		limit = 10;
 
 	block_time = 0xFFFFFFFF;
 	
@@ -655,30 +679,36 @@ OS_API_C_FUNC(int) blocks(const char *params, const struct http_req *req, mem_zo
 	}
 	prm[64] = 0;
 	num = 0;
-	while ((num<limit) && (block_time>=time))
+	tidx = 0;
+	while (block_time>=time)
 	{
-		tree_manager_add_child_node	(&block_list, "block", NODE_GFX_OBJECT, &new_block);
-		block						(prm, req, &new_block);
-		release_zone_ref			(&new_block);
-		num++;
+		if ((tidx>=page_num*limit) && (num < limit))
+		{
+			tree_manager_add_child_node(&block_list, "block", NODE_GFX_OBJECT, &new_block);
+			block(prm, req, &new_block);
+			release_zone_ref(&new_block);
+			num++;
+		}
+		tidx++;
 		idx--;
 		if (!tree_mamanger_get_node_dword(&time_index_node, idx * 4, &block_time))
 			break;
 
-		if (!tree_manager_get_node_str(&block_index_node, idx * 32, chash,65,0))
-			break;
-
-		n = 0;
-		while (n<32)
+		if (num < limit)
 		{
-			prm[(31 - n) * 2 + 0] = chash[n * 2 + 0];
-			prm[(31 - n) * 2 + 1] = chash[n * 2 + 1];
-			n++;
+			if (!tree_manager_get_node_str(&block_index_node, idx * 32, chash, 65, 0))
+				break;
+			n = 0;
+			while (n < 32)
+			{
+				prm[(31 - n) * 2 + 0] = chash[n * 2 + 0];
+				prm[(31 - n) * 2 + 1] = chash[n * 2 + 1];
+				n++;
+			}
+			prm[64] = 0;
 		}
-		prm[64] = 0;
-		
 	}
-	tree_manager_set_child_value_i32(result, "length", num);
+	tree_manager_set_child_value_i32(result, "numblocks", tidx);
 
 	release_zone_ref(&block_list);
 	release_zone_ref(&block_index_node);

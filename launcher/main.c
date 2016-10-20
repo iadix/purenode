@@ -1,3 +1,4 @@
+//copyright iadix 2016
 #include <stdio.h>
 
 #include <base/std_def.h>

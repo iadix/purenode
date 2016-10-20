@@ -1,4 +1,5 @@
-﻿#include <stdio.h>
+﻿//copyright iadix 2016
+#include <stdio.h>
 
 #include <base/std_def.h>
 #include <base/std_mem.h>

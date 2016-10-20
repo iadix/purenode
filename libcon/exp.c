@@ -1,3 +1,4 @@
+//copyright iadix 2016
 #define LIBC_API C_EXPORT
 
 #include "base/std_def.h"
