@@ -92,7 +92,6 @@ LIBC_API unsigned int	C_API_FUNC update_mem_area_zone_list	(mem_zone_ref_ptr mem
 LIBC_API void			C_API_FUNC swap_zone_ref					(mem_zone_ref_ptr dest_zone_ref, mem_zone_ref_ptr src_zone_ref);
 LIBC_API int			C_API_FUNC align_zone_memory				(mem_zone_ref *zone_ref, mem_size align);
 
-extern mem_ptr			ASM_API_FUNC memset							(mem_ptr ptr, int value, unsigned int size);
 
 LIBC_API int			C_API_FUNC set_mem_area_id					(unsigned int area_id);
 LIBC_API int			C_API_FUNC set_tree_mem_area_id				(unsigned int area_id);
@@ -100,12 +99,8 @@ LIBC_API unsigned int	C_API_FUNC get_mem_area_id					();
 LIBC_API unsigned int	C_API_FUNC get_tree_mem_area_id				();
 
 LIBC_API int			C_API_FUNC background_func					(thread_func_ptr func, mem_zone_ref_ptr params);
-LIBC_API uint64_t		C_API_FUNC mul64							(uint64_t a, uint64_t b);
-LIBC_API uint64_t		C_API_FUNC muldiv64							(uint64_t a, uint64_t b, uint64_t c);
-LIBC_API uint64_t		C_API_FUNC shl64							(uint64_t a, unsigned char n);
-LIBC_API uint64_t		C_API_FUNC shr64							(uint64_t a, unsigned char n);
-LIBC_API double			C_API_FUNC exp_c							(double a);
-LIBC_API void			C_API_FUNC big128_mul						(unsigned int x, struct big64 y,struct big128 *out);
+
+
 static __inline unsigned int mem_to_uint(const_mem_ptr ptr)
 {
 	return *((unsigned int *)&ptr);

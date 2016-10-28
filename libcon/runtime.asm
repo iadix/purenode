@@ -4,12 +4,14 @@ section .text
 %ifdef ASM_EXPORT
 	export  _fetch_add_c
 	export  _memset
+	export  _memcpy
 	export  _compare_z_exchange_c
 %endif
 
 %ifdef PREFIX
 	global  _fetch_add_c
 	global  _memset
+	global  _memcpy
 	global  _compare_z_exchange_c
 %else
 	GLOBAL  compare_z_exchange_c:function
@@ -17,10 +19,34 @@ section .text
 	global  memset:function
 %endif
 
+
+%ifdef PREFIX
+_memcpy:
+%else
+memcpy:
+%endif
+   push ebp
+   mov  ebp, esp
+   
+   push esi
+   push edi
+   push ecx
+
+   mov edi, [ebp+8]   ; edi = dest
+   mov esi, [ebp+12]   ; esi = src
+   mov ecx, [ebp+16]   ; ecx = count
+   rep movsb   ; for(i = 0; i < ecx; i++){edi[i]=esi[i]}
+   pop ecx
+   pop edi
+   pop esi
+   pop ebp
+   mov eax, [ebp]      ; eax = return value = dest
+ret
+
 %ifdef PREFIX
 _memset:
 %else
-memset
+memset:
 %endif
  push ebp
     mov ebp, esp

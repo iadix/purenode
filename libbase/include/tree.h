@@ -171,7 +171,7 @@ LIBBASE_API  void			C_API_FUNC	tree_manager_set_node_name				(mem_zone_ref_ptr n
 
 LIBBASE_API  int  			C_API_FUNC	tree_manager_add_child_node				(mem_zone_ref_ptr parent_ref_ptr,const char *name,unsigned int type,mem_zone_ref *ref_ptr);
 LIBBASE_API  unsigned int	C_API_FUNC	tree_manager_node_add_child				(mem_zone_ref_ptr parent_ref_ptr,mem_zone_ref_const_ptr child_ref_ptr);
-LIBBASE_API  int			C_API_FUNC	tree_manager_node_dup					(mem_zone_ref_ptr new_parent,mem_zone_ref_ptr src_ref_ptr,mem_zone_ref_ptr new_ref_ptr);
+LIBBASE_API  int			C_API_FUNC	tree_manager_node_dup					(mem_zone_ref_ptr new_parent,mem_zone_ref_const_ptr src_ref_ptr,mem_zone_ref_ptr new_ref_ptr);
 LIBBASE_API  int			C_API_FUNC	tree_manager_node_dup_one				(mem_zone_ref_ptr src_ref_ptr,mem_zone_ref_ptr new_ref_ptr);
 LIBBASE_API  int			C_API_FUNC	tree_manager_copy_children				(mem_zone_ref_ptr dest_ref_ptr,mem_zone_ref_const_ptr src_ref_ptr);
 LIBBASE_API  int			C_API_FUNC	tree_manager_copy_children_ref			(mem_zone_ref_ptr dest_ref_ptr, mem_zone_ref_const_ptr src_ref_ptr);
@@ -246,10 +246,11 @@ LIBBASE_API  int			C_API_FUNC	tree_mamanger_get_node_word				(mem_zone_ref_const
 LIBBASE_API  int			C_API_FUNC	tree_mamanger_get_node_signed_word		(mem_zone_ref_const_ptr node_ref,mem_size ofset,short *val);
 LIBBASE_API  int			C_API_FUNC	tree_mamanger_get_node_byte				(mem_zone_ref_const_ptr node_ref,mem_size ofset,unsigned char *val);
 LIBBASE_API  mem_ptr		C_API_FUNC	tree_mamanger_get_node_data_ptr			(mem_zone_ref_const_ptr node_ref,mem_size ofset);
-LIBBASE_API  mem_ptr		C_API_FUNC	tree_manager_expand_node_data_ptr		(mem_zone_ref_const_ptr node_ref, mem_size ofset, mem_size size);
 LIBBASE_API  int			C_API_FUNC	tree_manager_get_child_value_btcaddr	(const mem_zone_ref	*p_node_ref, unsigned int crc_name, btc_addr_t addr);
 LIBBASE_API  unsigned int	C_API_FUNC	tree_manager_compare_node_crc			(mem_zone_ref_ptr node_ref,unsigned int crc);
 LIBBASE_API  int			C_API_FUNC	tree_mamanger_compare_node_dword		(mem_zone_ref_ptr node_ref,mem_size ofset,unsigned int val);
+
+LIBBASE_API  mem_ptr		C_API_FUNC	tree_manager_expand_node_data_ptr		(mem_zone_ref_ptr node_ref, mem_size ofset, mem_size size);
 
 //LIBBASE_API  void			C_API_FUNC	tree_mamanger_get_node_data_ref			(mem_zone_ref_const_ptr node_ref,mem_zone_ref_ptr out);
 

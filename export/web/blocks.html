@@ -125,7 +125,8 @@
         var CurrentTime = null;
         var selectedhash = null;
         var currentAddr = null;
-
+        var updt_blocks = null;
+        var busy = false;
 
         var unit = 100000000;
         function api_call(in_method, in_params, in_success) {
@@ -155,7 +156,13 @@
             var months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
             var year = a.getFullYear();
             var month = months[a.getMonth()];
-            var date = a.getDate();
+            var date;
+
+            if (a.getDate() < 10)
+                date = '0' + a.getDate();
+            else
+                date = a.getDate();
+
             var time = year + '-' + month + '-' + date;
             return time;
         }
@@ -382,7 +389,8 @@
             $(window).scroll(function () { //detect page scroll
 
                 //alert($(document).height() - 50 + ' ' + $(window).scrollTop() + ' ' + $(window).height());
-                if ($(window).scrollTop() == $(document).height() - $(window).height()) {
+                if ( (busy==false)&&
+                     (($(window).scrollTop() == $(document).height() - $(window).height()))) {
                     busy = true;
 
                     date = dateConverter(CurrentTime);
@@ -465,6 +473,14 @@
             });
         }
 
+        function new_blocks() {
+            api_call('blocks', "?SinceBlock=" + blocks[0].hash, function (data) {
+                updt_blocks = data.blocks;
+                $("#newblocks").html(updt_blocks.length);
+                setTimeout(new_blocks, 5000);
+            });
+        }
+
         function selectAddress(saddr) {
             addrPageNum = 0;
             currentAddr = saddr.toString();
@@ -516,11 +532,12 @@
             });
         }
 
-        var busy = false;
+        
 
         $(document).ready(function () {
             //list_blocks('2016-06-29');
             get_lastblock();
+            setTimeout(new_blocks, 5000);
 
 
 

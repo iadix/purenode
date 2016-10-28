@@ -66,6 +66,9 @@ LIBC_API int			C_API_FUNC isspace_c				(int _c);
 LIBC_API void			C_API_FUNC snooze					(unsigned int micro_sec);
 LIBC_API void			C_API_FUNC dtoa_c					(char *buff, char conv, int bsize, int dplace, double value);
 LIBC_API unsigned int	C_API_FUNC parseDate				(const char *date);
+LIBC_API void			C_API_FUNC  store_bigendian(unsigned char *x, uint64_t u);
+LIBC_API uint64_t		C_API_FUNC  load_bigendian(const unsigned char *x);
+
 static const char		hex_chars[]		=	{'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
 
 typedef unsigned char	ipv4_t[4];

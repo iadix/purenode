@@ -5,11 +5,24 @@
 #include <base/std_str.h>
 
 #include <sha256.h>
+#include <crypto.h>
 #include <strs.h>
 #include <tree.h>
+#ifdef _DEBUG
+LIBEC_API int			C_API_FUNC crypto_extract_key	(dh_key_t pk, const dh_key_t sk);
+LIBEC_API int			C_API_FUNC crypto_sign_open(const struct string *sign, struct string *msgh, struct string *pk);
+#ifdef FORWARD_CRYPTO
+LIBEC_API struct string	C_API_FUNC crypto_sign			(struct string *msg, const dh_key_t sk);
+#endif
+#else
+extern crypto_extract_key_func_ptr	crypto_extract_key;
+extern crypto_sign_open_func_ptr	crypto_sign_open;
+#ifdef FORWARD_CRYPTO
+extern crypto_sign_func_ptr			crypto_sign_func;
+#endif
+#endif
 
 extern unsigned char	pubKeyPrefix;
-
 
 char* base58(unsigned char *s, char *out) {
 	static const char *tmpl = "123456789"
@@ -179,11 +192,163 @@ int serialize_script(mem_zone_ref_ptr script_node, struct string *script)
 	}
 	return 1;
 }
-OS_API_C_FUNC(int) get_in_script_address(struct string *script, btc_addr_t addr)
+void keyh_to_addr(unsigned char *pkeyh, btc_addr_t addr)
 {
 	hash_t			tmp_hash, fhash;
-	char			hash[21];
 	unsigned char	hin[32];
+
+	hin[0] = pubKeyPrefix;
+	ripemd160(pkeyh, 32, &hin[1]);
+
+	mbedtls_sha256(hin, 21, tmp_hash, 0);
+	mbedtls_sha256(tmp_hash, 32, fhash, 0);
+	memcpy_c(&hin[21], fhash, 4);
+	base58(hin, addr);
+}
+
+void key_to_addr(unsigned char *pkey,btc_addr_t addr)
+{
+	hash_t			tmp_hash;
+	mbedtls_sha256	(pkey, 33, tmp_hash, 0);
+	keyh_to_addr	(tmp_hash, addr);
+}
+
+
+struct string get_next_script_var(const struct string *script,size_t *offset)
+{
+	struct string var = { PTR_NULL };
+	unsigned char *p = (unsigned char *)(&script->str[*offset]);
+
+	if ((*p) < 80)
+	{
+		var.len		= (*p);
+		var.size	= var.len + 1;
+		var.str		= malloc_c(var.size);
+		memcpy_c(var.str, p + 1, var.len);
+		var.str[var.len] = 0;
+		(*offset) += var.len + 1;
+	}
+	else
+		(*offset)++;
+
+	return var;
+}
+
+int parse_sig_seq(struct string *sign_seq, struct string *sign, unsigned char *hashtype)
+{
+	unsigned char 	seq_len;
+	size_t			slen, rlen;
+	if (sign_seq->len < 70)return 0;
+
+	if ((sign_seq->str[0] == 0x30) && (sign_seq->str[2] == 0x02))
+	{
+		unsigned char *s, *r,*sig;
+		int n;
+		seq_len  = sign_seq->str[1];
+		slen	 = sign_seq->str[3];
+
+		if ((4 + slen+2)>= sign_seq->len)return 0;
+
+		if (sign_seq->str[4 + slen] == 2)
+			rlen = sign_seq->str[4 + slen + 1];
+
+		if (seq_len != (slen + rlen + 4))return 0;
+
+		*hashtype = sign_seq->str[sign_seq->len - 1];
+		
+		if (slen == 33)
+			r = sign_seq->str + 4 + 1;
+		else
+			r = sign_seq->str + 4;
+
+		if (rlen == 33)
+			s=sign_seq->str + 4 + slen + 2 + 1;
+		else
+			s=sign_seq->str + 4 + slen + 2;
+
+		sign->len = 64;
+		sign->size = sign->len + 1;
+		sign->str = malloc_c(sign->size);
+		sig = sign->str;
+
+		n = 32;
+		while (n--)
+		{
+			sig[n]		= r[31-n];
+			sig[n + 32] = s[31 - n];
+		}
+
+		sign->str[sign->len] = 0;
+		return 1;
+	}
+	return 0;
+
+}
+
+int get_insig_info(const struct string *script, struct string *sign, struct string *pubk, unsigned char *hash_type)
+{
+	struct string	sigseq = { PTR_NULL };
+	size_t			offset = 0;
+	int				ret = 0;
+	sigseq = get_next_script_var(script, &offset);
+	if (sigseq.str == PTR_NULL)return 0;
+	if (sigseq.len < 70)
+	{
+		free_string(&sigseq);
+		return 0;
+	}
+	if (parse_sig_seq(&sigseq, sign, hash_type))
+	{
+		(*pubk) = get_next_script_var(script, &offset);
+		if (pubk->str != PTR_NULL)
+		{
+			if (pubk->len >= 32)
+				ret = 1;
+			else
+				free_string(pubk);
+		}
+		if (!ret)
+			free_string(sign);
+	}
+	free_string(&sigseq);
+
+	return ret;
+}
+int check_sign(struct string *sign, struct string *pubK, hash_t txh)
+{
+	int ret=0;
+	if (pubK->len == 33)
+	{
+		struct string ppk = { PTR_NULL };
+		struct string msg = { PTR_NULL };
+		unsigned char *mp,*p,*dp;
+		int n = 32;
+		
+		msg.len = 32;
+		msg.str = malloc_c(32);
+		ppk.str = malloc_c(33);
+		
+		ppk.len = 33;
+		p		= pubK->str;
+		dp      = ppk.str;
+		mp		= msg.str;
+		
+		dp[0] = p[0];
+		while (n--)
+		{
+			mp[n]		= txh[31-n];
+			dp[n + 1]	= p[(31 - n) + 1];
+		}
+		ret = crypto_sign_open(sign, &msg, &ppk);
+		free_string(&msg);
+		free_string(&ppk);
+	}
+	return ret;
+}
+
+
+OS_API_C_FUNC(int) get_in_script_address(struct string *script, btc_addr_t addr)
+{
 	unsigned char  *p;
 	p = (unsigned char  *)script->str;
 
@@ -193,6 +358,10 @@ OS_API_C_FUNC(int) get_in_script_address(struct string *script, btc_addr_t addr)
 	}
 	else if ((p[0] == 72) && (p[73] == 33) && (script->len == 107))
 	{
+		char		pkey[33];
+		memcpy_c		(pkey, &p[73], 33);
+		key_to_addr		(pkey, addr);
+		/*
 		char		pkey[33];
 		memcpy_c(pkey, &p[73], 33);
 		mbedtls_sha256(script->str + 1, 33, tmp_hash, 0);
@@ -205,6 +374,7 @@ OS_API_C_FUNC(int) get_in_script_address(struct string *script, btc_addr_t addr)
 
 		memcpy_c(&hin[21], fhash, 4);
 		base58(hin, addr);
+		*/
 		return 1;
 	}
 
@@ -213,16 +383,14 @@ OS_API_C_FUNC(int) get_in_script_address(struct string *script, btc_addr_t addr)
 
 OS_API_C_FUNC(int) get_out_script_address(struct string *script, btc_addr_t addr)
 {
-	hash_t			tmp_hash, fhash;
-	char			hash[21];
-	unsigned char	hin[32];
-	unsigned char  *p;
-	p = (unsigned char  *)script->str;
+	unsigned char  *p = (unsigned char  *)script->str;
+	
 	if ((p[0] == 33) && (p[34] == 0xAC))
 	{
+		key_to_addr(script->str + 1, addr);
+		/*
 		char			pkey[33];
 		mbedtls_sha256(script->str + 1, 33, tmp_hash, 0);
-
 		hin[0] = pubKeyPrefix;
 		ripemd160		(tmp_hash, 32,&hin[1]);
 		
@@ -231,11 +399,13 @@ OS_API_C_FUNC(int) get_out_script_address(struct string *script, btc_addr_t addr
 				
 		memcpy_c(&hin[21], fhash, 4);
 		base58(hin, addr);
-		
+		*/
 		return 1;
 	}
 	else if ((p[0] == 0x76) && (p[1] == 0xA9) && (p[24] == 0xAC))
 	{
+		keyh_to_addr(script->str + 3, addr);
+		/*
 		hash[0] = pubKeyPrefix;
 		memcpy_c(&hash[1], script->str + 3, 20);
 
@@ -245,7 +415,24 @@ OS_API_C_FUNC(int) get_out_script_address(struct string *script, btc_addr_t addr
 		memcpy_c(hin, hash, 21);
 		memcpy_c(&hin[21], fhash, 4);
 		base58	(hin, addr);
+		*/
 		return 2;
 	}
 	return 0;
+}
+int check_txout_key(mem_zone_ref_ptr output, unsigned char *pkey)
+{
+	btc_addr_t inaddr;
+	struct string oscript = { PTR_NULL };
+	int ret;
+
+	keyh_to_addr(pkey, inaddr);
+	if (tree_manager_get_child_value_istr(output, NODE_HASH("script"), &oscript, 0))
+	{
+		btc_addr_t outaddr;
+		get_out_script_address(&oscript, outaddr);
+		free_string(&oscript);
+		ret = (memcmp_c(outaddr, inaddr, sizeof(btc_addr_t)) == 0) ? 1 : 0;
+	}
+	return ret;
 }

@@ -12,6 +12,7 @@
 #include "fsio.h"
 
 #include <math.h>
+#include <stdlib.h>
 
 
  LIBC_API void	*	C_API_FUNC kernel_memory_map_c				(unsigned int size);
@@ -218,6 +219,12 @@ mem_ptr _intel_fast_memcpy(mem_ptr dst_ptr,const_mem_ptr src_ptr,mem_size size)
 	return memcpy_c(dst_ptr,src_ptr,size);
 }
 */
+
+OS_API_C_FUNC(unsigned int ) rand_c()
+{
+	return rand();
+
+}
 
 OS_API_C_FUNC(mem_ptr) memmove_c(mem_ptr dst_ptr, const_mem_ptr src_ptr, mem_size size)
 {
@@ -467,6 +474,8 @@ OS_API_C_FUNC(void) swap_zone_ref(mem_zone_ref_ptr dest_zone_ref, mem_zone_ref_p
 }
 
 extern void init_funcs(void);
+extern mem_ptr			ASM_API_FUNC memset(mem_ptr ptr, int value, unsigned int size);
+extern mem_ptr			ASM_API_FUNC memcpy(mem_ptr ptr, int value, unsigned int size);
 
 OS_API_C_FUNC(void) init_mem_system()
 {
@@ -496,12 +505,20 @@ OS_API_C_FUNC(void) init_mem_system()
 	sys_add_tpo_mod_func_name("libcon", "malloc_c", malloc_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "calloc_c", calloc_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "memset_c", memset_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "rand_c", rand_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "memset", memset, 0);
-	sys_add_tpo_mod_func_name("libcon", "memcpy_c", memcpy_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "memcpy_c", memcpy_c,0);
+	sys_add_tpo_mod_func_name("libcon", "memcpy", memcpy, 0);
 	sys_add_tpo_mod_func_name("libcon", "memcmp_c", memcmp_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "memmove_c", memmove_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "memchr_c", memchr_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "memchr_32_c", memchr_32_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "store_bigendian", store_bigendian, 0);
+	sys_add_tpo_mod_func_name("libcon", "load_bigendian", load_bigendian, 0); 
+	
+	 
+
+
 	sys_add_tpo_mod_func_name("libcon", "allocate_new_zone", allocate_new_zone, 0);
 	sys_add_tpo_mod_func_name("libcon", "allocate_new_empty_zone", allocate_new_empty_zone, 0);
 	sys_add_tpo_mod_func_name("libcon", "expand_zone", expand_zone, 0);

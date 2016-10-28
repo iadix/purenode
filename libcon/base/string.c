@@ -1126,3 +1126,28 @@ OS_API_C_FUNC(void) dtoa_c	(char *buff, char conv, int bsize, int dplace, double
 
 
 
+OS_API_C_FUNC(uint64_t) load_bigendian(const unsigned char *x)
+{
+	return
+		(uint64_t)(x[7]) \
+		| (((uint64_t)(x[6])) << 8) \
+		| (((uint64_t)(x[5])) << 16) \
+		| (((uint64_t)(x[4])) << 24) \
+		| (((uint64_t)(x[3])) << 32) \
+		| (((uint64_t)(x[2])) << 40) \
+		| (((uint64_t)(x[1])) << 48) \
+		| (((uint64_t)(x[0])) << 56)
+		;
+}
+
+OS_API_C_FUNC(void) store_bigendian(unsigned char *x, uint64_t u)
+{
+	x[7] = u; u >>= 8;
+	x[6] = u; u >>= 8;
+	x[5] = u; u >>= 8;
+	x[4] = u; u >>= 8;
+	x[3] = u; u >>= 8;
+	x[2] = u; u >>= 8;
+	x[1] = u; u >>= 8;
+	x[0] = u;
+}

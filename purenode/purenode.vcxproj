@@ -63,7 +63,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)export\</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libcon_d.lib;libbase_d.lib;block_adx_d.lib;node_adx_d.lib;stake_pos3_d.lib;kernel32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libcon_d.lib;ed25519_d.lib;libbase_d.lib;block_adx_d.lib;node_adx_d.lib;stake_pos3_d.lib;kernel32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>

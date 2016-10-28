@@ -5,10 +5,13 @@
 #include <base/std_str.h>
 
 #include <sha256.h>
+#define FORWARD_CRYPTO
+#include <crypto.h>
 #include <strs.h>
 #include <tree.h>
 #include <fsio.h>
-
+#include <mem_stream.h>
+#include <tpo_mod.h>
 
 
 C_IMPORT size_t			C_API_FUNC	compute_payload_size(mem_zone_ref_ptr payload_node);
@@ -20,11 +23,13 @@ C_IMPORT size_t			C_API_FUNC init_node(mem_zone_ref_ptr key);
 
 extern int C_API_FUNC get_out_script_address(struct string *script, btc_addr_t addr);
 
-extern int compute_script_size(mem_zone_ref_ptr script_node);
-extern int serialize_script(mem_zone_ref_ptr script_node, struct string *script);
-
-extern int scrypt_blockhash(const void* input, hash_t hash);
-
+extern int				compute_script_size(mem_zone_ref_ptr script_node);
+extern int				serialize_script(mem_zone_ref_ptr script_node, struct string *script);
+extern int				check_txout_key(mem_zone_ref_ptr output, unsigned char *pkey);
+extern int				scrypt_blockhash(const void* input, hash_t hash);
+extern struct string   get_next_script_var(struct string *script, size_t *offset);
+extern int				check_sign(struct string *sign, struct string *pubK, hash_t txh);
+extern int				get_insig_info(const struct string *script, struct string *sign, struct string *pubk, unsigned char *hash_type);
 #define ONE_COIN		100000000ULL
 #define ONE_CENT		1000000ULL
 
@@ -32,10 +37,90 @@ hash_t					null_hash		= { 0xCD };
 const char				*null_hash_str	= "0000000000000000000000000000000000000000000000000000000000000000";
 unsigned char			pubKeyPrefix	= 0xCD;
 static const uint64_t	one_coin		= ONE_COIN;
+tpo_mod_file			sign_tpo_mod = { 0xCD };
 
-OS_API_C_FUNC(void) set_pubkeyprefix(unsigned char c){
-	memset_c(null_hash, 0, 32);
-	pubKeyPrefix = c;
+//#undef _DEBUG
+
+#ifdef _DEBUG
+LIBEC_API int			C_API_FUNC crypto_extract_key	(dh_key_t pk, const dh_key_t sk);
+LIBEC_API int			C_API_FUNC crypto_sign_open		(const struct string *sign, const struct string *msgh, const dh_key_t pk);
+LIBEC_API struct string	C_API_FUNC crypto_sign			(struct string *msg, const dh_key_t sk);
+#else
+crypto_extract_key_func_ptr crypto_extract_key=PTR_INVALID;
+crypto_sign_open_func_ptr	crypto_sign_open = PTR_INVALID;
+#ifdef FORWARD_CRYPTO
+crypto_sign_func_ptr		crypto_sign = PTR_INVALID;
+#endif
+#endif
+
+
+int load_sign_module(const char *sign_mod, tpo_mod_file *tpomod)
+{
+	int ret=1;
+#ifndef _DEBUG
+	char str[64];
+	strcpy_c(str, "modz/");
+	strcat_cs(str, 64, sign_mod);
+	strcat_cs(str, 64, ".tpo");
+	ret = load_module(str, sign_mod, tpomod);
+
+	crypto_extract_key = get_tpo_mod_exp_addr_name(tpomod, "crypto_extract_key", 0);
+	crypto_sign_open = get_tpo_mod_exp_addr_name(tpomod, "crypto_sign_open", 0);
+#ifdef FORWARD_CRYPTO
+	crypto_sign = get_tpo_mod_exp_addr_name(tpomod, "crypto_sign", 0); 
+#endif
+#endif
+	return ret;
+}
+
+
+OS_API_C_FUNC(void) init_blocks(mem_zone_ref_ptr node_config){
+	hash_t				msgh;
+	dh_key_t			privkey;
+	dh_key_t			pubkey;
+	char				sign_mod_name[65];
+	struct string		sign = { PTR_NULL };
+	struct string		msg = { PTR_NULL };
+	struct string		pkstr,str = { PTR_NULL }, strh = { PTR_NULL };
+	int					i;
+
+	memset_c						(null_hash, 0, 32);
+	tree_manager_get_child_value_i32(node_config, NODE_HASH("pubKeyVersion"), &i);
+	pubKeyPrefix = i;
+	if (!tree_manager_get_child_value_str(node_config, NODE_HASH("sign_mod"),sign_mod_name,65,0))
+		strcpy_cs(sign_mod_name,65,"ed25519");
+
+	tpo_mod_init		(&sign_tpo_mod);
+	load_sign_module	(sign_mod_name,&sign_tpo_mod);
+
+#ifdef FORWARD_CRYPTO
+	for (i = 0; i < 64; i++)
+		privkey[i] = 0;// rand_c();
+
+	crypto_extract_key	(pubkey, privkey);
+	make_string			(&str, "abcdef");
+	mbedtls_sha256		(str.str, str.len, msgh,0);
+
+	strh.str = msgh;
+	strh.len = 32;
+
+	pkstr.str	= pubkey;
+	pkstr.len	= 64;
+	
+	sign = crypto_sign		(&strh, privkey);
+	i = crypto_sign_open    (&sign, &strh, &pkstr);
+
+	if (i==1)
+	{
+		mem_zone_ref log = { PTR_NULL };
+		tree_manager_create_node("log", NODE_LOG_PARAMS, &log);
+		tree_manager_set_child_value_str(&log, "msg", msg.str);
+		log_message("crypto sign ok '%msg%'", &log);
+		release_zone_ref(&log);
+	}
+	else
+		log_message("crypto sign error", PTR_NULL);
+#endif	
 }
 
 
@@ -98,12 +183,77 @@ OS_API_C_FUNC(int) compute_tx_hash(mem_zone_ref_ptr tx, hash_t hash)
 
 	length = get_node_size(tx);
 	buffer = (unsigned char *)malloc_c(length);
-	serialize_children(tx, buffer);
-	mbedtls_sha256(buffer, length, tx_hash, 0);
-	mbedtls_sha256(tx_hash, 32, hash, 0);
+	write_node		(tx, buffer);
+	mbedtls_sha256	(buffer, length, tx_hash, 0);
+	mbedtls_sha256	(tx_hash, 32, hash, 0);
 	free_c(buffer);
 	return 1;
 }
+
+/*
+int SignatureHash(struct string scriptCode, mem_zone_ref txTo, unsigned int nIn, int nHashType)
+{
+	if (nIn >= txTo.vin.size())
+	{
+		LogPrintf("ERROR: SignatureHash() : nIn=%d out of range\n", nIn);
+		return 1;
+	}
+	CTransaction txTmp(txTo);
+
+	// In case concatenating two scripts ends up with two codeseparators,
+	// or an extra one at the end, this prevents all those possible incompatibilities.
+	scriptCode.FindAndDelete(CScript(OP_CODESEPARATOR));
+
+	// Blank out other inputs' signatures
+	for (unsigned int i = 0; i < txTmp.vin.size(); i++)
+		txTmp.vin[i].scriptSig = CScript();
+	txTmp.vin[nIn].scriptSig = scriptCode;
+
+	// Blank out some of the outputs
+	if ((nHashType & 0x1f) == SIGHASH_NONE)
+	{
+		// Wildcard payee
+		txTmp.vout.clear();
+
+		// Let the others update at will
+		for (unsigned int i = 0; i < txTmp.vin.size(); i++)
+			if (i != nIn)
+				txTmp.vin[i].nSequence = 0;
+	}
+	else if ((nHashType & 0x1f) == SIGHASH_SINGLE)
+	{
+		// Only lock-in the txout payee at same index as txin
+		unsigned int nOut = nIn;
+		if (nOut >= txTmp.vout.size())
+		{
+			LogPrintf("ERROR: SignatureHash() : nOut=%d out of range\n", nOut);
+			return 1;
+		}
+		txTmp.vout.resize(nOut + 1);
+		for (unsigned int i = 0; i < nOut; i++)
+			txTmp.vout[i].SetNull();
+
+		// Let the others update at will
+		for (unsigned int i = 0; i < txTmp.vin.size(); i++)
+			if (i != nIn)
+				txTmp.vin[i].nSequence = 0;
+	}
+
+	// Blank out other inputs completely, not recommended for open transactions
+	if (nHashType & SIGHASH_ANYONECANPAY)
+	{
+		txTmp.vin[0] = txTmp.vin[nIn];
+		txTmp.vin.resize(1);
+	}
+
+	// Serialize and hash
+	CHashWriter ss(SER_GETHASH, 0);
+	ss << txTmp << nHashType;
+	return ss.GetHash();
+}
+*/
+
+
 OS_API_C_FUNC(int) compute_block_pow(mem_zone_ref_ptr block, hash_t hash)
 {
 	size_t		  length;
@@ -1025,22 +1175,93 @@ OS_API_C_FUNC(int) check_tx_outputs(mem_zone_ref_ptr tx, uint64_t *total, unsign
 	return 1;
 }
 
+/*
+OS_API_C_FUNC(int) check_tx_sign(mem_zone_ref_ptr tx)
+{
+	mem_zone_ref		txin_list = { PTR_NULL }, my_list = { PTR_NULL };
+	mem_zone_ref_ptr	input = PTR_NULL;
+	int					ret=1;
 
+	if (!tree_manager_find_child_node(tx, NODE_HASH("txsin"), NODE_BITCORE_VINLIST, &txin_list))
+		return 0;
 
+	for (tree_manager_get_first_child(&txin_list, &my_list, &input); ((input != PTR_NULL) && (input->zone != PTR_NULL)); tree_manager_get_next_child(&my_list, &input))
+	{
+		char pkey[33];
+		hash_t txh;
+		struct string t;
+		if (ret == 0)continue;
 
+		if (!tree_manager_get_child_value_hash(tx, NODE_HASH("tx hash"), txh))
+			compute_tx_hash(tx, txh);
+
+		if (check_txin_sign(input,pkey,txh) != 0)
+			ret = 0;
+	}
+	release_zone_ref(&txin_list);
+	return ret;
+}
+OS_API_C_FUNC(int) check_tx_hash_sign(hash_t tx_hash)
+{
+	hash_t blk_hash;
+	mem_zone_ref tx = { PTR_NULL };
+	int ret;
+	if (!load_tx(&tx, blk_hash, tx_hash))return 0;
+	ret=check_tx_sign(&tx);
+	release_zone_ref(&tx);
+	return ret;
+}
+*/
+int compute_tx_sign_hash(mem_zone_ref_const_ptr tx, unsigned int nIn, const struct string *script,unsigned int hash_type,hash_t txh)
+{
+	hash_t				tx_hash;
+	mem_zone_ref		txin_list = { PTR_NULL }, my_list = { PTR_NULL }, txTmp = { PTR_NULL };
+	mem_zone_ref_ptr	input = PTR_NULL;
+	size_t				length;
+	unsigned char		*buffer;
+	unsigned int		iidx,ver;
+	
+	tree_manager_node_dup(PTR_NULL, tx, &txTmp);
+	if (!tree_manager_find_child_node(&txTmp, NODE_HASH("txsin"), NODE_BITCORE_VINLIST, &txin_list))
+		return 0;
+
+	for (iidx = 0, tree_manager_get_first_child(&txin_list, &my_list, &input); ((input != PTR_NULL) && (input->zone != PTR_NULL)); tree_manager_get_next_child(&my_list, &input), iidx++)
+	{
+		if (nIn == iidx)
+			tree_manager_set_child_value_vstr(input, "script", script); 
+		else
+			tree_manager_set_child_value_str(input, "script", "");
+	}
+
+	release_zone_ref(&txin_list);
+
+	length								= get_node_size(&txTmp);
+	buffer								= (unsigned char *)malloc_c(length+4);
+	*((unsigned int *)(buffer+length))	= hash_type;
+
+	write_node(&txTmp, buffer);
+	mbedtls_sha256(buffer, length+4, tx_hash, 0);
+	mbedtls_sha256(tx_hash, 32, txh, 0);
+	free_c(buffer);
+	release_zone_ref(&txTmp);
+
+}
 
 OS_API_C_FUNC(int) check_tx_inputs(mem_zone_ref_ptr tx, uint64_t *total_in, unsigned int *is_coinbase)
 {
 	mem_zone_ref		txin_list = { PTR_NULL }, my_list = { PTR_NULL };
 	mem_zone_ref_ptr	input = PTR_NULL;
+	unsigned int		iidx;
 	int ret;
 
 	if (!tree_manager_find_child_node(tx, NODE_HASH("txsin"), NODE_BITCORE_VINLIST, &txin_list))
 		return 0;
 
+
+
 	*total_in = 0;
 
-	for (tree_manager_get_first_child(&txin_list, &my_list, &input); ((input != PTR_NULL) && (input->zone != PTR_NULL)); tree_manager_get_next_child(&my_list, &input))
+	for (iidx = 0, tree_manager_get_first_child(&txin_list, &my_list, &input); ((input != PTR_NULL) && (input->zone != PTR_NULL)); tree_manager_get_next_child(&my_list, &input), iidx++)
 	{
 		struct string		tx_path = { 0 };
 
@@ -1068,72 +1289,81 @@ OS_API_C_FUNC(int) check_tx_inputs(mem_zone_ref_ptr tx, uint64_t *total_in, unsi
 		}
 		else
 		{
+
 			mem_zone_ref		prevout = { PTR_NULL }, prev_tx = { PTR_NULL };
-			struct string		script = { 0 }, oscript = { 0 };
-			unsigned char		sig[72];
-			unsigned char		pubK[33];
-			unsigned char		*cscript;
-
-
-			n = 0;
-			while (n<32)
+			struct string		oscript = { 0 };
+			hash_t				txsh;
+			ret			= load_tx(&prev_tx, pBlock, prev_hash);
+			if (ret)
 			{
-				cphash[n * 2 + 0] = hex_chars[prev_hash[n] >> 0x04];
-				cphash[n * 2 + 1] = hex_chars[prev_hash[n] & 0x0F];
-				n++;
-			}
-			cphash[64] = 0;
-
-			tree_manager_get_child_value_istr(input, NODE_HASH("script"), &script, 0);
-			cscript = (unsigned char *)script.str;
-			if ((cscript[0] == 72) && (cscript[73] == 33) && (script.len == 107))
-			{
-				memcpy_c(sig, &cscript[1], 72);
-				memcpy_c(pubK, &cscript[73], 33);
-			}
-			free_string(&script);
-
-			load_tx(&prev_tx, pBlock, prev_hash);
-
-			if (get_tx_output(&prev_tx, oidx, &prevout))
-			{
-				if (tree_manager_get_child_value_istr(&prevout, NODE_HASH("script"), &oscript, 0))
+				n = 0;
+				while (n < 32)
 				{
-					/*
-					bool Verify(const uint256 &hash, const std::vector<unsigned char>& vchSig) {
-					// -1 = error, 0 = bad sig, 1 = good
-					if (ECDSA_verify(0, (unsigned char*)&hash, sizeof(hash), &vchSig[0], vchSig.size(), pkey) != 1)
-					return false;
-					return true;
-					}
-					*/
-					free_string(&oscript);
-					ret = tree_manager_get_child_value_i64(&prevout, NODE_HASH("value"), &amount);
+					cphash[n * 2 + 0] = hex_chars[prev_hash[n] >> 0x04];
+					cphash[n * 2 + 1] = hex_chars[prev_hash[n] & 0x0F];
+					n++;
 				}
-				release_zone_ref(&prevout);
+				cphash[64] = 0;
+				n = 0;
+				while (n < 32)
+				{
+					ctphash[n * 2 + 0] = hex_chars[pBlock[n] >> 4];
+					ctphash[n * 2 + 1] = hex_chars[pBlock[n] & 0x0F];
+					n++;
+				}
+				ctphash[64] = 0;
+
+				make_string(&tx_path, "blks");
+				cat_ncstring_p(&tx_path, ctphash + 0, 2);
+				cat_ncstring_p(&tx_path, ctphash + 2, 2);
+				cat_cstring_p(&tx_path, ctphash);
+				cat_cstring_p(&tx_path, cphash);
+				cat_cstring(&tx_path, "_out_");
+				strcat_int(&tx_path, oidx);
+				ret = (stat_file(tx_path.str) == 0) ? 1 : 0;
+				free_string(&tx_path);
+				
+				if ((ret)&&(get_tx_output(&prev_tx, oidx, &prevout)))
+				{
+					struct string	script = { PTR_NULL }, sign = { PTR_NULL }, sigseq = { PTR_NULL }, vpubK = { PTR_NULL };
+					mem_zone_ref	txTmp = { PTR_NULL };
+					size_t			offset = 0;
+					int				ret;
+					unsigned char	hash_type;
+
+					tree_manager_get_child_value_i64(&prevout, NODE_HASH("value"), &amount);
+					tree_manager_get_child_value_istr(&prevout, NODE_HASH("script"), &oscript, 0);
+					
+
+					tree_manager_get_child_value_istr(input, NODE_HASH("script"), &script, 0);
+					ret = get_insig_info(&script, &sign, &vpubK, &hash_type);
+					if (ret)
+					{
+						/*
+						ret = check_txout_key(&prevout, vpubK.str);
+						if (ret)
+						{
+						*/
+							compute_tx_sign_hash(tx, iidx, &oscript, hash_type, txsh);
+							ret = check_sign(&sign, &vpubK, txsh);
+						//}
+						free_string(&sign);
+						free_string(&vpubK);
+					}
+
+					free_string(&script);
+					free_string(&oscript);
+					release_zone_ref(&prevout);
+				}
+				release_zone_ref(&prev_tx);
 			}
-			release_zone_ref(&prev_tx);
+			else
+			{
+				int ppp;
+				ppp = 0;
+			}
 		}
 
-		n = 0;
-		while (n<32)
-		{
-			ctphash[n * 2 + 0] = hex_chars[pBlock[n] >> 4];
-			ctphash[n * 2 + 1] = hex_chars[pBlock[n] & 0x0F];
-			n++;
-		}
-		ctphash[64] = 0;
-
-		make_string(&tx_path, "blks");
-		cat_ncstring_p(&tx_path, ctphash + 0, 2);
-		cat_ncstring_p(&tx_path, ctphash + 2, 2);
-		cat_cstring_p(&tx_path, ctphash);
-		cat_cstring_p(&tx_path, cphash);
-		cat_cstring(&tx_path, "_out_");
-		strcat_int(&tx_path, oidx);
-
-		ret = (stat_file(tx_path.str) == 0) ? 1 : 0;
-		free_string(&tx_path);
 		if (!ret)
 		{
 			release_zone_ref	(&my_list);

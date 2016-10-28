@@ -35,6 +35,15 @@ LIBC_API mem_ptr		C_API_FUNC malloc_c				(mem_size sz);
 LIBC_API mem_ptr		C_API_FUNC calloc_c				(mem_size sz,mem_size blk);
 LIBC_API mem_ptr		C_API_FUNC get_next_aligned_ptr (mem_ptr ptr);
 
+LIBC_API uint64_t		C_API_FUNC mul64(uint64_t a, uint64_t b);
+LIBC_API uint64_t		C_API_FUNC muldiv64(uint64_t a, uint64_t b, uint64_t c);
+LIBC_API uint64_t		C_API_FUNC shl64(uint64_t a, unsigned char n);
+LIBC_API uint64_t		C_API_FUNC shr64(uint64_t a, unsigned char n);
+LIBC_API double			C_API_FUNC exp_c(double a);
+LIBC_API void			C_API_FUNC big128_mul(unsigned int x, struct big64 y, struct big128 *out);
+LIBC_API unsigned int	C_API_FUNC rand_c();
+
+
 LIBC_API unsigned int	ASM_API_FUNC		compare_z_exchange_c(unsigned int *data, unsigned int new_value);
 LIBC_API unsigned int	ASM_API_FUNC		fetch_add_c(unsigned int *data, int new_value);
 LIBC_API unsigned int	ASM_API_FUNC		calc_crc32_c(const char *, size_t);

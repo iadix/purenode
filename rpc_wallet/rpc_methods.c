@@ -936,7 +936,6 @@ OS_API_C_FUNC(int) listtransactions(mem_zone_ref_const_ptr params, unsigned int 
 	mem_zone_ref  tx_out_list = { PTR_NULL }, addrs = { PTR_NULL };
 	mem_zone_ref  my_list = { PTR_NULL };
 	mem_zone_ref_ptr addr;
-	uint64_t		amount;
 
 	tree_manager_add_child_node(result, "txs", NODE_JSON_ARRAY, &tx_out_list);
 

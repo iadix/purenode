@@ -7,10 +7,13 @@
 #include <base/std_str.h>
 #include <fsio.h>
 
+#define FORWARD_CRYPTO
+
 #include <strs.h>
 #include <tree.h>
 #include <connect.h>
 #include <sha256.h>
+#include <crypto.h>
 #include <http.h>
 #include <upnp.h>
 #include <mem_stream.h>
@@ -928,6 +931,12 @@ int handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 		release_zone_ref				(&lastPOSBlk);
 	}
 
+	if (nblks == 18)
+	{
+		int kk;
+		kk = 12;
+	}
+
 	if (ret)
 	{
 		hash_t				out_diff;
@@ -1390,6 +1399,7 @@ OS_API_C_FUNC(int) app_init(mem_zone_ref_ptr params)
 }
 
 
+
 OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 {
 	mem_zone_ref		genesis = { PTR_NULL };
@@ -1398,12 +1408,16 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 	struct host_def		*seed_host;
 	int					nc;
 
+	int					i;
+
 	if (!tree_manager_find_child_node(&node_config, NODE_HASH("genesis"), 0xFFFFFFFF, &genesis_conf))
 	{
 		log_message("no genesis block in node config\n", PTR_NULL);
 		return 0;
 	}
-		
+
+
+	
 	make_genesis_block(&genesis_conf, &genesis);
 	if (tree_manager_find_child_node(&node_config, NODE_HASH("staking"), 0xFFFFFFFF, &stake_conf))
 	{

@@ -621,7 +621,7 @@ OS_API_C_FUNC(int) blocks(const char *params, const struct http_req *req, mem_zo
 	uint64_t			nblks=0;
 	size_t			page_num;
 	unsigned int	 block_time, limit, num, idx,tidx,n;
-	const struct http_hdr *blockdate, *pageNum;
+	const struct http_hdr *blockdate, *pageNum, *sinceblock;
 
 	tree_manager_find_child_node		(&my_node, NODE_HASH("block index"), NODE_BITCORE_HASH, &block_index_node);
 	tree_manager_find_child_node		(&my_node, NODE_HASH("block time"), NODE_GFX_INT, &time_index_node);
@@ -634,11 +634,6 @@ OS_API_C_FUNC(int) blocks(const char *params, const struct http_req *req, mem_zo
 	else
 		page_num = 0;
 
-	if ((blockdate = find_key(req->query_vars, "BlockDate")) != PTR_NULL)
-		time = parseDate(blockdate->value.str);
-	else
-		time = get_time_c()-24*3600;
-
 	if (isdigit_c(params[0]))
 		limit = strtoul_c(params, PTR_NULL, 10);
 	else
@@ -647,69 +642,127 @@ OS_API_C_FUNC(int) blocks(const char *params, const struct http_req *req, mem_zo
 	if ((limit < 1) || (limit > 10))
 		limit = 10;
 
-	block_time = 0xFFFFFFFF;
-	
-	idx = nblks;
-	while ((block_time > (time + 24 * 3600))&&(idx>1))
-	{
-		if (!tree_mamanger_get_node_dword(&time_index_node, (--idx) * 4, &block_time))
-			break;
-	}
 	tree_manager_add_child_node(result, "blocks", NODE_JSON_ARRAY, &block_list);
-	if (idx == 1)
-	{
-		/*
-		tree_manager_add_child_node		(&block_list, "block", NODE_GFX_OBJECT, &new_block);
-		tree_manager_set_child_value_str(&new_block , "blk hash", nullhash);
-		release_zone_ref				(&new_block);
-		*/
-		release_zone_ref				(&block_list);
-		release_zone_ref				(&block_index_node);
-		release_zone_ref				(&time_index_node);
-		return 1;
-	}
 	
-	tree_manager_get_node_str(&block_index_node, idx * 32, chash, 65, 0);
-	n = 0;
-	while (n<32)
+	if ((blockdate = find_key(req->query_vars, "BlockDate")) != PTR_NULL)
 	{
-		prm[(31 - n) * 2 + 0] = chash[n * 2 + 0];
-		prm[(31 - n) * 2 + 1] = chash[n * 2 + 1];
-		n++;
-	}
-	prm[64] = 0;
-	num = 0;
-	tidx = 0;
-	while (block_time>=time)
-	{
-		if ((tidx>=page_num*limit) && (num < limit))
+		time		= parseDate(blockdate->value.str);
+		block_time	= 0xFFFFFFFF;
+		idx			= nblks;
+		while ((block_time > (time + 24 * 3600)) && (idx > 1))
 		{
-			tree_manager_add_child_node(&block_list, "block", NODE_GFX_OBJECT, &new_block);
-			block(prm, req, &new_block);
-			release_zone_ref(&new_block);
+			if (!tree_mamanger_get_node_dword(&time_index_node, (--idx) * 4, &block_time))
+				break;
+		}
+		
+		if (idx <= 1)
+		{
+			release_zone_ref(&block_list);
+			release_zone_ref(&block_index_node);
+			release_zone_ref(&time_index_node);
+			return 1;
+		}
+
+		tree_manager_get_node_str(&block_index_node, idx * 32, chash, 65, 0);
+		n = 0;
+		while (n < 32)
+		{
+			prm[(31 - n) * 2 + 0] = chash[n * 2 + 0];
+			prm[(31 - n) * 2 + 1] = chash[n * 2 + 1];
+			n++;
+		}
+		prm[64] = 0;
+		num = 0;
+		tidx = 0;
+		while (block_time >= time)
+		{
+			if ((tidx >= page_num*limit) && (num < limit))
+			{
+				tree_manager_add_child_node(&block_list, "block", NODE_GFX_OBJECT, &new_block);
+				block(prm, req, &new_block);
+				release_zone_ref(&new_block);
+				num++;
+			}
+			tidx++;
+			idx--;
+			if (!tree_mamanger_get_node_dword(&time_index_node, idx * 4, &block_time))
+				break;
+
+			if (num < limit)
+			{
+				if (!tree_manager_get_node_str(&block_index_node, idx * 32, chash, 65, 0))
+					break;
+				n = 0;
+				while (n < 32)
+				{
+					prm[(31 - n) * 2 + 0] = chash[n * 2 + 0];
+					prm[(31 - n) * 2 + 1] = chash[n * 2 + 1];
+					n++;
+				}
+				prm[64] = 0;
+			}
+		}
+		tree_manager_set_child_value_i32(result, "numblocks", tidx);
+	}
+	else if ((sinceblock = find_key(req->query_vars, "SinceBlock")) != PTR_NULL)
+	{
+		hash_t phash,hash;
+		size_t cur;
+
+		if (sinceblock->value.len != 64)
+		{
+			release_zone_ref(&block_list);
+			release_zone_ref(&block_index_node);
+			release_zone_ref(&time_index_node);
+			return 0;
+		}
+
+		n = 0;
+		while (n < 32)
+		{
+			char    hex[3];
+
+			chash[(31 - n) * 2 + 0] = sinceblock->value.str[n * 2 + 0];
+			chash[(31 - n) * 2 + 1] = sinceblock->value.str[n * 2 + 1];
+
+			hex[0] = sinceblock->value.str[n * 2 + 0];
+			hex[1] = sinceblock->value.str[n * 2 + 1];
+			hex[2] = 0;
+			phash[31 - n] = strtoul_c(hex, PTR_NULL, 16);
+			n++;
+		}
+		chash[64] = 0;
+
+		cur = 0;
+		num = 0;
+		idx = nblks;
+		memset_c(hash, 0, sizeof(hash_t));
+
+		while ((idx--) > 0)
+		{
+			if (!tree_manager_get_node_hash(&block_index_node, ((idx) * 32), hash))break;
+			if (!memcmp_c(hash, phash, sizeof(hash_t)))break;
+			
+			if ((num >= page_num*limit) && (cur < limit))
+			{
+				n = 0;
+				while (n < 32)
+				{
+					prm[n * 2 + 0] = hex_chars[hash[31 - n] >> 4];
+					prm[n * 2 + 1] = hex_chars[hash[31 - n] & 0x0F];
+					n++;
+				}
+				prm[64] = 0;
+
+				tree_manager_add_child_node(&block_list, "block", NODE_GFX_OBJECT, &new_block);
+				block(prm, req, &new_block);
+				release_zone_ref(&new_block);
+				cur++;
+			}
 			num++;
 		}
-		tidx++;
-		idx--;
-		if (!tree_mamanger_get_node_dword(&time_index_node, idx * 4, &block_time))
-			break;
-
-		if (num < limit)
-		{
-			if (!tree_manager_get_node_str(&block_index_node, idx * 32, chash, 65, 0))
-				break;
-			n = 0;
-			while (n < 32)
-			{
-				prm[(31 - n) * 2 + 0] = chash[n * 2 + 0];
-				prm[(31 - n) * 2 + 1] = chash[n * 2 + 1];
-				n++;
-			}
-			prm[64] = 0;
-		}
+		tree_manager_set_child_value_i32(result, "numblocks", num);
 	}
-	tree_manager_set_child_value_i32(result, "numblocks", tidx);
-
 	release_zone_ref(&block_list);
 	release_zone_ref(&block_index_node);
 	release_zone_ref(&time_index_node);
