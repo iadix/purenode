@@ -21,7 +21,7 @@ C_IMPORT void			C_API_FUNC	serialize_children(mem_zone_ref_ptr node, unsigned ch
 C_IMPORT const unsigned char*	C_API_FUNC read_node(mem_zone_ref_ptr key, const unsigned char *payload);
 C_IMPORT size_t			C_API_FUNC init_node(mem_zone_ref_ptr key);
 
-extern int C_API_FUNC get_out_script_address(struct string *script, btc_addr_t addr);
+extern int C_API_FUNC get_out_script_address(struct string *script, struct string *pubk, btc_addr_t addr);
 
 extern int				compute_script_size(mem_zone_ref_ptr script_node);
 extern int				serialize_script(mem_zone_ref_ptr script_node, struct string *script);
@@ -953,7 +953,7 @@ int store_tx_vout(struct string *out_path, mem_zone_ref_ptr vout, btc_addr_t out
 	if (!tree_manager_get_child_value_i64(vout, NODE_HASH("value"), &amount))return 0;
 	if (!tree_manager_get_child_value_istr(vout, NODE_HASH("script"), &script, 16))return 0;
 	if (script.len == 0){ free_string(&script); return 0; }
-	ret_addr = get_out_script_address(&script, out_addr);
+	ret_addr = get_out_script_address(&script, PTR_NULL,out_addr);
 	free_string(&script);
 
 	memcpy_c(bbuffer, &amount, sizeof(uint64_t));
@@ -997,7 +997,7 @@ OS_API_C_FUNC(int) get_tx_output_addr(const hash_t tx_hash, unsigned int idx, bt
 		ret = tree_manager_get_child_value_istr(&vout, NODE_HASH("script"), &script,0);
 		if (ret)
 		{
-			get_out_script_address(&script, addr);
+			get_out_script_address(&script, PTR_NULL,addr);
 			free_string(&script);
 		}
 		release_zone_ref(&vout);
@@ -1328,7 +1328,6 @@ OS_API_C_FUNC(int) check_tx_inputs(mem_zone_ref_ptr tx, uint64_t *total_in, unsi
 					struct string	script = { PTR_NULL }, sign = { PTR_NULL }, sigseq = { PTR_NULL }, vpubK = { PTR_NULL };
 					mem_zone_ref	txTmp = { PTR_NULL };
 					size_t			offset = 0;
-					int				ret;
 					unsigned char	hash_type;
 
 					tree_manager_get_child_value_i64(&prevout, NODE_HASH("value"), &amount);
@@ -1339,16 +1338,22 @@ OS_API_C_FUNC(int) check_tx_inputs(mem_zone_ref_ptr tx, uint64_t *total_in, unsi
 					ret = get_insig_info(&script, &sign, &vpubK, &hash_type);
 					if (ret)
 					{
-						/*
-						ret = check_txout_key(&prevout, vpubK.str);
+						btc_addr_t addr;
+						if (vpubK.len == 0)
+						{
+							free_string						(&vpubK);
+							ret = get_out_script_address	(&oscript, &vpubK, addr);
+						}
+						else
+							check_txout_key		(&prevout, vpubK.str);
+							
 						if (ret)
 						{
-						*/
 							compute_tx_sign_hash(tx, iidx, &oscript, hash_type, txsh);
 							ret = check_sign(&sign, &vpubK, txsh);
-						//}
-						free_string(&sign);
+						}
 						free_string(&vpubK);
+						free_string(&sign);
 					}
 
 					free_string(&script);
@@ -1884,7 +1889,7 @@ OS_API_C_FUNC(int) store_tx_inputs(mem_zone_ref_ptr tx, const char *tx_hash, uns
 				struct string script = { 0 };
 				if (!tree_manager_get_child_value_istr(out, NODE_HASH("script"), &script, 16))continue;
 				if (script.len == 0){ free_string(&script); continue; }
-				if (get_out_script_address(&script, to_addr_list[n_to_addrs]))
+				if (get_out_script_address(&script, PTR_NULL,to_addr_list[n_to_addrs]))
 				{
 					unsigned int n, f;
 					f = 0;

@@ -41,7 +41,7 @@ C_IMPORT int			C_API_FUNC   load_tx(mem_zone_ref_ptr tx, hash_t blk_hash, const 
 C_IMPORT int			C_API_FUNC get_tx_blk_height(const hash_t tx_hash, uint64_t *height, uint64_t *block_time, uint64_t *tx_time);
 C_IMPORT int			C_API_FUNC compute_block_hash(mem_zone_ref_ptr block, hash_t hash);
 C_IMPORT int			C_API_FUNC  get_in_script_address(struct string *script, btc_addr_t addr);
-C_IMPORT int			C_API_FUNC   get_out_script_address(struct string *script, btc_addr_t addr);
+C_IMPORT int			C_API_FUNC   get_out_script_address(struct string *script, struct string *pubk, btc_addr_t addr);
 C_IMPORT int			C_API_FUNC    load_tx_input(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr	vin, mem_zone_ref_ptr tx_out);
 C_IMPORT int			C_API_FUNC     get_tx_output(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr vout);
 C_IMPORT int			C_API_FUNC      get_tx_input(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr vout);
@@ -374,7 +374,7 @@ OS_API_C_FUNC(int) tx(const char *params, const struct http_req *req, mem_zone_r
 								btc_addr_t addr;
 								mem_zone_ref ad = { PTR_NULL };
 								tree_manager_get_child_value_istr(&vout, NODE_HASH("script"), &script, 0);
-								if (get_out_script_address(&script, addr))
+								if (get_out_script_address(&script, PTR_NULL,addr))
 								{
 									if (tree_manager_add_child_node(&addrs, "addr", NODE_BITCORE_WALLET_ADDR, &ad))
 									{
@@ -458,7 +458,7 @@ OS_API_C_FUNC(int) tx(const char *params, const struct http_req *req, mem_zone_r
 							mem_zone_ref ad = { PTR_NULL };
 							int ret;
 
-							ret = get_out_script_address(&script, addr);
+							ret = get_out_script_address(&script, PTR_NULL,addr);
 
 							if (ret == 1)
 								tree_manager_set_child_value_str(&scriptkey, "type", "pubkeyhash");

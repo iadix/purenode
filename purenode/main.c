@@ -51,7 +51,7 @@ C_IMPORT int			C_API_FUNC	SetCompact(unsigned int bits, hash_t out);
 C_IMPORT int			C_API_FUNC	is_pow_block(const char *blk_hash);
 C_IMPORT unsigned int	C_API_FUNC	calc_new_target(unsigned int nActualSpacing, unsigned int TargetSpacing, unsigned int nTargetTimespan, unsigned int pBits);
 C_IMPORT int			C_API_FUNC	check_block_pow(mem_zone_ref_ptr hdr, hash_t diff_hash);
-C_IMPORT int			C_API_FUNC	get_out_script_address(struct string *script, btc_addr_t addr);
+C_IMPORT int			C_API_FUNC	get_out_script_address(struct string *script, struct string *pubk, btc_addr_t addr);
 C_IMPORT int			C_API_FUNC	add_unspent(btc_addr_t	addr, const char *tx_hash, unsigned int oidx, uint64_t amount, btc_addr_t *src_addrs, unsigned int n_addrs);
 C_IMPORT int			C_API_FUNC	spend_tx_addr(btc_addr_t addr, const char *tx_hash, unsigned int vin, const char *ptx_hash, unsigned int oidx, btc_addr_t *addrs_to, unsigned int n_addrs_to);
 C_IMPORT int			C_API_FUNC	get_tx_output_addr(const hash_t tx_hash, unsigned int idx, btc_addr_t addr);
@@ -383,7 +383,7 @@ OS_API_C_FUNC(int) store_tx_wallet(btc_addr_t addr, hash_t tx_hash)
 		struct string script = { 0 };
 		if (!tree_manager_get_child_value_istr(out, NODE_HASH("script"), &script, 16))continue;
 		if (script.len == 0){ free_string(&script); continue; }
-		if (get_out_script_address(&script, to_addr_list[n_to_addrs]))
+		if (get_out_script_address(&script, PTR_NULL,to_addr_list[n_to_addrs]))
 		{
 			unsigned int n, f;
 			f = 0;
@@ -476,7 +476,7 @@ OS_API_C_FUNC(int) store_tx_wallet(btc_addr_t addr, hash_t tx_hash)
 		int				ret;
 
 		tree_manager_get_child_value_istr(out, NODE_HASH("script"), &script, 0);
-		ret = get_out_script_address(&script, out_addr);
+		ret = get_out_script_address(&script, PTR_NULL,out_addr);
 		free_string(&script);
 
 		if (ret)

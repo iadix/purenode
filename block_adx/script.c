@@ -243,42 +243,69 @@ int parse_sig_seq(struct string *sign_seq, struct string *sign, unsigned char *h
 	if ((sign_seq->str[0] == 0x30) && (sign_seq->str[2] == 0x02))
 	{
 		unsigned char *s, *r,*sig;
+		size_t last_r, last_s;
 		int n;
 		seq_len  = sign_seq->str[1];
-		slen	 = sign_seq->str[3];
+		rlen	 = sign_seq->str[3];
 
-		if ((4 + slen+2)>= sign_seq->len)return 0;
+		if ((4 + rlen+2)>= sign_seq->len)return 0;
 
-		if (sign_seq->str[4 + slen] == 2)
-			rlen = sign_seq->str[4 + slen + 1];
+		if (sign_seq->str[4 + rlen] == 2)
+			slen = sign_seq->str[4 + rlen + 1];
 
 		if (seq_len != (slen + rlen + 4))return 0;
 
 		*hashtype = sign_seq->str[sign_seq->len - 1];
 		
-		if (slen == 33)
-			r = sign_seq->str + 4 + 1;
-		else
-			r = sign_seq->str + 4;
-
 		if (rlen == 33)
-			s=sign_seq->str + 4 + slen + 2 + 1;
+		{
+			last_r = 31;
+			r = sign_seq->str + 4 + 1;
+		}
 		else
-			s=sign_seq->str + 4 + slen + 2;
+		{
+			last_r = rlen-1;
+			r		= sign_seq->str + 4;
+		}
+			
+
+		if (slen == 33)
+		{
+			last_s	= 31;
+			s		= sign_seq->str + 4 + rlen + 2 + 1;
+		}
+		else
+		{
+			last_s	= slen-1;
+			s		= sign_seq->str + 4 + rlen + 2;
+		}
 
 		sign->len = 64;
 		sign->size = sign->len + 1;
 		sign->str = malloc_c(sign->size);
 		sig = sign->str;
 
-		n = 32;
-		while (n--)
+		n = 0;
+		while (n <= last_r)
 		{
-			sig[n]		= r[31-n];
-			sig[n + 32] = s[31 - n];
+			sig[(last_r - n)] = r[n];
+			n++;
 		}
 
-		sign->str[sign->len] = 0;
+		if (rlen < 32)
+			memset_c(&sig[rlen], 0, 32 - rlen);
+
+		n = 0;
+		while (n <= last_s)
+		{
+			sig[(last_s - n)+32] = s[n];
+			n++;
+		}
+
+		if (slen < 32)
+			memset_c(&sig[slen+32], 0, 32 - slen);
+
+		
 		return 1;
 	}
 	return 0;
@@ -297,21 +324,10 @@ int get_insig_info(const struct string *script, struct string *sign, struct stri
 		free_string(&sigseq);
 		return 0;
 	}
-	if (parse_sig_seq(&sigseq, sign, hash_type))
-	{
-		(*pubk) = get_next_script_var(script, &offset);
-		if (pubk->str != PTR_NULL)
-		{
-			if (pubk->len >= 32)
-				ret = 1;
-			else
-				free_string(pubk);
-		}
-		if (!ret)
-			free_string(sign);
-	}
+	ret		= parse_sig_seq			(&sigseq, sign, hash_type);
+	(*pubk) = get_next_script_var	(script, &offset);
+	
 	free_string(&sigseq);
-
 	return ret;
 }
 int check_sign(struct string *sign, struct string *pubK, hash_t txh)
@@ -381,12 +397,30 @@ OS_API_C_FUNC(int) get_in_script_address(struct string *script, btc_addr_t addr)
 	return 0;
 }
 
-OS_API_C_FUNC(int) get_out_script_address(struct string *script, btc_addr_t addr)
+OS_API_C_FUNC(int) get_out_script_address(struct string *script, struct string *pubk, btc_addr_t addr)
 {
 	unsigned char  *p = (unsigned char  *)script->str;
 	
 	if ((p[0] == 33) && (p[34] == 0xAC))
 	{
+		if (pubk != PTR_NULL)
+		{
+			int n;
+			pubk->len = 33;
+			pubk->size = pubk->len + 1;
+			pubk->str = malloc_c(pubk->size);
+			memcpy_c(pubk->str, script->str+1, 33);
+
+			/*
+			pubk->str[0] = script->str[1];
+			n = 32;
+			while (n--)
+			{
+				*((unsigned char *)(pubk->str + 1+ n)) = *((unsigned char *)(script->str + 2 + (31 - n)));
+			}
+			pubk->str[pubk->len] = 0;
+			*/
+		}
 		key_to_addr(script->str + 1, addr);
 		/*
 		char			pkey[33];
@@ -426,13 +460,22 @@ int check_txout_key(mem_zone_ref_ptr output, unsigned char *pkey)
 	struct string oscript = { PTR_NULL };
 	int ret;
 
-	keyh_to_addr(pkey, inaddr);
+
 	if (tree_manager_get_child_value_istr(output, NODE_HASH("script"), &oscript, 0))
 	{
 		btc_addr_t outaddr;
-		get_out_script_address(&oscript, outaddr);
+		if (pkey[0] != 0)
+		{ 
+			unsigned char ppk[33];
+			int n = 32;
+			
+
+			key_to_addr(ppk, inaddr);
+			get_out_script_address	(&oscript, PTR_NULL, outaddr);
+			ret = (memcmp_c(outaddr, inaddr, sizeof(btc_addr_t)) == 0) ? 1 : 0;
+		}
 		free_string(&oscript);
-		ret = (memcmp_c(outaddr, inaddr, sizeof(btc_addr_t)) == 0) ? 1 : 0;
+		
 	}
 	return ret;
 }
