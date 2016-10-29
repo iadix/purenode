@@ -238,7 +238,7 @@ int parse_sig_seq(struct string *sign_seq, struct string *sign, unsigned char *h
 {
 	unsigned char 	seq_len;
 	size_t			slen, rlen;
-	if (sign_seq->len < 70)return 0;
+	if (sign_seq->len < 69)return 0;
 
 	if ((sign_seq->str[0] == 0x30) && (sign_seq->str[2] == 0x02))
 	{
@@ -319,7 +319,7 @@ int get_insig_info(const struct string *script, struct string *sign, struct stri
 	int				ret = 0;
 	sigseq = get_next_script_var(script, &offset);
 	if (sigseq.str == PTR_NULL)return 0;
-	if (sigseq.len < 70)
+	if (sigseq.len < 69)
 	{
 		free_string(&sigseq);
 		return 0;
