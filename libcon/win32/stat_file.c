@@ -6,6 +6,7 @@
 #include <direct.h>
 #include <sys/stat.h>
 #include <stdio.h>
+#include <io.h>
 
 #include "../base/std_def.h"
 #include "../base/std_mem.h"
@@ -22,6 +23,7 @@ char path_sep='\\';
 struct string log_file_name = { PTR_INVALID };
 struct string home_path = { PTR_INVALID };
 struct string exe_path = { PTR_INVALID };
+unsigned int running = 1;
 
 struct thread
 {
@@ -260,6 +262,7 @@ OS_API_C_FUNC(int) truncate_file(const char *path, unsigned int ofset,const void
 {
 	FILE		*f;
 	size_t		len;
+	uint64_t	offset;
 	int			ret;
 
 	if ((ofset == 0) && (data_len == 0))
@@ -607,4 +610,17 @@ OS_API_C_FUNC(int)kernel_memory_free_c(mem_ptr ptr)
 	 if (n < 10)return 0;
 	 
 	 return extractDate(date);
+ }
+ OS_API_C_FUNC(unsigned int) isRunning()
+ {
+	 return running;
+ }
+ void __cdecl exited(void)
+ {
+	 running = 0;
+	 return PTR_NULL;
+ }
+  void init_exit()
+ {
+	 atexit(exited);
  }

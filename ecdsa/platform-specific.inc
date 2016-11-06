@@ -7,12 +7,18 @@
 
 #if (defined(_WIN32) || defined(_WIN64))
 /* Windows */
-
+/*
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <wincrypt.h>
-
+*/
 static int default_RNG(uint8_t *dest, unsigned size) {
+
+	while(size--)
+	{
+		dest[size]=rand_c();
+	}
+	/*
     HCRYPTPROV prov;
     if (!CryptAcquireContext(&prov, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
         return 0;
@@ -20,6 +26,7 @@ static int default_RNG(uint8_t *dest, unsigned size) {
 
     CryptGenRandom(prov, size, (BYTE *)dest);
     CryptReleaseContext(prov, 0);
+	*/
     return 1;
 }
 #define default_RNG_defined 1

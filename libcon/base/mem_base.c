@@ -18,7 +18,7 @@
  LIBC_API void	*	C_API_FUNC kernel_memory_map_c				(unsigned int size);
  LIBC_API void		C_API_FUNC kernel_memory_free_c				(mem_ptr ptr);
  extern struct string exe_path;
- 
+ extern void init_exit();
 			
 typedef struct
 {
@@ -614,6 +614,9 @@ OS_API_C_FUNC(void) init_mem_system()
 	sys_add_tpo_mod_func_name("libcon", "load_module", load_module, 0);
 	sys_add_tpo_mod_func_name("libcon", "register_tpo_exports", register_tpo_exports, 0);
 	sys_add_tpo_mod_func_name("libcon", "get_tpo_mod_exp_addr_name", get_tpo_mod_exp_addr_name, 0);
+	sys_add_tpo_mod_func_name("libcon", "isRunning", isRunning, 0);
+
+	init_exit();
 	
 	init_funcs();
 

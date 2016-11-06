@@ -1,0 +1,49 @@
+<html>
+<head>
+    <title>keys></title>
+    
+    <script src="/jsbn.js"></script>
+    <script src="/jsbn2.js"></script>
+    <script src="/jsSHA-2.2.0/src/sha_dev.js"></script>
+    <script src="/djbec.js"></script>
+    <script src="/jquery-3.1.1.min.js"></script>
+    <script language="javascript">
+
+        var pubKey=null;
+        var privkey=null;
+        function newPKey()
+        {
+            var bytes = new Uint8Array(32);
+            window.crypto.getRandomValues(bytes);
+            return bytes2bi(bytes);
+        }
+
+        $(document).ready(function () {
+            var ss='',sss='';
+            privkey = newPKey   ();
+            pubKey = publickey  (privkey);
+
+            for (n = 0; n < pubKey.length; n++)
+            {
+                var t;
+                t = pubKey[n] < 16 ? '0' + pubKey[n].toString(16) : pubKey[n].toString(16);
+                ss+=t;
+            }
+
+            bb = bi2bytes(privkey);
+            for (n = 0; n < bb.length; n++) {
+                var t;
+                t = bb[n] < 16 ? '0' + bb[n].toString(16) : bb[n].toString(16);
+                sss += t;
+            }
+            $('#pubkey').val(ss);
+            $('#privkey').val(sss);
+        });
+    </script>
+</head>
+<body >
+    pubkey : <input size="64" type="text" id="pubkey" value="" />
+    privkey : <input size="64" type="text" id="privkey" value="" />
+</body>
+
+</html>

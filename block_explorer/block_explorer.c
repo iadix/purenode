@@ -40,12 +40,10 @@ C_IMPORT int			C_API_FUNC  load_tx_addresses(btc_addr_t addr, mem_zone_ref_ptr t
 C_IMPORT int			C_API_FUNC   load_tx(mem_zone_ref_ptr tx, hash_t blk_hash, const hash_t tx_hash);
 C_IMPORT int			C_API_FUNC get_tx_blk_height(const hash_t tx_hash, uint64_t *height, uint64_t *block_time, uint64_t *tx_time);
 C_IMPORT int			C_API_FUNC compute_block_hash(mem_zone_ref_ptr block, hash_t hash);
-C_IMPORT int			C_API_FUNC  get_in_script_address(struct string *script, btc_addr_t addr);
 C_IMPORT int			C_API_FUNC   get_out_script_address(struct string *script, struct string *pubk, btc_addr_t addr);
 C_IMPORT int			C_API_FUNC    load_tx_input(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr	vin, mem_zone_ref_ptr tx_out);
 C_IMPORT int			C_API_FUNC     get_tx_output(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr vout);
 C_IMPORT int			C_API_FUNC      get_tx_input(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr vout);
-C_IMPORT int			C_API_FUNC	  get_blk_txs(const char* blk_hash, mem_zone_ref_ptr txs);
 C_IMPORT int			C_API_FUNC	  blk_load_tx_hash(const char *blk_hash, const char *tx_hash, mem_zone_ref_ptr tx);
 C_IMPORT int			C_API_FUNC is_tx_null(mem_zone_ref_const_ptr tx);
 C_IMPORT size_t			C_API_FUNC	  get_node_size(mem_zone_ref_ptr key);

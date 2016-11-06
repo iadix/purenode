@@ -75,6 +75,8 @@ typedef unsigned char	ipv4_t[4];
 typedef	char			bitcore_cmd_t[12];
 typedef	unsigned char	hash_t[32];
 typedef	char			btc_addr_t[34];
+typedef	char			btc_paddr_t[52];
 /*
 LIBC_API char *			C_API_FUNC strcpy				(char *string,const char *src_string);
 */
+

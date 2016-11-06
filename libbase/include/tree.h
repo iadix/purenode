@@ -134,6 +134,9 @@
 #define		NODE_BITCORE_TXOUT				0x0B100000
 #define		NODE_BITCORE_SCRIPT				0x0B200000	
 #define		NODE_BITCORE_LOCATOR			0x0B400000	
+#define		NODE_BITCORE_ECDSA_SIG			0x0B800000
+
+
 #define		NODE_NET_IPV4					0x0C000000
 
 struct node_hash_val_t
@@ -215,7 +218,7 @@ LIBBASE_API  int			C_API_FUNC	tree_manager_write_node_btcaddr			(mem_zone_ref_pt
 LIBBASE_API  int			C_API_FUNC	tree_manager_write_node_rhash			(mem_zone_ref_ptr node_ref, mem_size ofset, const hash_t hash);
 LIBBASE_API  int			C_API_FUNC	tree_manager_write_node_vstr			(mem_zone_ref_ptr node_ref, mem_size ofset, const struct string *str);
 LIBBASE_API  int			C_API_FUNC	tree_manager_write_node_vint			(mem_zone_ref_ptr node_ref, mem_size ofset, const_mem_ptr vint);
-
+LIBBASE_API  int			C_API_FUNC	tree_manager_write_node_sig				(mem_zone_ref_ptr node_ref, mem_size ofset, unsigned char *sign, size_t sign_len);
 LIBBASE_API  int			C_API_FUNC	tree_manager_write_node_4uc				(mem_zone_ref_ptr node_ref,mem_size ofset,const vec_4uc_t val);
 LIBBASE_API  int			C_API_FUNC	tree_manager_write_node_word			(mem_zone_ref_ptr node_ref,mem_size ofset,unsigned short value);
 LIBBASE_API  int			C_API_FUNC	tree_manager_write_node_byte			(mem_zone_ref_ptr node_ref,mem_size ofset,unsigned char value);

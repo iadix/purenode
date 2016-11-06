@@ -8,18 +8,12 @@
 #include <crypto.h>
 #include <strs.h>
 #include <tree.h>
+
+
 #ifdef _DEBUG
-LIBEC_API int			C_API_FUNC crypto_extract_key	(dh_key_t pk, const dh_key_t sk);
-LIBEC_API int			C_API_FUNC crypto_sign_open(const struct string *sign, struct string *msgh, struct string *pk);
-#ifdef FORWARD_CRYPTO
-LIBEC_API struct string	C_API_FUNC crypto_sign			(struct string *msg, const dh_key_t sk);
-#endif
+	LIBEC_API int	C_API_FUNC			crypto_sign_open(const struct string *sign, struct string *msgh, struct string *pk);
 #else
-extern crypto_extract_key_func_ptr	crypto_extract_key;
-extern crypto_sign_open_func_ptr	crypto_sign_open;
-#ifdef FORWARD_CRYPTO
-extern crypto_sign_func_ptr			crypto_sign_func;
-#endif
+	extern	crypto_sign_open_func_ptr	crypto_sign_open;
 #endif
 
 extern unsigned char	pubKeyPrefix;
@@ -48,6 +42,98 @@ char* base58(unsigned char *s, char *out) {
 
 	return out;
 }
+
+static const unsigned char b58digits_map[] = {
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+	-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, -1, -1, -1, -1, -1, -1,
+	-1, 9, 10, 11, 12, 13, 14, 15, 16, -1, 17, 18, 19, 20, 21, -1,
+	22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, -1, -1, -1, -1, -1,
+	-1, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, -1, 44, 45, 46,
+	47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, -1, -1, -1, -1, -1,
+};
+
+int b58tobin(void *bin, size_t *binszp, const char *b58, size_t b58sz)
+{
+	size_t binsz = *binszp;
+	const unsigned char *b58u = (void*)b58;
+	unsigned char *binu = bin;
+	size_t outisz = (binsz + 3) / 4;
+	unsigned long outi[256];
+	uint64_t t;
+	unsigned long c;
+	size_t i, j;
+	unsigned char bytesleft = binsz % 4;
+	unsigned long zeromask = bytesleft ? (0xffffffff << (bytesleft * 8)) : 0;
+	unsigned zerocount = 0;
+
+	if (!b58sz)
+		b58sz = strlen_c(b58);
+
+	memset_c(outi, 0, outisz * sizeof(*outi));
+
+	// Leading zeros, just count
+	for (i = 0; i < b58sz && b58u[i] == '1'; ++i)
+		++zerocount;
+
+	for (; i < b58sz; ++i)
+	{
+		if (b58u[i] & 0x80)
+			// High-bit set on invalid digit
+			return 0;
+		if (b58digits_map[b58u[i]] == -1)
+			// Invalid base58 digit
+			return 0;
+		c = (unsigned)b58digits_map[b58u[i]];
+		for (j = outisz; j--;)
+		{
+			t = ((uint64_t)outi[j]) * 58 + c;
+			c = (t & 0x3f00000000) >> 32;
+			outi[j] = t & 0xffffffff;
+		}
+		if (c)
+			// Output number too big (carry to the next int32)
+			return 0;
+		if (outi[0] & zeromask)
+			// Output number too big (last int32 filled too far)
+			return 0;
+	}
+
+	j = 0;
+	switch (bytesleft) {
+	case 3:
+		*(binu++) = (outi[0] & 0xff0000) >> 16;
+	case 2:
+		*(binu++) = (outi[0] & 0xff00) >> 8;
+	case 1:
+		*(binu++) = (outi[0] & 0xff);
+		++j;
+	default:
+		break;
+	}
+
+	for (; j < outisz; ++j)
+	{
+		*(binu++) = (outi[j] >> 0x18) & 0xff;
+		*(binu++) = (outi[j] >> 0x10) & 0xff;
+		*(binu++) = (outi[j] >> 8) & 0xff;
+		*(binu++) = (outi[j] >> 0) & 0xff;
+	}
+
+	// Count canonical base58 byte count
+	binu = bin;
+	for (i = 0; i < binsz; ++i)
+	{
+		if (binu[i])
+			break;
+		--*binszp;
+	}
+	*binszp += zerocount;
+
+	return 1;
+}
+
 
 
 int compute_script_size(mem_zone_ref_ptr script_node)
@@ -206,7 +292,7 @@ void keyh_to_addr(unsigned char *pkeyh, btc_addr_t addr)
 	base58(hin, addr);
 }
 
-void key_to_addr(unsigned char *pkey,btc_addr_t addr)
+OS_API_C_FUNC(void) key_to_addr(unsigned char *pkey,btc_addr_t addr)
 {
 	hash_t			tmp_hash;
 	mbedtls_sha256	(pkey, 33, tmp_hash, 0);
@@ -234,7 +320,7 @@ struct string get_next_script_var(const struct string *script,size_t *offset)
 	return var;
 }
 
-int parse_sig_seq(struct string *sign_seq, struct string *sign, unsigned char *hashtype)
+OS_API_C_FUNC(int) parse_sig_seq(const struct string *sign_seq, struct string *sign, unsigned char *hashtype, int rev)
 {
 	unsigned char 	seq_len;
 	size_t			slen, rlen;
@@ -244,7 +330,7 @@ int parse_sig_seq(struct string *sign_seq, struct string *sign, unsigned char *h
 	{
 		unsigned char *s, *r,*sig;
 		size_t last_r, last_s;
-		int n;
+		unsigned int n;
 		seq_len  = sign_seq->str[1];
 		rlen	 = sign_seq->str[3];
 
@@ -285,25 +371,39 @@ int parse_sig_seq(struct string *sign_seq, struct string *sign, unsigned char *h
 		sign->str = malloc_c(sign->size);
 		sig = sign->str;
 
-		n = 0;
-		while (n <= last_r)
+		if (rev == 1)
 		{
-			sig[(last_r - n)] = r[n];
-			n++;
+			n = 0;
+			while (n <= last_r)
+			{
+				sig[(last_r - n)] = r[n];
+				n++;
+			}
+		}
+		else
+		{
+			memcpy_c(sig, r, rlen);
 		}
 
 		if (rlen < 32)
 			memset_c(&sig[rlen], 0, 32 - rlen);
 
-		n = 0;
-		while (n <= last_s)
+		if (rev == 1)
 		{
-			sig[(last_s - n)+32] = s[n];
-			n++;
+			n = 0;
+			while (n <= last_s)
+			{
+				sig[(last_s - n) + 32] = s[n];
+				n++;
+			}
+		}
+		else
+		{
+			memcpy_c(sig+32, s, slen);
 		}
 
 		if (slen < 32)
-			memset_c(&sig[slen+32], 0, 32 - slen);
+			memset_c(&sig[slen + 32], 0, 32 - slen);
 
 		
 		return 1;
@@ -312,7 +412,7 @@ int parse_sig_seq(struct string *sign_seq, struct string *sign, unsigned char *h
 
 }
 
-int get_insig_info(const struct string *script, struct string *sign, struct string *pubk, unsigned char *hash_type)
+OS_API_C_FUNC(int) get_insig_info(const struct string *script, struct string *sign, struct string *pubk, unsigned char *hash_type)
 {
 	struct string	sigseq = { PTR_NULL };
 	size_t			offset = 0;
@@ -324,13 +424,29 @@ int get_insig_info(const struct string *script, struct string *sign, struct stri
 		free_string(&sigseq);
 		return 0;
 	}
-	ret		= parse_sig_seq			(&sigseq, sign, hash_type);
+	ret		= parse_sig_seq			(&sigseq, sign, hash_type,1);
 	(*pubk) = get_next_script_var	(script, &offset);
 	
 	free_string(&sigseq);
 	return ret;
 }
-int check_sign(struct string *sign, struct string *pubK, hash_t txh)
+
+int get_insig(const struct string *script, struct string *sign_seq, struct string *pubk)
+{
+	size_t offset = 0;
+	(*sign_seq) = get_next_script_var(script, &offset);
+	if (sign_seq->str == PTR_NULL)return 0;
+	if (sign_seq->len < 69)
+	{
+		free_string(sign_seq);
+		return 0;
+	}
+	(*pubk) = get_next_script_var(script, &offset);
+	return 1;
+}
+
+
+int check_sign(const struct string *sign, const struct string *pubK, const hash_t txh)
 {
 	int ret=0;
 	if (pubK->len == 33)
@@ -363,40 +479,6 @@ int check_sign(struct string *sign, struct string *pubK, hash_t txh)
 }
 
 
-OS_API_C_FUNC(int) get_in_script_address(struct string *script, btc_addr_t addr)
-{
-	unsigned char  *p;
-	p = (unsigned char  *)script->str;
-
-	if ((p[0] == 72) && (script->len == 73))
-	{
-		return 0;
-	}
-	else if ((p[0] == 72) && (p[73] == 33) && (script->len == 107))
-	{
-		char		pkey[33];
-		memcpy_c		(pkey, &p[73], 33);
-		key_to_addr		(pkey, addr);
-		/*
-		char		pkey[33];
-		memcpy_c(pkey, &p[73], 33);
-		mbedtls_sha256(script->str + 1, 33, tmp_hash, 0);
-
-		hin[0] = pubKeyPrefix;
-		ripemd160(tmp_hash, 32, &hin[1]);
-
-		mbedtls_sha256(hin, 21, tmp_hash, 0);
-		mbedtls_sha256(tmp_hash, 32, fhash, 0);
-
-		memcpy_c(&hin[21], fhash, 4);
-		base58(hin, addr);
-		*/
-		return 1;
-	}
-
-	return 0;
-}
-
 OS_API_C_FUNC(int) get_out_script_address(struct string *script, struct string *pubk, btc_addr_t addr)
 {
 	unsigned char  *p = (unsigned char  *)script->str;
@@ -405,51 +487,17 @@ OS_API_C_FUNC(int) get_out_script_address(struct string *script, struct string *
 	{
 		if (pubk != PTR_NULL)
 		{
-			int n;
 			pubk->len = 33;
 			pubk->size = pubk->len + 1;
 			pubk->str = malloc_c(pubk->size);
 			memcpy_c(pubk->str, script->str+1, 33);
-
-			/*
-			pubk->str[0] = script->str[1];
-			n = 32;
-			while (n--)
-			{
-				*((unsigned char *)(pubk->str + 1+ n)) = *((unsigned char *)(script->str + 2 + (31 - n)));
-			}
-			pubk->str[pubk->len] = 0;
-			*/
 		}
 		key_to_addr(script->str + 1, addr);
-		/*
-		char			pkey[33];
-		mbedtls_sha256(script->str + 1, 33, tmp_hash, 0);
-		hin[0] = pubKeyPrefix;
-		ripemd160		(tmp_hash, 32,&hin[1]);
-		
-		mbedtls_sha256  (hin, 21, tmp_hash, 0);
-		mbedtls_sha256  (tmp_hash, 32, fhash, 0);
-				
-		memcpy_c(&hin[21], fhash, 4);
-		base58(hin, addr);
-		*/
 		return 1;
 	}
 	else if ((p[0] == 0x76) && (p[1] == 0xA9) && (p[24] == 0xAC))
 	{
 		keyh_to_addr(script->str + 3, addr);
-		/*
-		hash[0] = pubKeyPrefix;
-		memcpy_c(&hash[1], script->str + 3, 20);
-
-		mbedtls_sha256(hash, 21, tmp_hash, 0);
-		mbedtls_sha256(tmp_hash, 32, fhash, 0);
-
-		memcpy_c(hin, hash, 21);
-		memcpy_c(&hin[21], fhash, 4);
-		base58	(hin, addr);
-		*/
 		return 2;
 	}
 	return 0;
@@ -459,7 +507,6 @@ int check_txout_key(mem_zone_ref_ptr output, unsigned char *pkey)
 	btc_addr_t inaddr;
 	struct string oscript = { PTR_NULL };
 	int ret;
-
 
 	if (tree_manager_get_child_value_istr(output, NODE_HASH("script"), &oscript, 0))
 	{
