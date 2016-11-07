@@ -7,7 +7,6 @@
 #include <base/std_str.h>
 #include <fsio.h>
 
-#define FORWARD_CRYPTO
 
 #include <strs.h>
 #include <tree.h>

@@ -460,6 +460,98 @@ int list_spent(btc_addr_t addr, mem_zone_ref_ptr spents)
 	return 1;
 }
 
+int get_balance(btc_addr_t addr, uint64_t *conf_amount, uint64_t *amount, unsigned int minconf)
+{
+	struct string		unspent_path = { 0 };
+	unsigned int		n;
+	unsigned int		dir_list_len;
+	struct string		dir_list = { PTR_NULL };
+	const char			*ptr, *optr;
+	size_t				cur, nfiles;
+	uint64_t			sheight;
+
+	make_string(&unspent_path, "adrs");
+	cat_ncstring_p(&unspent_path, addr, 34);
+	cat_cstring_p(&unspent_path, "unspent");
+
+	if (stat_file(unspent_path.str) != 0)
+	{
+		free_string(&unspent_path);
+		return 0;
+	}
+
+	sheight = get_last_block_height();
+
+	nfiles = get_sub_files(unspent_path.str, &dir_list);
+
+	dir_list_len = dir_list.len;
+	optr = dir_list.str;
+	cur = 0;
+	while (cur < nfiles)
+	{
+		struct string	tx_path = { 0 };
+		unsigned int	output = 0xFFFFFFFF;
+		size_t			sz, len;
+		unsigned char	*data;
+
+		ptr = memchr_c(optr, 10, dir_list_len);
+		sz = mem_sub(optr, ptr);
+
+		clone_string(&tx_path, &unspent_path);
+		cat_ncstring_p(&tx_path, optr, sz);
+
+		if (get_file(tx_path.str, &data, &len)>0)
+		{
+			unsigned int nconf;
+
+
+
+			if (len >= sizeof(uint64_t))
+			{
+				hash_t			hash;
+				mem_zone_ref	unspent = { PTR_NULL };
+				uint64_t		height, block_time, tx_time;
+
+				n = 0;
+				while (n<32)
+				{
+					char    hex[3];
+					hex[0] = optr[n * 2 + 0];
+					hex[1] = optr[n * 2 + 1];
+					hex[2] = 0;
+					hash[n] = strtoul_c(hex, PTR_NULL, 16);
+					n++;
+				}
+
+				if (optr[64] == '_')
+					output = strtoul_c(&optr[65], PTR_NULL, 10);
+				else
+					output = 0xFFFFFFFF;
+
+				if (get_tx_blk_height(hash, &height, &block_time, &tx_time))
+					nconf = sheight - height;
+				else
+				{
+					block_time = 0;
+					tx_time = 0;
+					nconf = 0;
+				}
+				if (nconf < minconf)
+					(*amount)		+= *((uint64_t*)data); 
+				else
+					(*conf_amount)	+= *((uint64_t*)data);
+			}
+			free_c(data);
+		}
+		free_string(&tx_path);
+		cur++;
+		optr = ptr + 1;
+		dir_list_len -= sz;
+	}
+	free_string(&dir_list);
+
+	return 1;
+}
 
 int list_received(btc_addr_t addr, uint64_t *amount, mem_zone_ref_ptr received)
 {
@@ -2271,9 +2363,10 @@ OS_API_C_FUNC(int) getpubaddrs(mem_zone_ref_const_ptr params, unsigned int rpc_m
 	struct string username = { PTR_NULL };
 	struct string user_key_file = { PTR_NULL };
 	size_t keys_data_len = 0;
+	uint64_t conf_amount, unconf_amount, minconf;
 	unsigned char *keys_data = PTR_NULL;
 
-	if (!tree_manager_create_node("addrs", NODE_JSON_ARRAY, &addr_list))
+	if (!tree_manager_add_child_node(result, "addrs", NODE_JSON_ARRAY, &addr_list))
 		return 0;
 
 	tree_manager_get_child_at(params, 0, &username_n);
@@ -2283,24 +2376,32 @@ OS_API_C_FUNC(int) getpubaddrs(mem_zone_ref_const_ptr params, unsigned int rpc_m
 	make_string(&user_key_file, "keypairs");
 	cat_cstring_p(&user_key_file, username.str);
 
+	minconf = 1;
+
 	if (get_file(user_key_file.str, &keys_data, &keys_data_len))
 	{
 		mem_ptr keys_ptr=keys_data;
 		while (keys_data_len > 0)
 		{
 			mem_zone_ref new_addr = { PTR_NULL };
+			conf_amount = 0;
+			unconf_amount = 0;
 
-			tree_manager_add_child_node		(&addr_list, "addr", NODE_BITCORE_WALLET_ADDR, &new_addr);
-			tree_manager_write_node_btcaddr	(&new_addr, 0,keys_ptr);
-			release_zone_ref				(&new_addr);
-
+			get_balance	(keys_ptr, &conf_amount, &unconf_amount, minconf);
+			if(tree_manager_add_child_node			(&addr_list	, "addr"		 , NODE_GFX_OBJECT, &new_addr))
+			{
+				tree_manager_set_child_value_btcaddr(&new_addr	, "address"		 , keys_ptr);
+				tree_manager_set_child_value_i64	(&new_addr	, "amount"		 , conf_amount);
+				tree_manager_set_child_value_i64	(&new_addr	, "unconf_amount", unconf_amount);
+				release_zone_ref					(&new_addr);
+			}			
 			keys_ptr		 =	mem_add(keys_ptr ,(sizeof(btc_addr_t) + sizeof(dh_key_t)));
 			keys_data_len   -= (sizeof(btc_addr_t) + sizeof(dh_key_t));
 
 		}
 		free_c(keys_data);
 	}
-	tree_manager_node_add_child	(result, &addr_list);
+	
 	release_zone_ref			(&addr_list);
 	free_string					(&user_key_file);
 	free_string					(&username);

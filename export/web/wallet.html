@@ -1,4 +1,7 @@
+<html>
 <head>
+    <title>wallet</title>
+
     <style type="text/css">
         #addr_tab {
             width:35%;
@@ -10,6 +13,12 @@
             font-size:1.2em;
             font-weight:lighter;
         }
+        
+        .my_address {
+            font-weight:bold;
+            cursor:pointer;
+        }
+
         .address {
             font-weight:bold;
             cursor:pointer;
@@ -75,24 +84,39 @@
             border:1px solid;
             border-radius:2px;
         }
-
         .lbl {
             text-align:right;
         }
-
-      
+        #newaddr
+        {
+            display:none;
+            padding:8px;
+            border:1px solid;
+            text-align:left;
+        }
+        #newaddr div
+        {
+            text-align:left;
+        }
     </style>
+    <script src="/ecdsa_bundle.js"></script>
+    <script src="/jsSHA-2.2.0/src/sha_dev.js"></script>
     <script src="/jquery-3.1.1.min.js"></script>
+
     <script language="javascript">
+        var ec = null;
         var addrs = null;
         var unspents = null;
         var spents = null;
 	   var moneysupply=null;
-
+	   var my_addrs = null;
 	   var txs= null;
         var recvs = null;
         var scanTimer = null;
+        var userTimer = null;
         var blockTimer = null;
+        var pubkey = null;
+        var privkey = null;
         var unit=1;
         function rpc_call(in_method,in_params,in_success)
         {
@@ -105,6 +129,55 @@
                 error: function (err) { alert("Error"); }
             });
         }
+
+        var hexChar = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"];
+        function hex32(val) {
+            val &= 0xFFFFFFFF;
+            var hex = val.toString(16).toUpperCase();
+            return reverse(("00000000" + hex).slice(-8));
+        }
+
+        function sha256(s) {                      // Requires jsSHA
+            var shaObj = new jsSHA("SHA-256", "HEX");
+            shaObj.update(s);
+            return shaObj.getHash("HEX");
+        }
+        function toHexString(arr) {
+            var str = '';
+            for (var i = 0; i < arr.length ; i++) {
+                str += ((arr[i] < 16) ? "0" : "") + arr[i].toString(16);
+            }
+            return str;
+        }
+
+        function from_b58(S,           //Base58 encoded string input
+            A             //Base58 characters (i.e. "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz")
+        ) {
+            var d = [],   //the array for storing the stream of decoded bytes
+                b = [],   //the result byte array that will be returned
+                i,        //the iterator variable for the base58 string
+                j,        //the iterator variable for the byte array (d)
+                c,        //the carry amount variable that is used to overflow from the current byte to the next byte
+                n;        //a temporary placeholder variable for the current byte
+            for (i in S) { //loop through each base58 character in the input string
+                j = 0,                             //reset the byte iterator
+                c = A.indexOf(S[i]);             //set the initial carry amount equal to the current base58 digit
+                if (c < 0)                          //see if the base58 digit lookup is invalid (-1)
+                    return undefined;              //if invalid base58 digit, bail out and return undefined
+                c || b.length ^ i ? i : b.push(0); //prepend the result array with a zero if the base58 digit is zero and non-zero characters haven't been seen yet (to ensure correct decode length)
+                while (j in d || c) {               //start looping through the bytes until there are no more bytes and no carry amount
+                    n = d[j];                      //set the placeholder for the current byte
+                    n = n ? n * 58 + c : c;        //shift the current byte 58 units and add the carry amount (or just add the carry amount if this is a new byte)
+                    c = n >> 8;                    //find the new carry amount (1-byte shift of current byte value)
+                    d[j] = n % 256;                //reset the current byte to the remainder (the carry amount will pass on the overflow)
+                    j++                            //iterate to the next byte
+                }
+            }
+            while (j--)               //since the byte array is backwards, loop through it in reverse order
+                b.push(d[j]);      //append each byte to the result
+            return new Uint8Array(b) //return the final byte array in Uint8Array format
+        }
+
         function timeConverter(UNIX_timestamp) {
             var a = new Date(UNIX_timestamp * 1000);
             var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -116,6 +189,43 @@
             var sec = a.getSeconds();
             var time = date + ' ' + month + ' ' + year + ' ' + hour + ':' + min + ':' + sec;
             return time;
+        }
+        function generateKeys() {
+            
+            // Generate keys
+            var key = ec.genKeyPair();
+            $('#privkey').val(key.getPrivate('hex'));
+
+            pubkey = key.getPublic().encodeCompressed('hex');
+            privkey = key.getPrivate('hex');
+            pubkey_to_addr(pubkey);
+        }
+        function newkey() {
+            var addr, sk, hexk;
+            addr = $('#privkey').val();
+            data = from_b58(addr, "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz");
+
+            crc = toHexString(data.slice(34, 38));
+
+            sk = data.slice(0, 34);
+            hexk = toHexString(sk);
+            h = sha256(hexk);
+            h2 = sha256(h);
+            if (crc != h2.slice(0, 8))
+                alert('bad key');
+
+            sk = data.slice(1, 33);
+            hexk = toHexString(sk);
+            keys = ec.keyPair({ priv: hexk, privEnc: 'hex' });
+            pubkey = keys.getPublic().encodeCompressed('hex');
+            privkey = hexk;
+
+            pubkey_to_addr(pubkey);
+        }
+        function pubkey_to_addr(pubkey) {
+            rpc_call('pubkeytoaddr', [pubkey], function (data) {
+                $('#pubaddr').html(data.result.addr);
+            });
         }
         function select_menu(id)
         {
@@ -329,12 +439,15 @@
 
                 if (txs[n].category == "send") {
                     cell.className = "addr_send";
-                    cell.innerHTML = "-"+txs[n].amount/unit;
+                    cell.innerHTML = "-" + txs[n].amount / unit;
+                    total -= txs[n].amount;
                 }
                 else {
                     cell.className = "addr_recv";
                     cell.innerHTML = "+" + txs[n].amount / unit;
+                    total += txs[n].amount;
                 }
+                
 
             }
             $('#txtotal').html(total / unit);
@@ -361,7 +474,38 @@
             old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
             $('.address').click(function () { list_txs($(this).html()); if (scanTimer != null) { clearTimeout(scanTimer); scanTimer = null; } scan_status($(this).html()); });
         }
+        function update_my_addrs() {
+            old_tbody = document.getElementById("my_address_list_table").tBodies[0];
+            new_tbody = document.createElement('tbody');
+            if ((my_addrs == null) || (my_addrs.length == 0))
+            {
+                document.getElementById("my_address_list_table").style.display='none';
+                $('#myaddrhdr').html('no addresses');
+            }
+            else
+            {
+                var num_addrs = my_addrs.length;
+                for (n = 0; n < num_addrs; n++) {
+                    var row = new_tbody.insertRow(n);
+                    cell = row.insertCell(0);
+                    cell.className = "my_address";
+                    cell.innerHTML = my_addrs[n].address;
 
+                    cell = row.insertCell(1);
+                    cell.className = "balance_confirmed";
+                    cell.innerHTML = '<span>' + my_addrs[n].amount / unit + '</span>';
+
+                    cell = row.insertCell(2);
+                    cell.className = "balance_unconfirmed";
+                    cell.innerHTML = '<span>' + my_addrs[n].unconf_amount / unit + '</span>';
+
+                }
+                document.getElementById("my_address_list_table").style.display='block';
+                $('#myaddrhdr').html(num_addrs + ' addresses');
+            }
+            old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
+            $('.my_address').click(function () { list_txs($(this).html()); if (scanTimer != null) { clearTimeout(scanTimer); scanTimer = null; } scan_status($(this).html()); });
+        }
         function list_unspent(address) {
             var old_tbody = document.getElementById("list_table").tBodies[0];
             var new_tbody = document.createElement('tbody');
@@ -424,7 +568,6 @@
             rpc_call('listreceivedbyaddress', [0, true], function (data) {
                 addrs = data.result.addrs;
                 update_addr_list();
-                list_txs(addrs[0].addr);
             });
         }
 
@@ -511,14 +654,50 @@
         function import_address(address) {
             rpc_call('importaddress', [address], function (data) { });
         }
+        function get_addrs(username) {
+            rpc_call('getpubaddrs', [username], function (data) {
 
+                $('#newaddr').css('display', 'block');
+                if ((typeof data.result.addrs === 'undefined') || (data.result.addrs.length == 0)) {
+                    my_addrs = null;
+                }
+                else {
+                    my_addrs = data.result.addrs;
+                }
 
-        $(document).ready(function(){
+                update_my_addrs();
+                /*
+                list_unspent(addrs);
+                list_staking(addrs);
+                */
+            });
+        }
+        function import_keys() {
+            username = $('#username').val();
+            rpc_call('importkeypair', [username, pubkey, privkey], function (data) {
+                get_addrs(username);
+            });
+        }
+        $(document).ready(function () {
+            ec = new EC('secp256k1');
+            // Generate keys
+            var key = ec.genKeyPair();
+
+            // Sign message (must be an array, or it'll be treated as a hex sequence)
+            var msg = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+            var signature = key.sign(msg);
+            // Export DER encoded signature in Array
+            var derSign = signature.toDER();
+            // Verify signature
+            if(!key.verify(msg, derSign))
+                alert('ecdsa signature test failed!');
+            
+
             get_blockcount();
             get_lastblock();
             get_infos();
             list_received();
-
+            update_my_addrs();
            
         });
 
@@ -559,13 +738,35 @@
             <tr><td class="lbl">txs :</td> <td id="txs"></td></tr>
         </table>
     </div>
+
     <div id="addr_tab">
-        <h1>my addresses</h1>
-        <table id="address_list_table">
-            <thead><th>address</th><th>received</th></thead>
-            <tbody></tbody>
-        </table>
-        <div id="newaddr">new addr : <input id="address" type="text" size="34" /> <input type="button" onclick="import_address($('#address').val());" value="import" /></div>        
+        <div id="all addresses">
+            <h2>all addresses</h2>
+            <table id="address_list_table">
+                <thead><tr><th>address</th><th>received</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <div id="myaccount">
+            <h1>my acount</h1>
+            <div><span class="lbl">username :</span><input type="text" id="username" name="username" value="" /><input type="button" onclick="get_addrs($('#username').val());" value="load addresses" /></div>
+            <div>
+                <h2>my addresses</h2>
+                <div><span id="myaddrhdr"></span></div>
+                <table id="my_address_list_table">
+                    <thead><tr><th>address</th><th>balance</th><th>uncomfirmed balance</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div id="newaddr">
+                <h3>import</h3>
+                <div>privkey : <input size="64" type="text" id="privkey" oninput="newkey(this.value);" value="" /></div>
+                <div>address : <span id="pubaddr"></span></div>
+                <input type="button" value="create new" onclick="generateKeys();" />
+                <input type="button" value="import" onclick="import_keys();" />
+                <!-- new addr : <input id="address" type="text" size="34" /> <input type="button" onclick="import_address($('#address').val());" value="import" />-->
+            </div>
+        </div>
     </div>
     <div id="left_tab">
         <h1 id="unspentaddr"></h1><div id="scanning"></div>
@@ -584,3 +785,4 @@
 
     </div>
 </body>
+</html>
