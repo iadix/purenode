@@ -1,6 +1,4 @@
 //copyright iadix 2016
-#include <stdio.h>
-
 #include <base/std_def.h>
 #include <base/std_mem.h>
 #include <base/mem_base.h>
@@ -44,14 +42,7 @@ int main(int argc, char **argv)
 	load_module("modz/protocol_adx.tpo", "protocol_adx", &protocol_mod);
 	load_module("modz/block_adx.tpo", "block_adx", &block_mod);
 	load_module("modz/iadixcoin.tpo", "iadixcoin", &iadix_mod);
-	/*
-#ifdef _DEBUG
-	init_func_ptr init;
-	init=get_tpo_mod_exp_addr_name(&libbase_mod, "tree_manager_init", 0);
-	if(init)
-		init();
-#endif
-	*/
+
 #ifndef _DEBUG
 	app_init = get_tpo_mod_exp_addr_name(&iadix_mod, "app_init", 0);
 	app_start = get_tpo_mod_exp_addr_name(&iadix_mod, "app_start", 0);

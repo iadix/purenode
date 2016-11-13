@@ -1,9 +1,9 @@
 <html>
 <head>
     <title>keys</title>
-    <script src="/ecdsa_bundle.js"></script>
-    <script src="/jsSHA-2.2.0/src/sha_dev.js"></script>
-    <script src="/jquery-3.1.1.min.js"></script>
+        <script src="/ecdsa_bundle.js"></script>
+        <script src="/jsSHA-2.2.0/src/sha_dev.js"></script>
+        <script src="/jquery-3.1.1.min.js"></script>
 
     <style type="text/css">
 
@@ -341,7 +341,12 @@
                 var row = new_tbody.insertRow(n);
                 cell = row.insertCell(0);
                 cell.className = "address";
-                cell.innerHTML = addrs[n];
+                cell.innerHTML = addrs[n].address;
+
+                cell = row.insertCell(1);
+                cell.className = "balance";
+                cell.innerHTML = addrs[n].amount/unit;
+
             }
             old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
         }
@@ -352,10 +357,16 @@
         }
         function get_addrs(username) {
             rpc_call('getpubaddrs', [username], function (data) {
+                var n;
+                var arAddr=[];
                 addrs = data.result.addrs;
                 update_addrs();
-                list_unspent(addrs);
-                list_staking(addrs);
+                
+                for (n = 0; n < addrs.length; n++) {
+                    arAddr[n] = addrs[n].address;
+                }
+                list_unspent(arAddr);
+                list_staking(arAddr);
             });
         }
         function import_keys() {

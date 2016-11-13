@@ -29,7 +29,7 @@ OS_API_C_FUNC(int) crypto_sign_open(const struct string *sign, struct string *ms
 
 	if (sign->len < 64) goto badsig;
 	if (sign->str[63] & 224) goto badsig;
-	if (ge25519_unpackneg_vartime(&get1, pk)) goto badsig;
+	if (ge25519_unpackneg_vartime(&get1, pk->str)) goto badsig;
 
 	memmove_c(pkcopy, pk->str, 32);
 	memmove_c(rcopy, sign->str, 32);
@@ -52,7 +52,7 @@ OS_API_C_FUNC(int) crypto_sign_open(const struct string *sign, struct string *ms
 		msg->str[msg->len] = 0;
 	}
 badsig:
-	return msg;
+	return 1;
 }
 
 
@@ -77,6 +77,7 @@ OS_API_C_FUNC(int) crypto_extract_key(dh_key_t pk, const dh_key_t sk)
 	memmove_c(sk + 32, pk, 32);
 	return 0;
 }
+
 OS_API_C_FUNC(struct string) crypto_sign(struct string *msg, const dh_key_t sk)
 {
 	struct string sign = { PTR_NULL };
