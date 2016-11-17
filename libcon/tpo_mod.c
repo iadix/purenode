@@ -6,6 +6,7 @@
 #include "base/mem_base.h"
 
 #define KERNEL_API				C_EXPORT
+#include "include/strs.h"
 #include "include/fsio.h"
 #include "include/mem_stream.h"
 #include "include/tpo_mod.h"

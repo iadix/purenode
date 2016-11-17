@@ -2,14 +2,26 @@
 #define LIBC_API	C_IMPORT
 #endif
 
-typedef	void				   void_func();
-typedef	void_func			  *void_func_ptr;
+typedef	void		   void_func();
+typedef	void_func	   *void_func_ptr;
 
-typedef void				*mem_ptr;
-typedef const void			*const_mem_ptr;
+typedef void			*mem_ptr;
+typedef const void		*const_mem_ptr;
 
-typedef size_t				mem_size;
+typedef size_t		   mem_size;
 
+struct big64
+{
+	union
+	{
+		uint64_t v64;
+		unsigned int v[2];
+	};
+};
+struct big128
+{
+	unsigned int v[4];
+};
 
 #ifdef __cplusplus
 	extern "C" {
@@ -17,8 +29,7 @@ typedef size_t				mem_size;
 
 		
 LIBC_API mem_ptr		C_API_FUNC memcpy_c				(mem_ptr dst_ptr,const_mem_ptr src_ptr,mem_size size);
-/*LIBC_API mem_ptr		C_API_FUNC _intel_fast_memcpy	(mem_ptr dst_ptr,const_mem_ptr src_ptr,mem_size size);*/
-/*LIBC_API mem_ptr		C_API_FUNC memcpy				(mem_ptr dst_ptr,const_mem_ptr src_ptr,mem_size size);*/
+
 
 LIBC_API mem_ptr		C_API_FUNC memmove_c			(mem_ptr dst_ptr,const_mem_ptr src_ptr,mem_size size);
 LIBC_API mem_ptr		C_API_FUNC memset_c				(mem_ptr ptr,unsigned char v,mem_size size);

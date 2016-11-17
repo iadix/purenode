@@ -258,7 +258,7 @@ OS_API_C_FUNC(int) append_file(const char *path, const void *data, size_t data_l
 
 }
 
-OS_API_C_FUNC(int) truncate_file(const char *path, unsigned int ofset,const void *data, size_t data_len)
+OS_API_C_FUNC(int) truncate_file(const char *path, size_t ofset, const void *data, size_t data_len)
 {
 	FILE		*f;
 	size_t		len;

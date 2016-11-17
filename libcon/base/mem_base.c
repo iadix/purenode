@@ -722,7 +722,7 @@ mem_area * find_area(mem_ptr ptr,mem_size size)
 	return PTR_NULL;
 }
 
-OS_API_C_FUNC(unsigned int) free_mem_area(area_id)
+OS_API_C_FUNC(unsigned int) free_mem_area(unsigned int area_id)
 {
 	mem_area	*area_ptr;
 	int			n;
@@ -1622,7 +1622,6 @@ OS_API_C_FUNC(uint64_t) muldiv64(uint64_t a, uint64_t b, uint64_t c)
 }
 
 #define UINT32_MAX 0xFFFFFFFF
-
 OS_API_C_FUNC(void) big128_mul(unsigned int x, struct big64 y, struct big128 *out)
 {
 	/* x * y = (z2 << 64) + (z1 << 32) + z0

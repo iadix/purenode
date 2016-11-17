@@ -19,8 +19,8 @@ OS_API_C_FUNC(  int	)			tree_manager_get_next_child(mem_zone_ref_ptr child_list,
 
 OS_API_C_FUNC(  int	)			tree_manager_get_last_child(mem_zone_ref_const_ptr p_node_ref, mem_zone_ref_ptr child_list, mem_zone_ref_ptr *p_node_out_ref){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_get_prev_child(mem_zone_ref_ptr child_list, mem_zone_ref_ptr *p_node_out_ref){return 0;}
-
-
+OS_API_C_FUNC(int)			ripemd160(const void* in, unsigned long length, void* out){ return 0; }
+OS_API_C_FUNC(int)	tree_manager_get_child_value_btcaddr(const mem_zone_ref	*p_node_ref, unsigned int crc_name, btc_addr_t addr){ return 0; }
 OS_API_C_FUNC(  unsigned int	)	and_node_type(unsigned int type1, unsigned int type2){return 0;}
 OS_API_C_FUNC(  const char *	)	tree_mamanger_get_node_name(mem_zone_ref_const_ptr node_ref){return 0;}
 OS_API_C_FUNC(  unsigned int)		tree_mamanger_get_node_type(mem_zone_ref_const_ptr node_ref){return 0;}
@@ -49,6 +49,7 @@ OS_API_C_FUNC(  int	)			tree_find_child_node_by_id_name(mem_zone_ref_const_ptr  
 //OS_API_C_FUNC(  int				tree_find_child_node_by_value			(mem_zone_ref_const_ptr  p_node_ref,unsigned int child_type,const char *id_name,unsigned int id_val,mem_zone_ref_ptr out_node){return 0;}
 OS_API_C_FUNC(  int	)		  tree_find_child_node_idx_by_id(mem_zone_ref *p_node_ref, unsigned int child_type, unsigned int child_id, unsigned int *out_idx){return 0;}
 OS_API_C_FUNC(  int	)			tree_find_child_node_by_member_name(mem_zone_ref_const_ptr p_node_ref, unsigned int child_type, unsigned int child_member_type, const char *child_member_name, mem_zone_ref_ptr out_node){return 0;}
+OS_API_C_FUNC(int)			tree_find_child_node_by_member_name_hash(mem_zone_ref_const_ptr p_node_ref, unsigned int child_type, const char *child_member_name, hash_t hash, mem_zone_ref_ptr out_node){ return 0; }
 OS_API_C_FUNC(  int	)			tree_swap_child_node_by_id(mem_zone_ref_ptr p_node_ref, unsigned int id_val, mem_zone_ref_ptr node){return 0;}
 
 OS_API_C_FUNC(  int	)			tree_remove_children(mem_zone_ref_ptr p_node_ref){return 0;}
@@ -58,7 +59,7 @@ OS_API_C_FUNC(  int	)			tree_remove_child_by_id(mem_zone_ref_ptr p_node_ref, uns
 OS_API_C_FUNC(  int	)			tree_remove_child_by_value_dword(mem_zone_ref_ptr p_node_ref, unsigned int value){return 0;}
 OS_API_C_FUNC(  int	)			tree_remove_child_by_member_value_dword(mem_zone_ref_ptr p_node_ref, unsigned int child_type, const char *member_name, unsigned int value){return 0;}
 
-
+OS_API_C_FUNC(int)			tree_manager_write_node_sig(mem_zone_ref_ptr node_ref, mem_size ofset, unsigned char *sign, size_t sign_len){ return 0; }
 
 
 
@@ -73,7 +74,7 @@ OS_API_C_FUNC(  int	)			tree_manager_write_node_hash(mem_zone_ref_ptr node_ref, 
 OS_API_C_FUNC(  int	)			tree_manager_write_node_rhash(mem_zone_ref_ptr node_ref, mem_size ofset, const hash_t hash){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_write_node_vstr(mem_zone_ref_ptr node_ref, mem_size ofset, const struct string *str){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_write_node_vint(mem_zone_ref_ptr node_ref, mem_size ofset, const_mem_ptr vint){return 0;}
-
+OS_API_C_FUNC(int)			tree_manager_write_node_btcaddr(mem_zone_ref_ptr node_ref, mem_size ofset, const btc_addr_t addr){ return 0; }
 OS_API_C_FUNC(  int	)			tree_manager_write_node_4uc(mem_zone_ref_ptr node_ref, mem_size ofset, const vec_4uc_t val){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_write_node_word(mem_zone_ref_ptr node_ref, mem_size ofset, unsigned short value){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_write_node_byte(mem_zone_ref_ptr node_ref, mem_size ofset, unsigned char value){return 0;}
@@ -96,7 +97,7 @@ OS_API_C_FUNC(  int	)			tree_manager_get_node_vstr(mem_zone_ref_const_ptr node_r
 OS_API_C_FUNC(  int	)			tree_mamanger_get_node_dword(mem_zone_ref_const_ptr node_ref, mem_size ofset, unsigned int *val){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_get_node_hash(mem_zone_ref_const_ptr node_ref, mem_size ofset, hash_t hash){return 0;}
 OS_API_C_FUNC(  int		)		tree_manager_get_node_rhash(mem_zone_ref_const_ptr node_ref, mem_size ofset, hash_t hash){return 0;}
-OS_API_C_FUNC( int	)			tree_manager_get_node_btcaddr(mem_zone_ref_const_ptr node_ref, mem_size ofset, btc_addr_t addr){return 0;}
+OS_API_C_FUNC( int	)		    tree_manager_get_node_btcaddr(mem_zone_ref_ptr node_ref, mem_size ofset, btc_addr_t addr){return 0;}
 OS_API_C_FUNC(  int	)			tree_mamanger_get_node_qword(mem_zone_ref_const_ptr node_ref, mem_size ofset, uint64_t *val){return 0;}
 OS_API_C_FUNC(  int	)			tree_mamanger_get_node_float(mem_zone_ref_const_ptr node_ref, mem_size ofset, double *val){return 0;}
 OS_API_C_FUNC(  int		)		tree_mamanger_get_node_signed_dword(mem_zone_ref_const_ptr node_ref, mem_size ofset, int *val){return 0;}
@@ -152,11 +153,12 @@ OS_API_C_FUNC(  void )				tree_manager_dump_node_rec(mem_zone_ref_const_ptr node
 OS_API_C_FUNC(  unsigned int)		 node_array_pop(mem_zone_ref_ptr node_array, mem_zone_ref_ptr	node){return 0;}
 OS_API_C_FUNC(  unsigned int)		 node_array_get_free_element(mem_zone_ref_ptr node_array, mem_zone_ref_ptr	node){return 0;}
 OS_API_C_FUNC(  void	)			 init_node_array(mem_zone_ref_ptr node_array, unsigned int n_elems, const char *name, unsigned int type, unsigned int size_alloc){return ;}
+OS_API_C_FUNC(const struct http_hdr *)	find_key(const struct http_hdr *hdrs, const char *key){ return PTR_NULL; }
+
+OS_API_C_FUNC(int)			tree_manager_copy_children_ref(mem_zone_ref_ptr dest_ref_ptr, mem_zone_ref_const_ptr src_ref_ptr){ return 0; }
 
 
-
-
-OS_API_C_FUNC(  void )		tree_manager_init(){return ;}
+OS_API_C_FUNC(  void )		tree_manager_init(size_t x){return ;}
 OS_API_C_FUNC(  int	)	tree_manager_json_loadb(const char *buffer, size_t buflen, mem_zone_ref_ptr result){return 0;}
 OS_API_C_FUNC(  int	)	tree_manager_free_node_array(mem_zone_ref_ptr childs_ref_ptr){return 0;}
 OS_API_C_FUNC(  void)		log_message(const char *fmt, mem_zone_ref_ptr args){return ;}
@@ -167,3 +169,5 @@ OS_API_C_FUNC(void) mbedtls_sha256_update(mbedtls_sha256_context *ctx, const uns
 OS_API_C_FUNC(void) mbedtls_sha256_free(mbedtls_sha256_context *ctx){ return; }
 OS_API_C_FUNC(void) mbedtls_sha256_finish(mbedtls_sha256_context *ctx, unsigned char output[32]){ return; }
 OS_API_C_FUNC(void) mbedtls_sha256(const unsigned char *input, size_t ilen, unsigned char output[32], int is224){ return; }
+
+OS_API_C_FUNC(int)	crypto_hash_sha512(unsigned char *out, const unsigned char *in, size_t inlen){ return 0; }

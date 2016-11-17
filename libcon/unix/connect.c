@@ -12,6 +12,9 @@
 #include "../base/mem_base.h"
 #include "../base/std_str.h"
 #include "strs.h"
+#include "mem_stream.h"
+#include "tpo_mod.h"
+
 
 #include <connect.h>
 #include <sys_include.h>

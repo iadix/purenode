@@ -30,18 +30,6 @@ typedef thread_func *thread_func_ptr;
 typedef enum {MEM_TYPE_DATA = 1,MEM_TYPE_TREE = 2}mem_area_type_t;
 
 
-struct big64
-{
-	union
-	{
-		uint64_t v64;
-		unsigned int v[2];
-	};
-};
-struct big128
-{
-	unsigned int v[4];
-};
 
 	
 typedef int				vec_2s_t[2];
@@ -60,7 +48,7 @@ LIBC_API void			C_API_FUNC init_default_mem_area	(unsigned int size);
 LIBC_API unsigned int	C_API_FUNC mem_area_enable_sem		(unsigned int area_id);
 //LIBC_API void			C_API_FUNC set_default_mem_area		(unsigned int size);
 LIBC_API unsigned int	C_API_FUNC init_new_mem_area		(mem_ptr phys_start,	mem_ptr phys_end,mem_area_type_t type);
-LIBC_API unsigned int	C_API_FUNC free_mem_area			(area_id);
+LIBC_API unsigned int	C_API_FUNC free_mem_area			(unsigned int area_id);
 LIBC_API unsigned int	C_API_FUNC allocate_new_zone		(unsigned int area_id,	mem_size zone_size,	mem_zone_ref *zone_ref);
 LIBC_API unsigned int	C_API_FUNC allocate_new_empty_zone	(unsigned int area_id,mem_zone_ref *zone_ref);
 LIBC_API int			C_API_FUNC expand_zone				(mem_zone_ref *ref,mem_size new_size);
@@ -82,12 +70,6 @@ LIBC_API unsigned int	C_API_FUNC find_zones_used			(unsigned int area_id);
 LIBC_API void			C_API_FUNC do_gdt_real_mode			(mem_ptr new_gdt);
 LIBC_API unsigned int	C_API_FUNC get_zone_numref			(mem_zone_ref *zone_ref);
 
-LIBC_API unsigned int	C_API_FUNC get_mem_area_list			(struct obj_array_t *ctrl_items,unsigned int first,unsigned int num,const char *style);
-LIBC_API unsigned int	C_API_FUNC get_mem_area_zone_list		(unsigned int area_id,struct obj_array_t *ctrl_items,unsigned int first,unsigned int num,const char *style);
-LIBC_API unsigned int	C_API_FUNC get_tree_area_zone_list		(unsigned int area_id,struct obj_array_t *ctrl_items,unsigned int first,unsigned int num,const char *style);
-LIBC_API unsigned int	C_API_FUNC update_mem_area_list			(mem_zone_ref_ptr mem_area_list_node,unsigned int first,unsigned int num);
-LIBC_API unsigned int	C_API_FUNC update_tree_area_zone_list	(mem_zone_ref_ptr mem_area_zone_list_node,unsigned int first,unsigned int num);
-LIBC_API unsigned int	C_API_FUNC update_mem_area_zone_list	(mem_zone_ref_ptr mem_area_zone_list_node,unsigned int first,unsigned int num);
 
 LIBC_API void			C_API_FUNC swap_zone_ref					(mem_zone_ref_ptr dest_zone_ref, mem_zone_ref_ptr src_zone_ref);
 LIBC_API int			C_API_FUNC align_zone_memory				(mem_zone_ref *zone_ref, mem_size align);

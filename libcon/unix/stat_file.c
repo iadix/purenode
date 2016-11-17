@@ -3,21 +3,45 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/syscall.h>
 #include <sys/mman.h>
 #include <dirent.h>
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include <utime.h>
+#include <pwd.h>
+#include <pthread.h>
 
-#include "base/std_def.h"
-#include "base/std_mem.h"
-#include "base/mem_base.h"
-#include "base/std_str.h"
+#include "../base/std_def.h"
+#include "../base/std_mem.h"
+#include "../base/mem_base.h"
+#include "../base/std_str.h"
 #include "strs.h"
+#include "fsio.h"
 
 #include <sys_include.h>
-struct string log_file_name	={PTR_NULL};
-FILE			 *log_file	=PTR_NULL;
+
+char	path_sep				= '/';
+struct string log_file_name	={PTR_INVALID };
+struct string home_path			= { PTR_INVALID };
+struct string exe_path			= { PTR_INVALID };
+unsigned int running			= 1;
+FILE	*log_file				=PTR_INVALID ;
+
+
+struct thread
+{
+	thread_func_ptr		func;
+	mem_zone_ref		params;
+	unsigned int		status;
+	unsigned int		tree_area_id;
+	unsigned int		mem_area_id;
+	pthread_t			thread;
+	pid_t				h;
+};
+
+struct thread threads[16] = { PTR_INVALID };
 
 OS_API_C_FUNC(int) set_mem_exe(mem_zone_ref_ptr zone)
 {
@@ -33,25 +57,242 @@ OS_API_C_FUNC(int) set_mem_exe(mem_zone_ref_ptr zone)
 	return ret;
 }
 
+OS_API_C_FUNC(int) move_file(const char *ipath, const char *opath)
+{
+	return rename(ipath, opath);
+}
+
+OS_API_C_FUNC(int) del_file(const char *path)
+{
+	return unlink(path);
+}
+
+OS_API_C_FUNC(int) del_dir(const char *path)
+{
+	return rmdir(path);
+}
+
+
+void init_threads()
+{
+	memset_c(threads, 0, sizeof(threads));
+
+}
+unsigned int new_thread(pid_t h)
+{
+	unsigned int	n=0;
+	while (n<16)
+	{
+		if (compare_z_exchange_c((unsigned int *)&threads[n].h, (unsigned int)h))
+			return n;
+
+		n++;
+	}
+	return 0xFFFFFFFF;
+}
+
+unsigned int get_current_thread(pid_t h)
+{
+	int n = 0;
+
+	while (n < 16)
+	{
+		if (h == threads[n].h)
+			return n;
+		n++;
+	}
+	return 0xFFFFFFFF;
+}
+
+pid_t gettid()
+{
+	return syscall(__NR_gettid);
+}
+
+OS_API_C_FUNC(int) set_mem_area_id(unsigned int area_id)
+{
+	pid_t  h;
+	unsigned int cur;
+	h = gettid();
+	cur = get_current_thread(h);
+	if (cur == 0xFFFFFFFF)
+		cur = new_thread(h);
+	threads[cur].mem_area_id = area_id;
+	return 1;
+}
+
+OS_API_C_FUNC(int) set_tree_mem_area_id(unsigned int area_id)
+{
+	pid_t  h;
+	unsigned int cur;
+	h = gettid();
+	cur = get_current_thread(h);
+	if (cur == 0xFFFFFFFF)
+		cur = new_thread(h);
+
+	threads[cur].tree_area_id = area_id;
+	return 1;
+}
+
+OS_API_C_FUNC(unsigned int) get_tree_mem_area_id()
+{
+	pid_t  h;
+	unsigned int cur;
+	h = gettid();
+	cur = get_current_thread(h);
+	if (cur == 0xFFFFFFFF)
+		return cur;
+
+	return threads[cur].tree_area_id;
+}
+
+
+OS_API_C_FUNC(unsigned int) get_mem_area_id()
+{
+	pid_t  h;
+	unsigned int cur;
+	h = gettid();
+	cur = get_current_thread(h);
+	if (cur == 0xFFFFFFFF)
+		return cur;
+
+	return threads[cur].mem_area_id;
+}
+
+void *thread_start(void *p)
+{
+	thread_func_ptr		func;
+	struct thread	    *thread;
+	unsigned int		pn;
+	int					ret;
+
+	thread		= (struct thread *)p;
+	thread->h	= gettid();
+	func		= thread->func;
+
+	init_default_mem_area(4 * 1024 * 1024);
+	ret = func(&thread->params, &thread->status);
+	free_mem_area(0);
+
+	return NULL;
+}
+unsigned int next_ttid = 1;
+
+OS_API_C_FUNC(int) background_func(thread_func_ptr func, mem_zone_ref_ptr params)
+{
+	unsigned int			cur;
+	int						ret;
+
+	cur = new_thread(next_ttid++);
+
+	copy_zone_ref(&threads[cur].params, params);
+	threads[cur].func = func;
+	threads[cur].status = 0;
+
+	ret = pthread_create		(&threads[cur].thread, NULL, thread_start, &threads[cur]);
+	
+	if (!ret)
+	{
+		while (threads[cur].status == 0)
+		{
+			usleep(1000);
+		}
+	}
+
+	release_zone_ref(&threads[cur].params);
+
+	return (ret==0);
+}
+OS_API_C_FUNC(int) get_cwd(char *path, size_t len)
+{
+	if (getcwd(path, len))
+		return 1;
+	else
+		return 0;
+}
+OS_API_C_FUNC(int) set_cwd(const char *path)
+{
+	return chdir(path);
+}
+
+OS_API_C_FUNC(int) get_ftime(const char *path, ctime_t *time)
+{
+	struct stat statbuf;
+	if (stat(path, &statbuf) == -1) {
+		return 0;
+	}
+	*time = statbuf.st_mtime;
+	return 1;
+}
+
+OS_API_C_FUNC(int) set_ftime(const char *path, ctime_t time)
+{
+	struct stat statb;
+	time_t mtime;
+	struct utimbuf new_times;
+
+	stat(path, &statb);
+	mtime = statb.st_mtime; /* seconds since the epoch */
+
+	new_times.actime = statb.st_atime; /* keep atime unchanged */
+	new_times.modtime = time;    /* set mtime to current time */
+	utime(path, &new_times);
+
+	return 1;
+}
+
+
+
+
+OS_API_C_FUNC(int) get_home_dir(struct string *path)
+{
+	const char *homedir;
+
+	if ((homedir = getenv("HOME")) == NULL) {
+		homedir = getpwuid(getuid())->pw_dir;
+	}
+
+	if (homedir == NULL)
+		return 0;
+	
+	make_string(path, homedir);
+	return 1;
+}
+
 OS_API_C_FUNC(int) stat_file(const char *path)
 {
 	struct  stat	fileStat;
-	int				ret;
+	struct string t = { 0 };
+	int ret;
 
-	ret = stat(path,&fileStat);
-	if(ret<0)return ret;
-	
-	if(fileStat.st_mode & S_IXUSR)
-	 	return	0;
-	else
-		return	1;
+	ret = stat(path, &fileStat);
+	if ((ret != 0) && (exe_path.len > 0))
+	{
+		clone_string(&t, &exe_path);
+		cat_cstring_p(&t, path);
+		ret = stat(t.str, &fileStat);
+		free_string(&t);
+	}
+
+	if (ret == 0)
+	{
+		if (fileStat.st_mode & S_IXUSR)
+			return	0;
+		else
+			return	1;
+	}
+
+	return ret;
 }
+
+
 
 
 OS_API_C_FUNC(int) create_dir(const char *path)
 {
 	return mkdir(path,0775);
 }
+
 OS_API_C_FUNC(int) get_sub_dirs(const char *path, struct string *dir_list)
 {
 	struct dirent *direntp;
@@ -77,6 +318,7 @@ OS_API_C_FUNC(int) get_sub_dirs(const char *path, struct string *dir_list)
    closedir(dirp);
    return ret;
 }
+
 OS_API_C_FUNC(int) get_sub_files(const char *path, struct string *dir_list)
 {
 	struct dirent *direntp;
@@ -100,6 +342,38 @@ OS_API_C_FUNC(int) get_sub_files(const char *path, struct string *dir_list)
 	return ret;
 }
 
+OS_API_C_FUNC(int) rm_dir(const char *dir)
+{
+	char			mdir[512];
+	struct string	dir_list = { PTR_NULL };
+	const char		*ptr, *optr;
+	unsigned int	dir_list_len;
+	size_t			cur, nfiles;
+
+	if ((nfiles = get_sub_files(dir, &dir_list)) > 0)
+	{
+		dir_list_len = dir_list.len;
+		optr = dir_list.str;
+		cur = 0;
+		while (cur < nfiles)
+		{
+			size_t			sz;
+			ptr = memchr_c(optr, 10, dir_list_len);
+			sz = mem_sub(optr, ptr);
+
+			strcpy_cs(mdir, 512, dir);
+			strncat_c(mdir,&path_sep, 1);
+			strncat_c(mdir,optr, sz);
+			del_file(mdir);
+			cur++;
+			optr = ptr + 1;
+			dir_list_len -= sz;
+		}
+	}
+	free_string(&dir_list);
+	return del_dir(dir);
+}
+
 OS_API_C_FUNC(int) put_file(const char *path, void *data, size_t data_len)
 {
 	FILE		*f;
@@ -114,7 +388,8 @@ OS_API_C_FUNC(int) put_file(const char *path, void *data, size_t data_len)
 	return 1;
 
 }
-OS_API_C_FUNC(int) append_file(const char *path, void *data, size_t data_len)
+
+OS_API_C_FUNC(int) append_file(const char *path, const void *data, size_t data_len)
 {
 	FILE		*f;
 	size_t		len;
@@ -127,8 +402,7 @@ OS_API_C_FUNC(int) append_file(const char *path, void *data, size_t data_len)
 	return 1;
 }
 
-
-OS_API_C_FUNC(int) file_size(const char *path, void *data, size_t data_len)
+OS_API_C_FUNC(size_t) file_size(const char *path)
 {
 	FILE		*f;
 	size_t		len;
@@ -140,42 +414,133 @@ OS_API_C_FUNC(int) file_size(const char *path, void *data, size_t data_len)
 	fclose(f);
 	return len;
 }
-int get_file(const char *path,unsigned char **data,size_t *data_len)
+
+OS_API_C_FUNC(int) get_file(const char *path, unsigned char **data, size_t *data_len)
 {
 	FILE		*f;
-	size_t		len;
-
-	f	=	fopen	(path,"rb");
-	if(f==NULL)return -1;
-	fseek(f,0,SEEK_END);
+	size_t		len = 0;
+	int			ret;
+	f = fopen(path, "rb");
+	if (f == NULL)
+	{
+		struct string t;
+		clone_string(&t, &exe_path);
+		cat_cstring_p(&t, path);
+		f = fopen(t.str, "rb");
+		free_string(&t);
+		if (f == NULL)
+		{
+			*data_len = 0;
+			return -1;
+		}
+	}
+	fseek(f, 0, SEEK_END);
 	(*data_len) = ftell(f);
 	rewind(f);
-	(*data)		= malloc_c((*data_len)+1);
-	len			= fread((*data),*data_len,1,f);
+	if ((*data_len)>0)
+	{
+		(*data) = malloc_c((*data_len) + 1);
+		if ((*data) != PTR_NULL)
+		{
+			len = fread((*data), *data_len, 1, f);
+			(*data)[*data_len] = 0;
+		}
+		else
+			len = 0;
+	}
 	fclose(f);
-	(*data)[*data_len]=0;
 	return (int)len;
 
 }
 
-void	*kernel_memory_map_c(unsigned int size)
+
+
+OS_API_C_FUNC(int) truncate_file(const char *path, size_t ofset, const void *data, size_t data_len)
+{
+	FILE		*f;
+	size_t		len;
+	uint64_t	offset;
+	int			ret;
+
+	if ((ofset == 0) && (data_len == 0))
+	{
+		del_file(path);
+		return 1;
+	}
+
+
+	if (data != PTR_NULL)
+	{
+		f = fopen(path, "ab+");
+		if (f != NULL)
+		{
+			fseek(f, ofset, SEEK_SET);
+			len = fwrite(data, data_len, 1, f);
+		}
+		fclose(f);
+	}
+	else
+		truncate(path, ofset);
+
+	
+	return 1;
+}
+
+OS_API_C_FUNC(void *) kernel_memory_map_c(unsigned int size)
 {
 	return malloc(size);
 }
-
+OS_API_C_FUNC(int) kernel_memory_free_c(mem_ptr ptr)
+{
+	free(ptr);
+	return 1;
+}
 
 OS_API_C_FUNC(unsigned int)	 get_system_time_c()
 {
-	return 0;
+	return time(0);
 }
 
 
 
+OS_API_C_FUNC(ctime_t)	 get_time_c()
+{
+	return time(0);
+}
+
+
+OS_API_C_FUNC(int) set_exe_path()
+{
+	char path[512];
+	get_cwd(path, 512);
+	make_string(&exe_path, path);
+
+	return 1;
+}
+
+
+OS_API_C_FUNC(int) set_home_path(const char *name)
+{
+	get_home_dir(&home_path);
+	cat_cstring_p(&home_path, name);
+	create_dir(home_path.str);
+	set_cwd(home_path.str);
+	return 1;
+
+}
+
  OS_API_C_FUNC(int) daemonize(const char *name)
 {
-   pid_t pid, sid;
-   mem_zone_ref log={PTR_NULL};
+   pid_t		pid, sid;
    
+   log_file = fopen(log_file_name.str, "ab");
+   if (log_file == PTR_NULL)
+   {
+	   printf("could not open log file \n");
+	   return -1;
+   }
+   fclose(log_file);
+
    // Fork off the parent process 
    pid = fork();
    if (pid < 0) {
@@ -186,45 +551,24 @@ OS_API_C_FUNC(unsigned int)	 get_system_time_c()
 		exit(EXIT_SUCCESS);
    }
    // Change the file mode mask 
-   umask(0);       
+   umask			(0);       
    // Open any logs here 
-   
-   init_string (&log_file_name);
-   make_string (&log_file_name,name);
-   cat_cstring (&log_file_name,".log");
+   set_home_path	(name);
+   init_string		(&log_file_name);
+   make_string		(&log_file_name, name);
+   cat_cstring		(&log_file_name, ".log");
 
    log_file=fopen(log_file_name.str,"ab");
-   if(log_file==PTR_NULL)
-   {
-	   printf("could not open log file \n");
-	   return -1;
-   } 
-   
    // Create a new SID for the child process 
-   
    sid = setsid();
    if (sid < 0) {
 	   fclose(log_file);
        // Log any failures here 
        return -1;
    }
-   
-   
-      
    // Change the current working directory 
-   if ((chdir("./")) < 0) {
-	   fclose(log_file);
-       return -1;
-   }
-   /*
-   tree_manager_create_node("log",NODE_LOG_PARAMS,&log);
-   tree_manager_set_child_value_i32(&log,"pid",pid);
-   tree_manager_set_child_value_i32(&log,"sid",sid);
-   log_message("process started %pid%, %sid%.",&log);
-   release_zone_ref(&log);
-   */
-
-   // Close out the standard file descriptors 
+   set_home_path(name);
+    // Close out the standard file descriptors 
    /*
    close(STDIN_FILENO);
    close(STDOUT_FILENO);
@@ -241,10 +585,6 @@ OS_API_C_FUNC(void) console_print(const char *msg)
 }
 
 
-ctime_t get_time_c()
-{
-	return time(0);
-}
 
 OS_API_C_FUNC(int) get_hash_idx(const char *path, size_t idx, hash_t hash)
 {
@@ -275,4 +615,46 @@ OS_API_C_FUNC(int) log_output(const char *data)
 	else
 		append_file(log_file_name.str, data, strlen_c(data));
 	return 1;
+}
+
+int extractDate(const char * s){
+	unsigned int	y, m, d;
+	struct tm t;
+
+	y = strtoul(s, PTR_NULL, 10);
+	m = strtoul(&s[5], PTR_NULL, 10);
+	d = strtoul(&s[8], PTR_NULL, 10);
+
+	memset_c(&t, 0, sizeof(struct tm));
+
+	t.tm_mday = d;
+	t.tm_mon = m - 1;
+	t.tm_year = y - 1900;
+	t.tm_isdst = -1;
+
+	// normalize:
+	return mktime(&t);
+}
+OS_API_C_FUNC(unsigned int) parseDate(const char *date)
+{
+	int			n;
+	n = strlen_c(date);
+	if (n < 10)return 0;
+
+	return extractDate(date);
+}
+
+OS_API_C_FUNC(unsigned int) isRunning()
+{
+	return running;
+}
+
+void exited(void)
+{
+	running = 0;
+	return PTR_NULL;
+}
+void init_exit()
+{
+	atexit(exited);
 }

@@ -24,6 +24,10 @@
 	#define INT_MAX       2147483647			/* maximum (signed) int value */
 	#define offsetof(s,m)   (size_t)( (ptrdiff_t)&(((s *)0)->m) )
 
+#ifndef MAX_PATH 
+	#define MAX_PATH 256
+#endif
+
 #else
 	
 	typedef unsigned int	size_t;
@@ -34,6 +38,10 @@
 
 
 	#define INVALID_SIZE	0xffffffffUL
+
+#ifndef MAX_PATH 
+	#define MAX_PATH 256
+#endif
 	#ifndef UINT_MAX		
 		#define LONG_MAX		0x7FFFFFFFL
 		#define LONG_MIN		((long) 0x80000000L)

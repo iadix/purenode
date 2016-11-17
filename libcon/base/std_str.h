@@ -48,7 +48,7 @@ LIBC_API char *			C_API_FUNC itoa_s					(int value, char *string,size_t len, int
 LIBC_API char *			C_API_FUNC uitoa_s					(size_t value, char *string,size_t len, int radix);
 LIBC_API char *			C_API_FUNC luitoa_s					(uint64_t value, char *string, size_t len, int radix);
 LIBC_API long			C_API_FUNC strtol_c					(const char *nptr, char **endptr,int base);
-LIBC_API uint64_t		C_API_FUNC strtoll_c				(const char *nptr, char **endptr, int base);
+LIBC_API int64_t		C_API_FUNC strtoll_c				(const char *nptr, char **endptr, int base);
 LIBC_API unsigned long	C_API_FUNC strtoul_c				(const char *nptr, char **endptr, int base);
 LIBC_API short			C_API_FUNC strtos_c					(const char *nptr, char **endptr, int base);
 LIBC_API long			C_API_FUNC atol_c					(const char *str ); 

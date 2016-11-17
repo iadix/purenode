@@ -4,7 +4,7 @@
 
 LIBC_API size_t			C_API_FUNC file_size(const char *path);
 LIBC_API int			C_API_FUNC append_file(const char *path, const void *data, size_t data_len);
-LIBC_API int			C_API_FUNC truncate_file(const char *path, unsigned int ofset, const void *data, size_t data_len);
+LIBC_API int			C_API_FUNC truncate_file(const char *path, size_t ofset, const void *data, size_t data_len);
 LIBC_API int			C_API_FUNC stat_file(const char *path);
 LIBC_API int			C_API_FUNC create_dir(const char *path);
 LIBC_API int			C_API_FUNC del_dir(const char *path);
