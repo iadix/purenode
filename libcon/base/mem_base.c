@@ -1650,7 +1650,9 @@ OS_API_C_FUNC(void) big128_mul(unsigned int x, struct big64 y, struct big128 *ou
 	out->v[3] = z2 >> 32u;
 }
 
+/*
 OS_API_C_FUNC(double) exp_c(double a)
 {
 	return exp(a);
 }
+*/
