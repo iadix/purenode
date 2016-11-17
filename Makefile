@@ -27,7 +27,7 @@ export/libprotocol_adx.so:protocol_adx/main.c protocol_adx/protocol.c export/lib
 export/libbase.so:libbaseimpl/funcs.c
 	gcc $(CFLAGS) -Ilibcon -Ilibcon/include -Ilibbase/include  libbaseimpl/funcs.c --shared -o export/libbase.so
 
-modz:export/modz/protocol_adx.tpo export/modz/block_adx.tpo export/modz/iadixcoin.tpo
+modz:export/modz/protocol_adx.tpo export/modz/block_adx.tpo export/modz/iadixcoin.tpo export/libstake_pos2.so export/libstake_pos3.so
 	@echo "modz ok"
 
 export/modz/stake_pos2.tpo:export/mod_maker export/libstake_pos2.so
