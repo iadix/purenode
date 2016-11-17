@@ -12,10 +12,10 @@
 
 hash_t			nullhash = { 0xCD };
 hash_t			Difflimit = { 0xCD };
-unsigned int	Di = 0xFFFFFFFF, last_diff = 0xFFFFFFFF;
-static int64_t	TargetSpacing = 0xFFFFFFFF;
-static int64_t	nTargetTimespan = 0xFFFFFFFF;
-static int64_t	nStakeReward= 0xFFFFFFFF;
+unsigned int	Di = PTR_INVALID, last_diff = PTR_INVALID;
+static int64_t	TargetSpacing = 0xABCDABCD;
+static int64_t	nTargetTimespan = 0xABCDABCD;
+static int64_t	nStakeReward = 0xABCDABCD;
 
 C_IMPORT int			C_API_FUNC  load_blk_tx_input	(const char *blk_hash, unsigned int tx_idx, unsigned int vin_idx, mem_zone_ref_ptr vout);
 C_IMPORT int			C_API_FUNC load_blk_hdr			(mem_zone_ref_ptr hdr, const char *blk_hash);
@@ -50,6 +50,9 @@ C_IMPORT int			C_API_FUNC	build_merkel_tree(mem_zone_ref_ptr txs, hash_t merkleR
 
 OS_API_C_FUNC(int) init_pos(mem_zone_ref_ptr stake_conf)
 {
+	mem_zone_ref log = { PTR_NULL };
+	char diff[16];
+
 	memset_c(nullhash, 0, 32);
 
 	if(!tree_manager_get_child_value_i64(stake_conf, NODE_HASH("target spacing"), &TargetSpacing))
@@ -62,13 +65,24 @@ OS_API_C_FUNC(int) init_pos(mem_zone_ref_ptr stake_conf)
 		nStakeReward = 150 * ONE_CENT;  //
 
 	if (!tree_manager_get_child_value_i32(stake_conf, NODE_HASH("limit"), &Di))
-		Di = 0x1E00FFFF;
+		Di = 0x1B00FFFF;
 
-	/*
-	memset_c(Difflimit, 0, sizeof(hash_t));
-	memset_c(Difflimit, 0xFF, 26);
-	*/
 	SetCompact(Di, Difflimit);
+
+	last_diff = Di;
+
+	uitoa_s(last_diff, diff, 16, 16);
+
+	
+	tree_manager_create_node("log", NODE_LOG_PARAMS, &log);
+	tree_manager_set_child_value_i32 (&log, "target", TargetSpacing);
+	tree_manager_set_child_value_i32 (&log, "timespan", nTargetTimespan);
+	tree_manager_set_child_value_i32 (&log, "reward", nStakeReward);
+	tree_manager_set_child_value_i32(&log, "last_diff", last_diff);
+	tree_manager_set_child_value_str (&log, "last_diffs", diff);
+	tree_manager_set_child_value_hash(&log, "limit", Difflimit);
+	log_message("stake_pos3->init_pos target : %target% secs, time span %timespan% , reward %reward% , limit %limit%, last diff %last_diff% '%last_diffs%'\n", &log);
+	release_zone_ref(&log);
 
 	
 	return 1;
@@ -89,16 +103,16 @@ OS_API_C_FUNC(int) generated_stake_modifier(const char *blk_hash, hash_t StakeMo
 	struct string		blk_path = { PTR_NULL };
 	int					ret = 0;
 
-	make_string(&blk_path, "blks");
-	cat_ncstring_p(&blk_path, blk_hash+0,2);
-	cat_ncstring_p(&blk_path, blk_hash+2, 2);
-	cat_cstring_p(&blk_path, blk_hash);
-	cat_cstring_p(&blk_path, "stakemodifier2");
+	make_string		(&blk_path, "blks");
+	cat_ncstring_p	(&blk_path, blk_hash+0,2);
+	cat_ncstring_p	(&blk_path, blk_hash+2, 2);
+	cat_cstring_p	(&blk_path, blk_hash);
+	cat_cstring_p	(&blk_path, "stakemodifier2");
 	if (stat_file(blk_path.str) == 0)
 	{
 		unsigned char	*data;
 		size_t			data_len;
-		if (get_file(blk_path.str, &data, &data_len))
+		if (get_file(blk_path.str, &data, &data_len)>0)
 		{
 			if (data_len >= sizeof(hash_t))
 			{
@@ -107,6 +121,12 @@ OS_API_C_FUNC(int) generated_stake_modifier(const char *blk_hash, hash_t StakeMo
 			}
 			free_c(data);
 		}
+	}
+	else
+	{
+		log_output("stake mod file not found ");
+		log_output(blk_path.str);
+		log_output("\n");
 	}
 	free_string(&blk_path);
 	return ret;
@@ -500,14 +520,14 @@ int compute_next_stake_modifier(mem_zone_ref_ptr newBlock,hash_t		nStakeModifier
 	mem_zone_ref pindex = { PTR_NULL };
 	hash_t	nStakeModifierNew;
 
-	/*
+	
 	mem_zone_ref log = { PTR_NULL };
 	tree_manager_create_node			("log", NODE_LOG_PARAMS, &log);
 	tree_manager_set_child_value_hash	(&log, "StakeMod", nStakeModifier);
 	tree_manager_set_child_value_hash	(&log, "kernel", Kernel);
 	log_message							("stake_pos3: ComputeNextStakeModifier:\n\tprev modifier:\n\t%StakeMod%\n\tkernel:\n\t%kernel%\n", &log);
 	release_zone_ref					(&log);
-	*/
+	
 
 	
 	mbedtls_sha256_init(&ctx);
@@ -559,12 +579,13 @@ OS_API_C_FUNC(int) compute_last_pos_diff(mem_zone_ref_ptr lastPOS, unsigned int 
 	if (!tree_manager_get_child_value_i32(lastPOS, NODE_HASH("bits"), &pBits))
 		pBits = Di;
 
-	tree_manager_get_child_value_i32(lastPOS, NODE_HASH("time"), &prevTime);
-	tree_manager_get_child_value_str(lastPOS, NODE_HASH("prev"), cpphash, 65, 16);
+	tree_manager_get_child_value_i32	(lastPOS, NODE_HASH("time"), &prevTime);
+	tree_manager_get_child_value_str	(lastPOS, NODE_HASH("prev"), cpphash, 65, 16);
 
 	if (!load_blk_hdr(&pprev, cpphash))
 	{
-		*nBits = pBits;
+		last_diff	= pBits;
+		*nBits		= pBits;
 		return 1;
 	}
 	
@@ -583,6 +604,11 @@ OS_API_C_FUNC(int) compute_last_pos_diff(mem_zone_ref_ptr lastPOS, unsigned int 
 			*(nBits) = Di;
 
 		last_diff = *(nBits);
+	}
+	else
+	{
+		*(nBits) = Di;
+		last_diff = Di;
 	}
 	release_zone_ref(&pprev);
 	return ret;
@@ -618,7 +644,7 @@ OS_API_C_FUNC(int) compute_blk_staking(mem_zone_ref_ptr prev, mem_zone_ref_ptr p
 	
 	if (!get_last_stake_modifier(prev, lastStakeModifier, &lastStakeModifiertime))
 	{
-		memset_c(lastStakeModifier, 0, sizeof(hash_t));
+		memset_c						(lastStakeModifier, 0, sizeof(hash_t));
 		tree_manager_get_child_value_i32(hdr, NODE_HASH("time"), &lastStakeModifiertime);
 	}
 
@@ -697,11 +723,13 @@ OS_API_C_FUNC(int) compute_blk_staking(mem_zone_ref_ptr prev, mem_zone_ref_ptr p
 			if (last_diff == 0xFFFFFFFF)
 			{
 				unsigned int					nBits;
-				tree_manager_get_child_value_i32(hdr, NODE_HASH("bits"), &nBits);
-				mul_compact(nBits, weight, out_diff);
+				if(tree_manager_get_child_value_i32(hdr, NODE_HASH("bits"), &nBits))
+					last_diff = nBits;
+				else
+					last_diff = Di;
 			}
-			else
-				mul_compact(last_diff, weight, out_diff);
+
+			mul_compact	(last_diff, weight, out_diff);
 
 			n = 32;
 			while (n--)
@@ -722,11 +750,17 @@ OS_API_C_FUNC(int) compute_blk_staking(mem_zone_ref_ptr prev, mem_zone_ref_ptr p
 			}
 			else
 			{
+				char dd[16];
+
+				uitoa_s(last_diff, dd, 16, 16);
+
 				tree_manager_create_node("log", NODE_LOG_PARAMS, &log);
 				tree_manager_set_child_value_hash(&log, "diff", rdiff);
+				tree_manager_set_child_value_str (&log, "last diff", dd);
+				tree_manager_set_child_value_i64 (&log, "weight", weight);
 				tree_manager_set_child_value_hash(&log, "pos", rpos);
 				tree_manager_set_child_value_hash(&log, "hash", blk_hash);
-				log_message("----------------\nNBAD POS BLOCK\n%diff%\n%pos%\n%hash%\n", &log);
+				log_message("----------------\nBAD POS BLOCK\n%diff%\n%last diff% %weight%\n%pos%\n%hash%\n", &log);
 				release_zone_ref(&log);
 				ret = 0;
 			}

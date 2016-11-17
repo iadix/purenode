@@ -1020,8 +1020,6 @@ OS_API_C_FUNC(mem_ptr) tpo_mod_get_exp_addr(mem_stream *file_stream,const char *
 	return PTR_NULL;
 }
 
-
-
 OS_API_C_FUNC(int) load_module(const char *file, const char *mod_name, tpo_mod_file *mod)
 {
 	mem_stream			mod_file;
@@ -1029,7 +1027,21 @@ OS_API_C_FUNC(int) load_module(const char *file, const char *mod_name, tpo_mod_f
 	unsigned char		*data;
 	size_t				data_len;
 
-	if (get_file(file, &data, &data_len) <= 0)return 0;
+	log_output("mod open ");
+	log_output(file);
+	log_output(" ");
+	log_output(mod_name);
+	log_output("\n");
+
+	if (get_file(file, &data, &data_len) <= 0)
+	{
+		log_output("error opening mod file ");
+		log_output(file);
+		log_output(" ");
+		log_output(mod_name);
+		log_output("\n");
+		return 0;
+	}
 
 	allocate_new_zone(0, data_len, &tpo_file_data);
 	memcpy_c(get_zone_ptr(&tpo_file_data, 0), data, data_len);

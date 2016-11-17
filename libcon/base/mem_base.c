@@ -17,8 +17,7 @@
 
  LIBC_API void	*	C_API_FUNC kernel_memory_map_c				(unsigned int size);
  LIBC_API void		C_API_FUNC kernel_memory_free_c				(mem_ptr ptr);
- extern struct string exe_path;
- extern void init_exit();
+  extern void init_exit();
 			
 typedef struct
 {

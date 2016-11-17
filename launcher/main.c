@@ -56,7 +56,11 @@ int main(int argc, char **argv)
 		console_print("\n");
 		return 0;
 	}
-	daemonize	("purenode");
+	if (daemonize("purenode") <= 0)
+	{
+		console_print("daemonize failed \n");
+		return 0;
+	}
 	app_start	(PTR_NULL);
 
 	while (isRunning())

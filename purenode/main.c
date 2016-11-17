@@ -1194,13 +1194,18 @@ int process_nodes()
 int load_pos_module(const char *staking_kernel,tpo_mod_file *tpomod)
 {
 	char str[64];
-	int ret;
 	
-	strcpy_c(str, "modz/");
+	strcpy_c (str, "modz/");
 	strcat_cs(str, 64, staking_kernel);
 	strcat_cs(str, 64, ".tpo");
 
-	ret=load_module(str, staking_kernel, tpomod);
+	log_output("loading pos module ");
+	log_output(str);
+	log_output("\n");
+
+	if (!load_module(str, staking_kernel, tpomod))return 0;
+
+	log_output("loaded\n");
 #ifdef _DEBUG
 	_init_pos = get_tpo_mod_exp_addr_name(tpomod, "init_pos", 0);
 	_store_blk_staking = get_tpo_mod_exp_addr_name(tpomod, "store_blk_staking", 0);
@@ -1223,7 +1228,7 @@ int load_pos_module(const char *staking_kernel,tpo_mod_file *tpomod)
 	store_last_pos_hash = get_tpo_mod_exp_addr_name(tpomod, "store_last_pos_hash", 0);
 	find_last_pos_block = get_tpo_mod_exp_addr_name(tpomod, "find_last_pos_block", 0);
 #endif
-	return ret;
+	return 1;
 }
 
 void load_node_module(mem_zone_ref_ptr node_config)
@@ -1366,18 +1371,26 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 	mem_zone_ref		seed_node = { PTR_NULL }, rpc_wallet_conf = { PTR_NULL }, block_explorer_conf = { PTR_NULL }, genesis_conf = { PTR_NULL }, stake_conf = { PTR_NULL };
 	struct host_def		*seed_host;
 	int					nc;
+	
+	log_output("app start\n");
+		
 
 	if (!tree_manager_find_child_node(&node_config, NODE_HASH("genesis"), 0xFFFFFFFF, &genesis_conf))
 	{
 		log_message("no genesis block in node config\n", PTR_NULL);
 		return 0;
 	}
+
 	
 	make_genesis_block(&genesis_conf, &genesis);
+
+	
 	if (tree_manager_find_child_node(&node_config, NODE_HASH("staking"), 0xFFFFFFFF, &stake_conf))
 	{
 		char			staking_kernel[33];
 		tree_manager_get_child_value_str(&stake_conf, NODE_HASH("staking_kernel"), staking_kernel, 33, 0);
+
+	
 		if (load_pos_module(staking_kernel, &pos_kernel))
 		{
 			init_pos(&stake_conf);
@@ -1394,7 +1407,7 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 		hash_t h;
 		unsigned int t;
 		tree_manager_get_child_value_hash	(&genesis, NODE_HASH("blk hash"), h);
-		tree_manager_get_child_value_i32	(&genesis, NODE_HASH("blk hash"), &t);
+		tree_manager_get_child_value_i32	(&genesis, NODE_HASH("time"), &t);
 		node_set_last_block					(&genesis);
 		node_add_block_index				(h,t);
 	}
@@ -1414,6 +1427,7 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 
 	//reset_addr_scan();
 		
+
 	if (tree_manager_find_child_node(&node_config, NODE_HASH("rpc_wallet"), 0xFFFFFFFF, &rpc_wallet_conf))
 	{
 		node_init_rpc	(&rpc_wallet_conf,&pos_kernel);
@@ -1427,7 +1441,6 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 	}
 
 	
-		
 	if (nc > 1)
 	{
 		mem_zone_ref		last_blk = { PTR_NULL };
@@ -1492,6 +1505,8 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 	}
 
 	//remove_last_block();
+
+	log_output("version\n");
 	
 	tree_manager_get_child_at(&peer_nodes, 0, &seed_node);
 	queue_version_message(&seed_node, &user_agent);

@@ -13,10 +13,10 @@ export/libiadixcoin.so:export/libbase.so export/libcon.so purenode/main.c
 	gcc $(CFLAGS)  -Lexport -lcon -lblock_adx -lbase -Ilibcon -Ilibcon/include -Ilibbase/include -Ilibcon/zlib-1.2.8 purenode/main.c  -nodefaultlibs -nostdlib --shared -o export/libiadixcoin.so
 
 export/libstake_pos2.so:export/libbase.so export/libcon.so stake_pos2/kernel.c
-	gcc $(CFLAGS)  -Lexport -lcon -lbase -Ilibcon -lblock -Ilibcon/include -Ilibbase/include -Ilibcon/zlib-1.2.8 stake_pos2/kernel.c  -nodefaultlibs -nostdlib --shared -o export/libstake_pos2.so
+	gcc $(CFLAGS)  -Lexport -lcon -lbase -Ilibcon -lblock_adx -Ilibcon/include -Ilibbase/include -Ilibcon/zlib-1.2.8 stake_pos2/kernel.c  -nodefaultlibs -nostdlib --shared -o export/libstake_pos2.so
 
-export/libstake_pos3.so:export/libbase.so export/libcon.so stake_pos2/kernel.c
-	gcc $(CFLAGS)  -Lexport -lcon -lbase -Ilibcon -lblock -Ilibcon/include -Ilibbase/include -Ilibcon/zlib-1.2.8 stake_pos3/kernel.c  -nodefaultlibs -nostdlib --shared -o export/libstake_pos3.so
+export/libstake_pos3.so:export/libbase.so export/libcon.so stake_pos3/kernel.c
+	gcc $(CFLAGS)  -Lexport -lcon -lbase -Ilibcon -lblock_adx -Ilibcon/include -Ilibbase/include -Ilibcon/zlib-1.2.8 stake_pos3/kernel.c  -nodefaultlibs -nostdlib --shared -o export/libstake_pos3.so
 
 export/libblock_adx.so:block_adx/main.c block_adx/script.c block_adx/block.c block_adx/scrypt.c export/libprotocol_adx.so export/libbase.so export/libcon.so
 	gcc $(CFLAGS)  -Lexport -lcon -lbase -lprotocol_adx  -Ilibcon -Ilibcon/include -Ilibbase/include block_adx/main.c block_adx/block.c block_adx/script.c block_adx/scrypt.c  -nodefaultlibs -nostdlib --shared -o export/libblock_adx.so
@@ -56,7 +56,7 @@ export/mod_maker:  export/libcon.so
 export/libcon.so: $(CONSRC) $(XMLSRC) $(ZLIBSRC)
 	nasm -f elf32 libcon/tpo.asm -o tpo.o
 	nasm -f elf32 libcon/runtime.asm -o runtime.o
-	gcc -g -lm -Ilibcon -Ilibcon/include -Ilibcon/unix/include -Ilibcon/expat/xmlparse -Ilibcon/expat/xmltok runtime.o tpo.o $(CONSRC) $(XMLSRC) $(ZLIBSRC) -DIMP_API= --shared -o export/libcon.so
+	gcc $(CFLAGS) -lm -Ilibcon -Ilibcon/include -Ilibcon/unix/include -Ilibcon/expat/xmlparse -Ilibcon/expat/xmltok runtime.o tpo.o $(CONSRC) $(XMLSRC) $(ZLIBSRC) -DIMP_API= --shared -o export/libcon.so
 
 clean:
 	rm -f export/libcon.so export/launcher

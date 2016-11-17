@@ -403,6 +403,8 @@ OS_API_C_FUNC(int) cmp_hashle(hash_t hash1, hash_t hash2)
 
 OS_API_C_FUNC(void) mul_compact(unsigned int nBits, uint64_t op, hash_t hash)
 {
+	char dd[16];
+	mem_zone_ref log = { PTR_NULL };
 	unsigned int size,d;
 	unsigned char *pdata;
 	struct big64 bop;
@@ -411,6 +413,12 @@ OS_API_C_FUNC(void) mul_compact(unsigned int nBits, uint64_t op, hash_t hash)
 	size	= (nBits >> 24)-3;
 	d		= (nBits & 0xFFFFFF);
 
+	uitoa_s(nBits, dd, 16, 16);
+	tree_manager_create_node("log", NODE_LOG_PARAMS, &log);
+	tree_manager_set_child_value_str(&log, "nBits", dd);
+	tree_manager_set_child_value_i64(&log, "op", op);
+	log_message("mul compact %op% %nBits%", &log);
+	release_zone_ref(&log);
 
 	bop.v64 = op;
 	big128_mul(d, bop, &data);
@@ -632,8 +640,11 @@ OS_API_C_FUNC(int) get_tx_blk_height(const hash_t tx_hash, uint64_t *height, uin
 	cat_ncstring_p	(&blk_path, chash + 2, 2);
 	cat_cstring_p	(&blk_path, chash);
 
-	get_ftime		(blk_path.str, &ctime);
+	clone_string	(&tx_path, &blk_path);
+	cat_cstring_p	(&tx_path, "header");
+	get_ftime		(tx_path.str, &ctime);
 	(*block_time) = ctime;
+	free_string		(&tx_path);
 
 	clone_string	(&tx_path, &blk_path);
 	cat_cstring_p	(&tx_path, "tx_");
@@ -1784,7 +1795,12 @@ OS_API_C_FUNC(int)  get_prev_block_time(mem_zone_ref_ptr header, ctime_t *time)
 	if (!tree_manager_get_child_value_str(header, NODE_HASH("prev"), prevHash,65,16))
 		return 0;
 	
-	make_blk_path(prevHash, &blk_path);
+	make_string		(&blk_path, "blks");
+	cat_ncstring_p	(&blk_path, prevHash + 0, 2);
+	cat_ncstring_p  (&blk_path, prevHash + 2, 2);
+	cat_cstring_p	(&blk_path, prevHash);
+	cat_cstring_p	(&blk_path, "header");
+
 	ret=get_ftime(blk_path.str, time);
 	free_string(&blk_path);
 
@@ -2632,8 +2648,7 @@ OS_API_C_FUNC(int) store_block(mem_zone_ref_ptr header, mem_zone_ref_ptr tx_list
 	cat_cstring_p	(&blk_path, chash);
 	create_dir		(blk_path.str);
 
-	if (tree_manager_get_child_value_i32(header, NODE_HASH("time"), &block_time))
-		set_ftime(blk_path.str, block_time);
+
 		
 	length = compute_payload_size(header);
 	buffer = malloc_c(length);
@@ -2643,9 +2658,14 @@ OS_API_C_FUNC(int) store_block(mem_zone_ref_ptr header, mem_zone_ref_ptr tx_list
 	clone_string	(&blk_data_path, &blk_path);
 	cat_cstring_p	(&blk_data_path, "header");
 	put_file		(blk_data_path.str, buffer, length);
-	free_string		(&blk_data_path);
 
+	if (tree_manager_get_child_value_i32(header, NODE_HASH("time"), &block_time))
+		set_ftime(blk_data_path.str, block_time);
+
+	free_string		(&blk_data_path);
 	free_c			(buffer);
+
+
 
 	height		= get_last_block_height();
 
@@ -2804,8 +2824,11 @@ OS_API_C_FUNC(int) make_genesis_block(mem_zone_ref_ptr genesis_conf,mem_zone_ref
 	hash_t								hmod;
 	
 
-	tree_manager_create_node			("genesis", NODE_BITCORE_BLK_HDR	, genesis);
-	tree_manager_create_node			("txs"	  , NODE_BITCORE_TX_LIST	, &txs);
+	if (!tree_manager_create_node("genesis", NODE_BITCORE_BLK_HDR, genesis))
+		return 0;
+	
+	if (!tree_manager_create_node("txs", NODE_BITCORE_TX_LIST, &txs))
+		return 0;
 	
 	if (!tree_manager_get_child_value_hash(genesis_conf, NODE_HASH("merkle_root"), merkle))
 	{

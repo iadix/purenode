@@ -17,11 +17,12 @@ struct big64
 		uint64_t v64;
 		unsigned int v[2];
 	};
-};
+}struct_packed;
+
 struct big128
 {
 	unsigned int v[4];
-};
+}struct_packed;
 
 #ifdef __cplusplus
 	extern "C" {
