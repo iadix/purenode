@@ -7,7 +7,7 @@ default: export/libcon.so export/launcher
 	@echo 'done'
 
 export/launcher: launcher/main.c export/libcon.a
-	gcc $(CFLAGS) -Lexport -lc -lm -pthread -Ilibcon -Ilibcon/include -Ilibbase/include launcher/main.c export/libcon.a -Wl,-melf_i386 -fPIC -o export/launcher
+	gcc $(CFLAGS) -Lexport -lc -lm -pthread -Ilibcon -Ilibcon/include -Ilibbase/include launcher/main.c export/libcon.a -o export/launcher
 
 export/libiadixcoin.so:export/libbase.so export/libcon.so purenode/main.c
 	gcc $(CFLAGS)  -Lexport -lcon -lblock_adx -lbase -Ilibcon -Ilibcon/include -Ilibbase/include -Ilibcon/zlib-1.2.8 purenode/main.c  -nodefaultlibs -nostdlib --shared -o export/libiadixcoin.so
@@ -56,11 +56,11 @@ export/mod_maker:  export/libcon.so
 export/libcon.so: $(CONSRC) $(XMLSRC) $(ZLIBSRC)
 	nasm -f elf32 libcon/tpo.asm -o tpo.o
 	nasm -f elf32 libcon/runtime.asm -o runtime.o
-	gcc $(CFLAGS) -lc -lm -Ilibcon -Ilibcon/zlib-1.2.8/ -Ilibcon/include -Ilibcon/unix/include -Ilibcon/expat/xmlparse -Ilibcon/expat/xmltok $(CONSRC) $(XMLSRC) $(ZLIBSRC) -fPIC -c
+	gcc $(CFLAGS) -lc -lm -Ilibcon -Ilibcon/zlib-1.2.8/ -Ilibcon/include -Ilibcon/unix/include -Ilibcon/expat/xmlparse -Ilibcon/expat/xmltok $(CONSRC) $(XMLSRC) $(ZLIBSRC) -c
 	ar -cvq export/libcon.a *.o
 
 clean:
-	rm -f export/libcon.so export/launcher
+	rm -f export/libcon.a export/launcher *.o
 
 clean_mod:
 	rm -f export/mod_maker export/libprotocol_adx.so export/libblock_adx.so export/libiadixcoin.so export/modz/protocol_adx.tpo export/modz/block_adx.tpo export/modz/iadixcoin.tpo
