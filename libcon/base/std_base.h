@@ -5,11 +5,11 @@
 
 #if defined(_M_X64) || defined(__amd64__)
 
-	#define KERN_API_FUNC		ASM_API_FUNC
-
 	#define C_API_FUNC			
 	#define ASM_API_FUNC		
 
+	#define KERN_API_FUNC			ASM_API_FUNC
+	
 	#define	MOD_NAME_DECO			GCC_STDCALL_64
 
 	typedef long int				int64_t;
@@ -20,8 +20,11 @@
 	
 	#define C_API_FUNC				__attribute__((stdcall)) 
 	#define ASM_API_FUNC			__attribute__((cdecl)) 	
+	
 	#define KERN_API_FUNC			ASM_API_FUNC
+
 	#define	MOD_NAME_DECO			GCC_STDCALL_32
+
 	typedef long long				int64_t;
 	typedef	unsigned long long		uint64_t;
 
