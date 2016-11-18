@@ -80,11 +80,11 @@ OS_API_C_FUNC(char * ) itoa_s(int value, char *string,size_t len, int radix)
 
 OS_API_C_FUNC(char * ) uitoa_s(size_t value, char *string,size_t len, int radix)
 {
-	char		tmp[33];
-	char		*tp	= tmp;
-	int			i;
-	unsigned	v;
-	char		*sp;
+	char			tmp[33];
+	char			*tp	= tmp;
+	unsigned int	i;
+	unsigned int	v;
+	char			*sp;
 
 	if (radix > 36 || radix <= 1)return 0;
 	

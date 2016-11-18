@@ -179,8 +179,11 @@ OS_API_C_FUNC(int) con_move_data(struct con *Con, struct string *data, size_t mo
 OS_API_C_FUNC(void) con_close(struct con *Con)
 {
 	FD_ZERO			(&Con->con_set);
-	shutdown		(Con->sock,SD_BOTH);
-	closesocket		(Con->sock);
+	if (Con->sock > 0)
+	{
+		shutdown	(Con->sock, SD_BOTH);
+		closesocket	(Con->sock);
+	}
 	Con->sock=0;
 	free_string		(&Con->error);
 	free_string		(&Con->lastLine);
