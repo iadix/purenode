@@ -473,9 +473,11 @@ OS_API_C_FUNC(void) swap_zone_ref(mem_zone_ref_ptr dest_zone_ref, mem_zone_ref_p
 }
 
 extern void init_funcs(void);
+
+#ifdef _MSC_VER
 extern mem_ptr			ASM_API_FUNC memset(mem_ptr ptr, int value, unsigned int size);
 extern mem_ptr			ASM_API_FUNC memcpy(mem_ptr ptr, int value, unsigned int size);
-
+#endif
 OS_API_C_FUNC(void) init_mem_system()
 {
 	if(__global_mem_areas	!= PTR_INVALID)return;
@@ -505,9 +507,11 @@ OS_API_C_FUNC(void) init_mem_system()
 	sys_add_tpo_mod_func_name("libcon", "calloc_c", calloc_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "memset_c", memset_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "rand_c", rand_c, 0);
+#ifdef _MSC_VER
 	sys_add_tpo_mod_func_name("libcon", "memset", memset, 0);
-	sys_add_tpo_mod_func_name("libcon", "memcpy_c", memcpy_c,0);
 	sys_add_tpo_mod_func_name("libcon", "memcpy", memcpy, 0);
+#endif
+	sys_add_tpo_mod_func_name("libcon", "memcpy_c", memcpy_c,0);
 	sys_add_tpo_mod_func_name("libcon", "memcmp_c", memcmp_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "memmove_c", memmove_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "memchr_c", memchr_c, 0);
