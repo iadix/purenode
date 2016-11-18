@@ -1483,33 +1483,34 @@ OS_API_C_FUNC(int) check_tx_inputs(mem_zone_ref_ptr tx, uint64_t *total_in, unsi
 
 	if (!tree_manager_find_child_node(tx, NODE_HASH("txsin"), NODE_BITCORE_VINLIST, &txin_list))
 		return 0;
-
-
-
+	
+	log_output("checking inputs \n");
 	*total_in = 0;
+	log_output("start loop\n");
 
 	for (iidx = 0, tree_manager_get_first_child(&txin_list, &my_list, &input); ((input != PTR_NULL) && (input->zone != PTR_NULL)); tree_manager_get_next_child(&my_list, &input), iidx++)
 	{
-		struct string		tx_path = { 0 };
-
 		hash_t				pBlock;
-		char				cphash[65] = { 0 }, ctphash[65] = { 0 };
-		hash_t				prev_hash = { 0 };
+		hash_t				prev_hash;
+		char				cphash[65], ctphash[65];
+		struct string		tx_path = { PTR_NULL };
 		uint64_t			amount = 0;
 		unsigned int		oidx = 0;
 		int					n = 0;
 
-		if (iidx > 3)
-		{
-			int pp;
-			pp = 45;
-		}
+		memset_c(cphash, 0, 65);
+		memset_c(ctphash, 0, 65);
+		memset_c(prev_hash, 0, sizeof(hash_t));
+		memset_c(pBlock, 0, sizeof(hash_t));
+
+		log_output("processing input\n");
 
 		tree_manager_get_child_value_hash(input, NODE_HASH("tx hash"), prev_hash);
 		tree_manager_get_child_value_i32(input, NODE_HASH("idx"), &oidx);
 
 		if ((!memcmp_c(prev_hash, null_hash, 32)) && (oidx >= 0xFFFF))
 		{
+			log_output("checking coinbase \n");
 			if ((*is_coinbase) == 0)
 			{
 				*is_coinbase = 1;
@@ -1526,6 +1527,9 @@ OS_API_C_FUNC(int) check_tx_inputs(mem_zone_ref_ptr tx, uint64_t *total_in, unsi
 			mem_zone_ref		prevout = { PTR_NULL }, prev_tx = { PTR_NULL };
 			struct string		oscript = { 0 };
 			hash_t				txsh;
+
+			log_output("checking unspent \n");
+
 			ret			= load_tx(&prev_tx, pBlock, prev_hash);
 			if (ret)
 			{
@@ -1546,6 +1550,8 @@ OS_API_C_FUNC(int) check_tx_inputs(mem_zone_ref_ptr tx, uint64_t *total_in, unsi
 				}
 				ctphash[64] = 0;
 
+				log_output("checking unspent output \n");
+
 				make_string(&tx_path, "blks");
 				cat_ncstring_p(&tx_path, ctphash + 0, 2);
 				cat_ncstring_p(&tx_path, ctphash + 2, 2);
@@ -1555,6 +1561,8 @@ OS_API_C_FUNC(int) check_tx_inputs(mem_zone_ref_ptr tx, uint64_t *total_in, unsi
 				strcat_int(&tx_path, oidx);
 				ret = (stat_file(tx_path.str) == 0) ? 1 : 0;
 				free_string(&tx_path);
+
+				log_output("get unspent output \n");
 				
 				if ((ret)&&(get_tx_output(&prev_tx, oidx, &prevout)))
 				{
@@ -1566,6 +1574,8 @@ OS_API_C_FUNC(int) check_tx_inputs(mem_zone_ref_ptr tx, uint64_t *total_in, unsi
 					tree_manager_get_child_value_i64(&prevout, NODE_HASH("value"), &amount);
 					tree_manager_get_child_value_istr(&prevout, NODE_HASH("script"), &oscript, 0);
 					
+
+					log_output("check addr \n");
 
 					tree_manager_get_child_value_istr(input, NODE_HASH("script"), &script, 0);
 					ret = get_insig_info(&script, &sign, &vpubK, &hash_type);
@@ -1579,6 +1589,9 @@ OS_API_C_FUNC(int) check_tx_inputs(mem_zone_ref_ptr tx, uint64_t *total_in, unsi
 						}
 						else
 							check_txout_key		(&prevout, vpubK.str);
+
+
+						log_output("check sign\n");
 							
 						if (ret)
 						{
@@ -1594,21 +1607,19 @@ OS_API_C_FUNC(int) check_tx_inputs(mem_zone_ref_ptr tx, uint64_t *total_in, unsi
 					release_zone_ref(&prevout);
 				}
 				release_zone_ref(&prev_tx);
-			}
-			else
-			{
-				int ppp;
-				ppp = 0;
+				log_output("done input\n");
 			}
 		}
 
 		if (!ret)
 		{
+			log_output("check input failed\n");
 			release_zone_ref	(&my_list);
 			dec_zone_ref		(input);
 			release_zone_ref	(&txin_list);
 			return 0;
 		}
+		log_output("next input\n");
 		(*total_in) += amount;
 	}
 	release_zone_ref(&txin_list);
@@ -1625,6 +1636,8 @@ OS_API_C_FUNC(int) check_tx_list(mem_zone_ref_ptr tx_list,uint64_t block_reward)
 	int					ret;
 	unsigned int		coinbase, coinstaking, is_staking, is_coinbase;
 	uint64_t			txFee, fees;
+
+	log_output("verify merkle root\n");
 	
 	build_merkel_tree				(tx_list, merkleRoot);
 	tree_manager_get_first_child	(tx_list, &my_list, &tx);
@@ -1644,6 +1657,8 @@ OS_API_C_FUNC(int) check_tx_list(mem_zone_ref_ptr tx_list,uint64_t block_reward)
 	list_reward = 0;
 	fees = 0;
 
+	log_output("verify txs\n");
+
 	ret = 1;
 	for (; ((tx != PTR_NULL) && (tx->zone != PTR_NULL)); tree_manager_get_next_child(&my_list, &tx))
 	{
@@ -1660,9 +1675,12 @@ OS_API_C_FUNC(int) check_tx_list(mem_zone_ref_ptr tx_list,uint64_t block_reward)
 		if (is_tx_null(tx))
 			continue;
 
+		log_output("verify inputs\n");
 		check_tx_inputs (tx, &total_in , &is_coinbase);
+		log_output("verify outputs\n");
 		check_tx_outputs(tx, &total_out, &is_staking);
-				
+			
+		log_output("verify reward\n");
 		if (is_staking)
 		{
 			if (coinstaking == 0)
@@ -1692,10 +1710,17 @@ OS_API_C_FUNC(int) check_tx_list(mem_zone_ref_ptr tx_list,uint64_t block_reward)
 		}
 	}
 
-	if (!ret)return 0;
-	if (list_reward > (block_reward + fees))
+	if (!ret)
+	{
+		log_output("error tx\n");
 		return 0;
-
+	}
+	if (list_reward > (block_reward + fees))
+	{
+		log_output("bad tx reward\n");
+		return 0;
+	}
+	log_output("txs verified\n");
 	return 1;
 }
 
@@ -1857,7 +1882,7 @@ int remove_tx_index(hash_t tx_hash)
 
 OS_API_C_FUNC(int) remove_tx_addresses(btc_addr_t addr, hash_t tx_hash)
 {
-	btc_addr_t		null_addr = { 0 };
+	btc_addr_t		null_addr;
 	struct string   tx_file = { 0 };
 	size_t			len;
 	unsigned char  *data;
@@ -1936,11 +1961,13 @@ int cancel_tx_inputs(mem_zone_ref_ptr tx,hash_t tx_hash)
 
 		if (load_tx(&ptx, pblk_hash, prev_hash))
 		{
-			btc_addr_t		 out_addr = { 0 };
-			mem_zone_ref	 vout = { PTR_NULL };
-			struct string	  tx_path = { 0 };
 			char			 pchash[65];
-			int					n;
+			btc_addr_t		 out_addr;
+			mem_zone_ref	 vout = { PTR_NULL };
+			struct string	 tx_path = { 0 };
+			int			  	 n;
+
+			memset_c(out_addr, '0', sizeof(btc_addr_t));
 
 			if (get_tx_output(&ptx, oidx, &vout))
 			{
