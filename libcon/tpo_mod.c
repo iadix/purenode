@@ -17,8 +17,6 @@ unsigned int			debug								=	0xFFFFFFFF;
 extern unsigned int		kernel_log_id;
 
 
-
-
 KERNEL_API unsigned int 		KERN_API_FUNC 	tpo_mod_imp_func_addr_c(unsigned int mod_hash, unsigned int crc_func);
 KERNEL_API unsigned int 		KERN_API_FUNC 	tpo_mod_add_func_addr_c(unsigned int mod_hash, unsigned int crc_func, unsigned int func_addr);
 
@@ -67,6 +65,22 @@ OS_API_C_FUNC(void) tpo_mod_init			(tpo_mod_file *tpo_mod)
 }
 
 
+struct kern_mod_fn_t *find_sym(size_t sym_ofset, unsigned int deco_type)
+{
+	unsigned int		n;
+	struct kern_mod_t	*mod;
+
+	n = 0;
+	while ( (mod=tpo_get_mod_entry_idx_c(n)) != PTR_NULL)
+	{
+		struct kern_mod_fn_t	*func_ptr;
+		func_ptr = tpo_get_fn_entry_name_c(n, mod->mod_hash, sym_ofset, deco_type);
+		if (func_ptr != PTR_FF)
+			return func_ptr;
+		n++;
+	}
+	return PTR_FF;
+}
 
 
 unsigned int tpo_mod_add_section		(tpo_mod_file *tpo_mod,mem_size img_ofset,mem_ptr ptr,mem_size section_size,unsigned int *crc_data)
@@ -656,15 +670,11 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 		{
 			int sz;
 			sz					=(sec_imps_n+1)*sizeof(tpo_import);
-
-			
 			if (allocate_new_zone(0, sz, &tpo_file->sections[sec_idx].imports_fnc) != 1)
 				return 0;
 			
 			memset_c(get_zone_ptr(&tpo_file->sections[sec_idx].imports_fnc,0),0xFF,sz);
 		}
-
-		
 
 		while(n_imps<sec_imps_n)
 		{
@@ -675,10 +685,12 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 			unsigned int			imp_ofs,str_n;
 			struct kern_mod_fn_t	*func_ptr;
 
+			memset_c(dll_name, 0, 64);
+			memset_c(dll_imp_name, 0, 64);
+			memset_c(sym_name, 0, 64);
+
 			if(sec_flags&0x00000001)
 			{
-				
-
 				dll_crc		=	mem_stream_read_32(file_stream);
 				fn_crc		=	mem_stream_read_32(file_stream);
 				new_addr	=	tpo_mod_imp_func_addr_c(dll_crc,fn_crc);
@@ -686,8 +698,6 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 			else
 			{
 				int ofset;
-
-				
 				
 				ofset		=	mem_stream_read_32		(file_stream);
 				strcpy_cs(dll_name, 64, get_zone_ptr(&tpo_file->string_buffer_ref, ofset));
@@ -695,26 +705,22 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 				if (!strcmp_c(dll_name, "libcon_d"))
 					strcpy_cs(dll_name, 64, "libcon");
 
-				if (!strncmp_c(dll_name, "libbase",7))
+				if (!strncmp_c(dll_name, "libbase", 7))
 					strcpy_cs(dll_name, 64, "libbase");
-					
+
+
 				dll_crc		=	calc_crc32_c(dll_name,64);
 				ofset		=	mem_stream_read_32		(file_stream);
-				
 
 				strcpy_cs		(sym_name,256,get_zone_ptr(&tpo_file->string_buffer_ref,ofset));
 				//fn_crc		=	calc_crc32_c(sym_name,256);
 
 				imp_ofs		=	0;
-
 				func_ptr	=	uint_to_mem(0xFFFFFFFF);
-
-				
 
 				while(func_ptr	== uint_to_mem(0xFFFFFFFF))
 				{
 					str_n		=	0;
-
 					while((dll_name[imp_ofs]!=';')&&(dll_name[imp_ofs]!=0))
 					{
 						dll_imp_name[str_n]=dll_name[imp_ofs];
@@ -733,26 +739,26 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 					if(dll_name[imp_ofs]==0)break;
 					imp_ofs++;
 				}
+
+				/*
 				if (func_ptr == PTR_FF)
-				{
-					console_print("import symbol not found ");
-					console_print(sym_name);
-					console_print(" ");
-					console_print(dll_name);
-					console_print(" in ");
-					console_print(tpo_file->name);
-					console_print("\n");
-
-				}
+					func_ptr = find_sym(ofset, tpo_file->deco_type);
+				*/
 			}
-
-			
 			ofs_addr	=	mem_stream_read_32(file_stream);
-
 			if(func_ptr	!= uint_to_mem(0xFFFFFFFF))
 			{
 				tpo_mod_write_import(tpo_file, sec_idx, ofs_addr, uint_to_mem(func_ptr->func_addr));
-			
+			}
+			else
+			{
+				console_print("import symbol not found ");
+				console_print(sym_name);
+				console_print(" ");
+				console_print(dll_name);
+				console_print(" in ");
+				console_print(tpo_file->name);
+				console_print("\n");
 			}
 			
 			n_imps++;

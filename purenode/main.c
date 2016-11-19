@@ -846,11 +846,16 @@ int accept_block(mem_zone_ref_ptr header, mem_zone_ref_ptr tx_list, struct strin
 	}
 
 	if (ret)
+	{
+		log_output("adding new block\n");
 		ret = node_add_block(header, tx_list, block_reward);
+	}
 
 	if (ret)
 	{
 		unsigned int blocktime = 0;
+
+		log_output("new block added\n");
 
 		if (strlen_c(pos_kernel.name) > 0)
 			store_blk_staking(header, tx_list);
@@ -1336,9 +1341,10 @@ OS_API_C_FUNC(int) app_init(mem_zone_ref_ptr params)
 	free_c(data);
 	
 	
-	tree_manager_get_child_value_istr(&node_config, NODE_HASH("seed_node_host"), &node_hostname, 0);
-	tree_manager_get_child_value_i32(&node_config, NODE_HASH("seed_node_port"), &seed_port);
-	tree_manager_get_child_value_istr(&node_config, NODE_HASH("name"), &user_agent, 0);
+	tree_manager_get_child_value_istr	(&node_config, NODE_HASH("seed_node_host"), &node_hostname, 0);
+	tree_manager_get_child_value_i32	(&node_config, NODE_HASH("seed_node_port"), &seed_port);
+	tree_manager_get_child_value_i32	(&node_config, NODE_HASH("p2p_port"), &node_port);
+	tree_manager_get_child_value_istr	(&node_config, NODE_HASH("name"), &user_agent, 0);
 	
 	self_node.zone = PTR_NULL;
 		
@@ -1408,16 +1414,36 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 		unsigned int t;
 		tree_manager_get_child_value_hash	(&genesis, NODE_HASH("blk hash"), h);
 		tree_manager_get_child_value_i32	(&genesis, NODE_HASH("time"), &t);
+
+
+		tree_manager_create_node			("log", NODE_LOG_PARAMS, &log);
+		tree_manager_set_child_value_hash	(&log, "hash", h);
+		tree_manager_set_child_value_i32	(&log, "time", t);
+		log_message							("initial block : %hash%, time : %time% \n", &log);
+		release_zone_ref					(&log);
+
 		node_set_last_block					(&genesis);
 		node_add_block_index				(h,t);
 	}
 	release_zone_ref(&genesis_conf);
 	release_zone_ref(&genesis);
 
+	tree_manager_create_node			("log", NODE_LOG_PARAMS, &log);
+	tree_manager_set_child_value_str	(&log, "host", node_hostname.str);
+	tree_manager_set_child_value_i32	(&log, "port", seed_port);
+	log_message							("initializing seed node: %host%:%port%\n", &log);
+	release_zone_ref					(&log);
+
 	seed_host = make_host_def(node_hostname.str, seed_port);
 	tree_manager_create_node("peer nodes", NODE_BITCORE_NODE_LIST, &peer_nodes);
 	if (!new_peer_node(seed_host, &peer_nodes))
 	{
+		tree_manager_create_node		("log", NODE_LOG_PARAMS, &log);
+		tree_manager_set_child_value_str(&log, "host", node_hostname.str);
+		tree_manager_set_child_value_i32(&log, "port", seed_port);
+		log_message						("could not initialize seed node\n", &log);
+		release_zone_ref				(&log);
+
 		free_string(&node_port_str);
 		free_string(&node_hostname);
 		free_host_def(seed_host);
@@ -1430,12 +1456,14 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 
 	if (tree_manager_find_child_node(&node_config, NODE_HASH("rpc_wallet"), 0xFFFFFFFF, &rpc_wallet_conf))
 	{
+		log_output		("initializing rpc server \n");
 		node_init_rpc	(&rpc_wallet_conf,&pos_kernel);
 		release_zone_ref(&rpc_wallet_conf);
 	}
 
 	if (tree_manager_find_child_node(&node_config, NODE_HASH("block_explorer"), 0xFFFFFFFF, &block_explorer_conf))
 	{
+		log_output				("initializing block explorer \n");
 		node_init_block_explorer(&block_explorer_conf, &pos_kernel);
 		release_zone_ref		(&block_explorer_conf);
 	}
@@ -1446,6 +1474,7 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 		mem_zone_ref		last_blk = { PTR_NULL };
 		mem_zone_ref		lastPOSBlk = { PTR_NULL }, lastPOWBlk = { PTR_NULL };
 		unsigned int		nBits;
+
 		node_load_last_blks();
 
 
@@ -1494,20 +1523,16 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 					tree_manager_get_child_value_i32(&self_node, NODE_HASH("limit"), &nBits);
 					tree_manager_set_child_value_i32(&self_node, "current pos diff", nBits);
 				}
-
-
 				log_message("loaded last block pos %blk hash%", &lastPOSBlk);
 				release_zone_ref(&lastPOSBlk);
 			}
 		}
-
 		release_zone_ref(&last_blk);
 	}
 
 	//remove_last_block();
 
 	log_output("version\n");
-	
 	tree_manager_get_child_at(&peer_nodes, 0, &seed_node);
 	queue_version_message(&seed_node, &user_agent);
 	release_zone_ref(&seed_node);

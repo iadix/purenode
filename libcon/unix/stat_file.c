@@ -584,6 +584,7 @@ OS_API_C_FUNC(ctime_t)	 get_time_c()
    if (log_output("init log\n") < 0)
 	   return -1;
 
+   /*
    // Fork off the parent process 
    tid = gettid();
    pid = fork();
@@ -617,6 +618,7 @@ OS_API_C_FUNC(ctime_t)	 get_time_c()
 	   log_output( "sid failed");
 	   return -1;
    }
+   */
    /*
    close(STDIN_FILENO);
    close(STDOUT_FILENO);

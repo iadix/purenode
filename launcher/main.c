@@ -61,7 +61,13 @@ int main(int argc, char **argv)
 		console_print("daemonize failed \n");
 		return 0;
 	}
-	app_start	(PTR_NULL);
+	if (!app_start(PTR_NULL))
+	{
+		console_print("could not start app ");
+		console_print(iadix_mod.name);
+		console_print("\n");
+		return 0;
+	}
 
 	while (isRunning())
 	{

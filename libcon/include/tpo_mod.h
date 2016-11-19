@@ -38,13 +38,25 @@ typedef struct
 	mem_zone_ref			data_sections;
 	tpo_section				sections[16];
 }tpo_mod_file;
+
 struct kern_mod_fn_t
 {
 	unsigned int	func_hash;
 	unsigned int	func_addr;
 	unsigned int	section_start_addr;
 	unsigned int	string_idx;
-};
+}struct_packed;
+
+struct kern_mod_t
+{
+	unsigned int	mod_hash;
+	unsigned char	n_funcs;
+	unsigned char	n_sections;
+	unsigned short  fn_ofset;
+	mem_ptr			mod_addr;
+	mem_ptr			string_tbl;
+}struct_packed;
+
 typedef const tpo_mod_file *const_tpo_mod_file_ptr ;
 
 
