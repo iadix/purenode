@@ -740,10 +740,8 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 					imp_ofs++;
 				}
 
-				/*
-				if (func_ptr == PTR_FF)
+				if (func_ptr == uint_to_mem(0xFFFFFFFF))
 					func_ptr = find_sym(ofset, tpo_file->deco_type);
-				*/
 			}
 			ofs_addr	=	mem_stream_read_32(file_stream);
 			if(func_ptr	!= uint_to_mem(0xFFFFFFFF))
