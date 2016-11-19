@@ -1,3 +1,14 @@
+Prerequisites:
+
+install nasm
+
+	apt-get install nasm
+
+For building on 64 bits linux, you need gcc multilib to build and link 32 bit elf
+
+	apt-get install gcc-multilib
+
+
 Building instruction :
 
 
@@ -12,15 +23,14 @@ Libcon and launcher:
 	make 
 
 
-Modules:
+Modules: (optional)
 
 	make modz
-
 
 Running:
 
 	cd export
-	./launcher (use /root/purenode)
+	./launcher (use ~/purenode)
 
 
 No dependencies, all is included.
@@ -35,12 +45,10 @@ No dependencies, all is included.
 
 	purenode/export# ldd launcher
 
-        linux-gate.so.1 (0xf779a000)
-        libcon.so => /mnt/freebox/purenode/export/libcon.so (0xf7713000)
-        libm.so.6 => /lib/i386-linux-gnu/libm.so.6 (0xf76be000)
-        libpthread.so.0 => /lib/i386-linux-gnu/libpthread.so.0 (0xf76a1000)
-        libc.so.6 => /lib/i386-linux-gnu/libc.so.6 (0xf74ea000)
-        /lib/ld-linux.so.2 (0x565e5000)
-
+	linux-gate.so.1 (0xf77e6000)
+	libc.so.6 => /lib/i386-linux-gnu/libc.so.6 (0xf760d000)
+	libm.so.6 => /lib/i386-linux-gnu/libm.so.6 (0xf75b8000)
+	libpthread.so.0 => /lib/i386-linux-gnu/libpthread.so.0 (0xf7599000)
+	/lib/ld-linux.so.2 (0x5655e000)
 
 Enjoy ! :-)
