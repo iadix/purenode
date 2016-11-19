@@ -1,4 +1,4 @@
-//copyright iadix 2016
+/*copyright iadix 2016*/
 #define LIBC_API C_EXPORT
 #include "std_def.h"
 #include "std_mem.h"
@@ -392,7 +392,7 @@ OS_API_C_FUNC(int)  strncat_c(char *string,const char *src_string,size_t max)
  OS_API_C_FUNC(int)  strcmp_c(const char *string1,const char *string2)
 {
 	int		n;
-	char	c1=0xFF,c2=0xFF;
+	char	c1='0',c2='0';
 
 	n=0;
 	while((c1!=0)&&(c2!=0))
@@ -408,7 +408,7 @@ OS_API_C_FUNC(int)  strncat_c(char *string,const char *src_string,size_t max)
  OS_API_C_FUNC(int)  stricmp_c(const char *string1,const char *string2)
 {
 	int		n;
-	char	c1=0xFF,c2=0xFF;
+	char	c1 = '0', c2 = '0';
 
 	n=0;
 	while((c1!=0)&&(c2!=0))
@@ -425,7 +425,7 @@ OS_API_C_FUNC(int)  strncat_c(char *string,const char *src_string,size_t max)
  OS_API_C_FUNC(int)  strncmp_c(const char *string1,const char *string2,size_t len)
 {
 	unsigned int		n;
-	char	c1=0xFF,c2=0xFF;
+	char	c1 = '0', c2 = '0';
 
 	n=0;
 	while((c1!=0)&&(c2!=0))
@@ -443,7 +443,7 @@ OS_API_C_FUNC(int)  strncat_c(char *string,const char *src_string,size_t max)
  OS_API_C_FUNC(int)  strincmp_c(const char *string1,const char *string2,size_t len)
 {
 	unsigned int		n;
-	char	c1=0xFF,c2=0xFF;
+	char	c1 = '0', c2 = '0';
 
 	n=0;
 	while((c1!=0)&&(c2!=0))
@@ -672,7 +672,7 @@ OS_API_C_FUNC(unsigned long) strtoul_c(const char *nptr, char **endptr, int base
 	}
 	if (any < 0) {
 		acc = ULONG_MAX;
-//		errno = ERANGE;
+		/* errno = ERANGE; */
 	}
 	if (endptr != 0)
 		*endptr = (char *)(any ? s - 1 : nptr);
@@ -762,7 +762,7 @@ OS_API_C_FUNC(int64_t) strtoll_c(const char *nptr, char **endptr, int base)
 	}
 	if (any < 0) {
 		acc = neg ? LONGLONG_MIN : LONGLONG_MAX;
-		//		errno = ERANGE;
+		/*errno = ERANGE;*/
 	}
 	else if (neg)
 		acc = -acc;
@@ -851,7 +851,7 @@ OS_API_C_FUNC(long) strtol_c(const char *nptr, char **endptr, int base)
 	}
 	if (any < 0) {
 		acc = neg ? LONG_MIN : LONG_MAX;
-//		errno = ERANGE;
+		/*errno = ERANGE;*/
 	} else if (neg)
 		acc = -acc;
 	if (endptr != 0)
@@ -1119,11 +1119,6 @@ OS_API_C_FUNC(void) dtoa_c	(char *buff, char conv, int bsize, int dplace, double
     *buff++ = '\0';
     return;
 }
-
-
-
-//unsigned int	errno=0xFFFFFFFF;
-
 
 
 OS_API_C_FUNC(uint64_t) load_bigendian(const unsigned char *x)

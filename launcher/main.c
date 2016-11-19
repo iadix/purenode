@@ -1,4 +1,4 @@
-//copyright iadix 2016
+/* copyright iadix 2016 */
 #include <base/std_def.h>
 #include <base/std_mem.h>
 #include <base/mem_base.h>
@@ -10,7 +10,6 @@
 #include <tpo_mod.h>
 #include <fsio.h>
 
-//#define _DEBUG
 #ifdef _DEBUG
 C_IMPORT int C_API_FUNC app_init(mem_zone_ref_ptr params);
 C_IMPORT int C_API_FUNC app_start(mem_zone_ref_ptr params);
@@ -44,10 +43,10 @@ int main(int argc, char **argv)
 	load_module("modz/iadixcoin.tpo", "iadixcoin", &iadix_mod);
 
 #ifndef _DEBUG
-	app_init = get_tpo_mod_exp_addr_name(&iadix_mod, "app_init", 0);
-	app_start = get_tpo_mod_exp_addr_name(&iadix_mod, "app_start", 0);
-	app_loop = get_tpo_mod_exp_addr_name(&iadix_mod, "app_loop", 0);
-	app_stop = get_tpo_mod_exp_addr_name(&iadix_mod, "app_stop", 0);
+	app_init = (app_func_ptr)get_tpo_mod_exp_addr_name(&iadix_mod, "app_init", 0);
+	app_start = (app_func_ptr)get_tpo_mod_exp_addr_name(&iadix_mod, "app_start", 0);
+	app_loop = (app_func_ptr)get_tpo_mod_exp_addr_name(&iadix_mod, "app_loop", 0);
+	app_stop = (app_func_ptr)get_tpo_mod_exp_addr_name(&iadix_mod, "app_stop", 0);
 #endif
 	if (!app_init(PTR_NULL))
 	{

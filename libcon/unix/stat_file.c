@@ -1,17 +1,4 @@
-//copyright iadix 2016
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/syscall.h>
-#include <sys/mman.h>
-#include <dirent.h>
-#include <string.h>
-#include <stdlib.h>
-#include <time.h>
-#include <utime.h>
-#include <pwd.h>
-#include <pthread.h>
+/*copyright iadix 2016*/
 
 #define LIBC_API C_EXPORT
 #include "../base/std_def.h"
@@ -22,6 +9,12 @@
 #include "fsio.h"
 
 #include <sys_include.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <time.h>
+#include <utime.h>
+#include <pwd.h>
 
 char	path_sep				= '/';
 struct string log_file_name		={PTR_INVALID };
@@ -584,13 +577,13 @@ OS_API_C_FUNC(ctime_t)	 get_time_c()
    if (log_output("init log\n") < 0)
 	   return -1;
       
-   // Fork off the parent process 
+   /* Fork off the parent process  */
    tid = gettid();
    pid = fork();
    if (pid < 0) {
        return -1;
    }
-   // If we got a good PID, then we can exit the parent process. 
+   /* If we got a good PID, then we can exit the parent process. */
    if (pid > 0) {
 	    printf	("forked %d \n", pid);
 		exit	(EXIT_SUCCESS);
@@ -602,18 +595,18 @@ OS_API_C_FUNC(ctime_t)	 get_time_c()
    ttid = gettid	();
    replace_thread_h (tid, ttid);
 
-   // Change the file mode mask 
+   /* Change the file mode mask */
    umask			(0);
    
    if (log_output("umask \n") < 0)
 	   return -1;
-   // Open any logs here 
+   /* Open any logs here */
    set_cwd		(home_path.str);
 
-   // Create a new SID for the child process 
+   /* Create a new SID for the child process */
    sid = setsid();
    if (sid < 0) {
-	   // Log any failures here
+	   /* Log any failures here */
 	   log_output( "sid failed");
 	   return -1;
    }
@@ -684,7 +677,7 @@ int extractDate(const char * s){
 	t.tm_year = y - 1900;
 	t.tm_isdst = -1;
 
-	// normalize:
+	/* normalize: */
 	return mktime(&t);
 }
 OS_API_C_FUNC(unsigned int) parseDate(const char *date)

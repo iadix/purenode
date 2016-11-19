@@ -69,10 +69,10 @@ int load_sign_module(const char *sign_mod, tpo_mod_file *tpomod)
 	strcat_cs(str, 64, ".tpo");
 	ret = load_module(str, sign_mod, tpomod);
 
-	crypto_extract_key = get_tpo_mod_exp_addr_name(tpomod, "crypto_extract_key", 0);
-	crypto_sign_open = get_tpo_mod_exp_addr_name(tpomod, "crypto_sign_open", 0);
+	crypto_extract_key = (crypto_extract_key_func_ptr)get_tpo_mod_exp_addr_name(tpomod, "crypto_extract_key", 0);
+	crypto_sign_open = (crypto_sign_open_func_ptr)get_tpo_mod_exp_addr_name(tpomod, "crypto_sign_open", 0);
 #ifdef FORWARD_CRYPTO
-	crypto_sign = get_tpo_mod_exp_addr_name(tpomod, "crypto_sign", 0); 
+	crypto_sign = (crypto_sign_func_ptr)get_tpo_mod_exp_addr_name(tpomod, "crypto_sign", 0);
 #endif
 #endif
 	return ret;
@@ -420,7 +420,7 @@ OS_API_C_FUNC(void) mul_compact(unsigned int nBits, uint64_t op, hash_t hash)
 	log_message("mul compact %op% %nBits%", &log);
 	release_zone_ref(&log);
 
-	bop.v64 = op;
+	bop.m.v64 = op;
 	big128_mul(d, bop, &data);
 
 	//data	= mul64(d , op);

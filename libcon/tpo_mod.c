@@ -1,4 +1,4 @@
-//copyright iadix 2016
+/* copyright iadix 2016 */
 #define LIBC_API C_EXPORT
 #include "base/std_def.h"
 #include "base/std_mem.h"
@@ -37,7 +37,7 @@ KERNEL_API unsigned int 		 KERN_API_FUNC	tpo_calc_exp_func_hash_c(unsigned int m
 KERNEL_API unsigned int 		 KERN_API_FUNC	tpo_calc_exp_func_hash_name_c(const char *func_name, unsigned int deco_type);
 KERNEL_API unsigned int 		 KERN_API_FUNC	tpo_calc_imp_func_hash_name_c(const char *func_name, unsigned int src_deco_type, unsigned int deco_type);
 
-//KERNEL_API unsigned int 		 KERN_API_FUNC	sys_add_tpo_mod_func_name(const char *name, const char *fn_name, mem_ptr addr,unsigned int deco );
+/*KERNEL_API unsigned int 		 KERN_API_FUNC	sys_add_tpo_mod_func_name(const char *name, const char *fn_name, mem_ptr addr,unsigned int deco );*/
 
 OS_API_C_FUNC(void) tpo_mod_init			(tpo_mod_file *tpo_mod)
 {
@@ -58,8 +58,6 @@ OS_API_C_FUNC(void) tpo_mod_init			(tpo_mod_file *tpo_mod)
 		tpo_mod->sections[n].imports_fnc.zone	=PTR_NULL;
 		
 		allocate_new_empty_zone		(0,&tpo_mod->sections[n].exports_fnc);
-		//allocate_new_empty_zone		(0,&tpo_mod->sections[n].imports_fnc);
-
 		n++;
 	}
 }
@@ -408,11 +406,12 @@ OS_API_C_FUNC(int)	set_tpo_mod_exp_value32_name(const tpo_mod_file *tpo_mod,cons
 }
 
 
-OS_API_C_FUNC(mem_ptr)	get_tpo_mod_exp_addr_name(const tpo_mod_file *tpo_mod,const char *name,unsigned int deco_type)
+OS_API_C_FUNC(void_func_ptr)	get_tpo_mod_exp_addr_name(const tpo_mod_file *tpo_mod, const char *name, unsigned int deco_type)
 {
 	tpo_export			*exports;
 	tpo_export			*end_zone;
-	mem_ptr				sec_ptr,sym_ptr;
+	mem_ptr				sec_ptr;
+	void_func_ptr		sym_ptr;
 	
 	size_t				size;
 	unsigned int		n;
@@ -441,7 +440,7 @@ OS_API_C_FUNC(mem_ptr)	get_tpo_mod_exp_addr_name(const tpo_mod_file *tpo_mod,con
 	crc_32	=	calc_crc32_c(func_name,256);
 	
 
-	//crc_32	=	tpo_calc_imp_func_hash_name_c(name,0,tpo_mod->deco_type);
+	/*crc_32	=	tpo_calc_imp_func_hash_name_c(name,0,tpo_mod->deco_type);*/
 	n		=	0;
 
 	while(tpo_mod->sections[n].section_size>0)
@@ -459,7 +458,7 @@ OS_API_C_FUNC(mem_ptr)	get_tpo_mod_exp_addr_name(const tpo_mod_file *tpo_mod,con
 				{
 					
 					sec_ptr=	get_zone_ptr(&tpo_mod->data_sections,tpo_mod->sections[n].section_ptr);
-					sym_ptr=	mem_add(sec_ptr, exports->sym_addr);
+					sym_ptr=	(void_func_ptr)mem_add(sec_ptr, exports->sym_addr);
 					
 					return sym_ptr;
 				}
@@ -713,7 +712,7 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 				ofset		=	mem_stream_read_32		(file_stream);
 
 				strcpy_cs		(sym_name,256,get_zone_ptr(&tpo_file->string_buffer_ref,ofset));
-				//fn_crc		=	calc_crc32_c(sym_name,256);
+				/*fn_crc		=	calc_crc32_c(sym_name,256);*/
 
 				imp_ofs		=	0;
 				func_ptr	=	uint_to_mem(0xFFFFFFFF);
@@ -865,7 +864,7 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 }
 
 
-OS_API_C_FUNC(mem_ptr) tpo_mod_get_exp_addr(mem_stream *file_stream,const char *sym)
+OS_API_C_FUNC(void_func_ptr) tpo_mod_get_exp_addr(mem_stream *file_stream,const char *sym)
 {
 	char			mod_name[128];
 	unsigned int	nsecs,deco_type;
@@ -949,7 +948,7 @@ OS_API_C_FUNC(mem_ptr) tpo_mod_get_exp_addr(mem_stream *file_stream,const char *
 		while(n_exps<sec_exps_n)
 		{
 			unsigned int	crc_dll,crc_func,sym_ofs;
-			mem_ptr			sym_addr;
+			void_func_ptr	sym_addr;
 			if(sec_flags&0x00000001)
 			{
 				crc_dll	=mem_stream_read_32(file_stream);
@@ -967,8 +966,8 @@ OS_API_C_FUNC(mem_ptr) tpo_mod_get_exp_addr(mem_stream *file_stream,const char *
 				ofset		=	mem_stream_read_32		(file_stream);
 				strcpy_cs	(sym_name,256,&str_buffer[ofset]);
 
-				//mem_stream_read			(file_stream,dll_name,64);
-				//mem_stream_read			(file_stream,sym_name,256);
+				/*mem_stream_read			(file_stream,dll_name,64);*/
+				/*mem_stream_read			(file_stream,sym_name,256);*/
 
 
 
@@ -984,7 +983,7 @@ OS_API_C_FUNC(mem_ptr) tpo_mod_get_exp_addr(mem_stream *file_stream,const char *
 			}
 
 			sym_ofs		=	mem_stream_read_32	(file_stream);
-			sym_addr	=	mem_add				(sec_data_ptr,sym_ofs);	
+			sym_addr	=  (void_func_ptr)mem_add(sec_data_ptr, sym_ofs);
 
 			if(crc_func==crc_sym)
 			{

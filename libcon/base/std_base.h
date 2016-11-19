@@ -48,9 +48,10 @@
 		#define KERN_API_FUNC		ASM_API_FUNC
 		#define	MOD_NAME_DECO		MSVC_STDCALL_32
 	#endif	
-
-
 #endif
+
+typedef	void		   void_func();
+typedef	void_func	   *void_func_ptr;
 
 #ifndef MOD_NAME_DECO
 #error compiler not supported !

@@ -65,9 +65,8 @@ LIBC_API void			C_API_FUNC tpo_mod_init(tpo_mod_file *driver);
 
 LIBC_API int			C_API_FUNC tpo_mod_load_tpo(mem_stream *file_stream, tpo_mod_file *tpo_file, unsigned int imp_func_addr);
 
-LIBC_API mem_ptr		C_API_FUNC tpo_mod_get_exp_addr(mem_stream *file_stream, const char *sym);
-LIBC_API mem_ptr		C_API_FUNC get_tpo_mod_exp_addr(const tpo_mod_file *tpo_mod, unsigned int crc_32);
-LIBC_API mem_ptr		C_API_FUNC get_tpo_mod_exp_addr_name(const tpo_mod_file *tpo_mod, const char *name, unsigned int deco_type);
+LIBC_API void_func_ptr	C_API_FUNC tpo_mod_get_exp_addr(mem_stream *file_stream, const char *sym);
+LIBC_API void_func_ptr	C_API_FUNC get_tpo_mod_exp_addr_name(const tpo_mod_file *tpo_mod, const char *name, unsigned int deco_type);
 LIBC_API int			C_API_FUNC set_tpo_mod_exp_value32(const tpo_mod_file *tpo_mod, unsigned int crc_32, unsigned int value);
 LIBC_API int			C_API_FUNC set_tpo_mod_exp_value32_name(const tpo_mod_file *tpo_mod, const char *name, unsigned int value);
 LIBC_API void			C_API_FUNC register_tpo_exports(tpo_mod_file *tpo_mod, const char *mod_name);
@@ -82,7 +81,7 @@ LIBC_API int			C_API_FUNC		 load_module(const char *file, const char *mod_name, 
 #define KERNEL_API	C_IMPORT
 #endif
 
-KERNEL_API unsigned int KERN_API_FUNC	sys_add_tpo_mod_func_name(const char *name, const char *fn_name, mem_ptr addr, unsigned int deco);
+KERNEL_API unsigned int KERN_API_FUNC	sys_add_tpo_mod_func_name(const char *name, const char *fn_name, void_func_ptr addr, unsigned int deco);
 
 typedef unsigned int	C_API_FUNC defaut_import_func_ptr		(void *data);
 typedef int			    C_API_FUNC run_func_fn					();

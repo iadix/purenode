@@ -1,4 +1,4 @@
-//copyright iadix 2016
+/* copyright iadix 2016 */
 #define LIBC_API C_EXPORT
 #include "base/std_def.h"
 #include "base/std_mem.h"
@@ -302,7 +302,6 @@ OS_API_C_FUNC(int) make_string_from_uint(struct string *str, size_t i)
 {
 	char		 int_str[32]={0};
 
-	//_ui64toa_s			(i,int_str,32,10);
 	uitoa_s				(i,int_str,32,10);
 	str->len			=	strlen_c(int_str);
 

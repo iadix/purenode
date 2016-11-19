@@ -1,26 +1,6 @@
 #ifndef LIBC_API	
 #define LIBC_API	C_IMPORT
 #endif
-/*
-typedef unsigned char *va_list;
-#define va_start(list,args) list=(va_list)&args
-#define va_arg(list,type) *((type *)(list+=sizeof(type))) 
-#define va_end(list) list=PTR_NULL
-*/
-
-#ifndef _VA_LIST
-#define _VA_LIST char*
-#endif
-
-//typedef _VA_LIST va_list;
-
-/*
- * define a macro to compute the size of a type, variable or expression,
- * rounded up to the nearest multiple of sizeof(int). This number is its
- * size as function argument (Intel architecture). Note that the macro
- * depends on sizeof(int) being a power of 2!
- */
-
 
 
 LIBC_API char *			C_API_FUNC strncpy_c				(char *string,const char *src_string,size_t		 cnt);

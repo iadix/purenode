@@ -52,6 +52,9 @@
 	typedef unsigned __int64		uint64_t;
 #endif
 
+typedef	void		   void_func();
+typedef	void_func	   *void_func_ptr;
+
 #ifndef MOD_NAME_DECO
 #error compiler not supported !
 #endif

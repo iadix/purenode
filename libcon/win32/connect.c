@@ -7,6 +7,8 @@
 #include "../base/mem_base.h"
 #include "../base/std_str.h"
 #include "strs.h"
+#include "mem_stream.h"
+#include "tpo_mod.h"
 
 #include <connect.h>
 #include <sys_include.h>
@@ -812,33 +814,33 @@ OS_API_C_FUNC(struct con	*)do_connect(const struct host_def *host)
 }
 OS_API_C_FUNC(int) network_init()
 {
-	sys_add_tpo_mod_func_name("libcon", "network_init", network_init, 0);
-	sys_add_tpo_mod_func_name("libcon", "network_free", network_free, 0);
-	sys_add_tpo_mod_func_name("libcon", "get_if", get_if, 0);
-	sys_add_tpo_mod_func_name("libcon", "init_read_group", init_read_group, 0);
-	sys_add_tpo_mod_func_name("libcon", "read_group_has", read_group_has, 0);
-	sys_add_tpo_mod_func_name("libcon", "set_tcp_no_delay", set_tcp_no_delay, 0);
-	sys_add_tpo_mod_func_name("libcon", "add_read_group", add_read_group, 0);
-	sys_add_tpo_mod_func_name("libcon", "get_con_error", get_con_error, 0);
-	sys_add_tpo_mod_func_name("libcon", "get_con_lastline", get_con_lastline, 0);
-	sys_add_tpo_mod_func_name("libcon", "con_move_data", con_move_data, 0);
-	sys_add_tpo_mod_func_name("libcon", "con_consume_data", con_consume_data, 0);
-	sys_add_tpo_mod_func_name("libcon", "get_con_hostd", get_con_hostd, 0);
-	sys_add_tpo_mod_func_name("libcon", "do_connect", do_connect, 0);
-	sys_add_tpo_mod_func_name("libcon", "reconnect", reconnect, 0);
-	sys_add_tpo_mod_func_name("libcon", "open_port", open_port, 0);
-	sys_add_tpo_mod_func_name("libcon", "do_get_incoming", do_get_incoming, 0);
-	sys_add_tpo_mod_func_name("libcon", "read_data", read_data, 0);
-	sys_add_tpo_mod_func_name("libcon", "send_data", send_data, 0);
-	sys_add_tpo_mod_func_name("libcon", "readline", readline, 0);
-	sys_add_tpo_mod_func_name("libcon", "do_read_group", do_read_group, 0);
-	sys_add_tpo_mod_func_name("libcon", "pop_read_done", pop_read_done, 0);
-	sys_add_tpo_mod_func_name("libcon", "con_close", con_close, 0);
-	sys_add_tpo_mod_func_name("libcon", "get_con_saddr", get_con_saddr, 0);
-	sys_add_tpo_mod_func_name("libcon", "read_av_data", read_av_data, 0);
-	sys_add_tpo_mod_func_name("libcon", "send_data_av", send_data_av, 0);
-	sys_add_tpo_mod_func_name("libcon", "create_upnp_broadcast", create_upnp_broadcast, 0);
-	sys_add_tpo_mod_func_name("libcon", "send_upnpbroadcast", send_upnpbroadcast, 0);
+	sys_add_tpo_mod_func_name("libcon", "network_init", (void_func_ptr)network_init, 0);
+	sys_add_tpo_mod_func_name("libcon", "network_free", (void_func_ptr)network_free, 0);
+	sys_add_tpo_mod_func_name("libcon", "get_if", (void_func_ptr)get_if, 0);
+	sys_add_tpo_mod_func_name("libcon", "init_read_group", (void_func_ptr)init_read_group, 0);
+	sys_add_tpo_mod_func_name("libcon", "read_group_has", (void_func_ptr)read_group_has, 0);
+	sys_add_tpo_mod_func_name("libcon", "set_tcp_no_delay", (void_func_ptr)set_tcp_no_delay, 0);
+	sys_add_tpo_mod_func_name("libcon", "add_read_group", (void_func_ptr)add_read_group, 0);
+	sys_add_tpo_mod_func_name("libcon", "get_con_error", (void_func_ptr)get_con_error, 0);
+	sys_add_tpo_mod_func_name("libcon", "get_con_lastline", (void_func_ptr)get_con_lastline, 0);
+	sys_add_tpo_mod_func_name("libcon", "con_move_data", (void_func_ptr)con_move_data, 0);
+	sys_add_tpo_mod_func_name("libcon", "con_consume_data", (void_func_ptr)con_consume_data, 0);
+	sys_add_tpo_mod_func_name("libcon", "get_con_hostd", (void_func_ptr)get_con_hostd, 0);
+	sys_add_tpo_mod_func_name("libcon", "do_connect", (void_func_ptr)do_connect, 0);
+	sys_add_tpo_mod_func_name("libcon", "reconnect", (void_func_ptr)reconnect, 0);
+	sys_add_tpo_mod_func_name("libcon", "open_port", (void_func_ptr)open_port, 0);
+	sys_add_tpo_mod_func_name("libcon", "do_get_incoming", (void_func_ptr)do_get_incoming, 0);
+	sys_add_tpo_mod_func_name("libcon", "read_data", (void_func_ptr)read_data, 0);
+	sys_add_tpo_mod_func_name("libcon", "send_data", (void_func_ptr)send_data, 0);
+	sys_add_tpo_mod_func_name("libcon", "readline", (void_func_ptr)readline, 0);
+	sys_add_tpo_mod_func_name("libcon", "do_read_group", (void_func_ptr)do_read_group, 0);
+	sys_add_tpo_mod_func_name("libcon", "pop_read_done", (void_func_ptr)pop_read_done, 0);
+	sys_add_tpo_mod_func_name("libcon", "con_close", (void_func_ptr)con_close, 0);
+	sys_add_tpo_mod_func_name("libcon", "get_con_saddr", (void_func_ptr)get_con_saddr, 0);
+	sys_add_tpo_mod_func_name("libcon", "read_av_data", (void_func_ptr)read_av_data, 0);
+	sys_add_tpo_mod_func_name("libcon", "send_data_av", (void_func_ptr)send_data_av, 0);
+	sys_add_tpo_mod_func_name("libcon", "create_upnp_broadcast", (void_func_ptr)create_upnp_broadcast, 0);
+	sys_add_tpo_mod_func_name("libcon", "send_upnpbroadcast", (void_func_ptr)send_upnpbroadcast, 0);
 
 	FD_ZERO(&listenset);
 	return WSAStartup(MAKEWORD(2, 2), &wsaData);

@@ -62,15 +62,15 @@ get_current_pos_difficulty_func_ptr	    _get_current_pos_difficulty = PTR_INVALI
 compute_tx_pos_func_ptr					_compute_tx_pos = PTR_INVALID;
 create_pos_block_func_ptr				_create_pos_block = PTR_INVALID;
 #else
-get_blk_staking_infos_func_ptr   get_blk_staking_infos = PTR_INVALID;
-store_tx_staking_func_ptr		 store_tx_staking = PTR_INVALID;
-get_tx_pos_hash_data_func_ptr	 get_tx_pos_hash_data = PTR_INVALID;
-get_target_spacing_func_ptr		 get_target_spacing = PTR_INVALID;
-get_stake_reward_func_ptr		 get_stake_reward = PTR_INVALID;
-get_last_stake_modifier_func_ptr get_last_stake_modifier = PTR_INVALID;
+get_blk_staking_infos_func_ptr		get_blk_staking_infos = PTR_INVALID;
+store_tx_staking_func_ptr			store_tx_staking = PTR_INVALID;
+get_tx_pos_hash_data_func_ptr		get_tx_pos_hash_data = PTR_INVALID;
+get_target_spacing_func_ptr			get_target_spacing = PTR_INVALID;
+get_stake_reward_func_ptr			get_stake_reward = PTR_INVALID;
+get_last_stake_modifier_func_ptr	 get_last_stake_modifier = PTR_INVALID;
 get_current_pos_difficulty_func_ptr	 get_current_pos_difficulty = PTR_INVALID;
-compute_tx_pos_func_ptr			 compute_tx_pos = PTR_INVALID;
-create_pos_block_func_ptr		create_pos_block = PTR_INVALID;
+compute_tx_pos_func_ptr				compute_tx_pos = PTR_INVALID;
+create_pos_block_func_ptr			create_pos_block = PTR_INVALID;
 #endif
 
 //get_blk_staking_infos_func_ptr  get_blk_staking_infos = PTR_INVALID;
@@ -140,15 +140,15 @@ OS_API_C_FUNC(int) set_node(mem_zone_ref_ptr node,tpo_mod_file *pos_mod)
 	
 	
 #else
-	get_blk_staking_infos	= get_tpo_mod_exp_addr_name(pos_mod, "get_blk_staking_infos", 0);
-	store_tx_staking		= get_tpo_mod_exp_addr_name(pos_mod, "store_tx_staking", 0);
-	get_tx_pos_hash_data	= get_tpo_mod_exp_addr_name(pos_mod, "get_tx_pos_hash_data", 0);
-	get_target_spacing		= get_tpo_mod_exp_addr_name(pos_mod, "get_target_spacing", 0);
-	get_stake_reward		= get_tpo_mod_exp_addr_name(pos_mod, "get_stake_reward", 0);
-	get_last_stake_modifier = get_tpo_mod_exp_addr_name(pos_mod, "get_last_stake_modifier", 0);
-	get_current_pos_difficulty = get_tpo_mod_exp_addr_name(pos_mod, "get_current_pos_difficulty", 0);
-	compute_tx_pos			= get_tpo_mod_exp_addr_name(pos_mod, "compute_tx_pos", 0);
-	create_pos_block		= get_tpo_mod_exp_addr_name(pos_mod, "create_pos_block", 0);
+	get_blk_staking_infos		= (get_blk_staking_infos_func_ptr)		get_tpo_mod_exp_addr_name(pos_mod, "get_blk_staking_infos", 0);
+	store_tx_staking			= (store_tx_staking_func_ptr)			get_tpo_mod_exp_addr_name(pos_mod, "store_tx_staking", 0);
+	get_tx_pos_hash_data		= (get_tx_pos_hash_data_func_ptr)		get_tpo_mod_exp_addr_name(pos_mod, "get_tx_pos_hash_data", 0);
+	get_target_spacing			= (get_target_spacing_func_ptr)			get_tpo_mod_exp_addr_name(pos_mod, "get_target_spacing", 0);
+	get_stake_reward			= (get_stake_reward_func_ptr)			get_tpo_mod_exp_addr_name(pos_mod, "get_stake_reward", 0);
+	get_last_stake_modifier		= (get_last_stake_modifier_func_ptr)	get_tpo_mod_exp_addr_name(pos_mod, "get_last_stake_modifier", 0);
+	get_current_pos_difficulty  = (get_current_pos_difficulty_func_ptr)	get_tpo_mod_exp_addr_name(pos_mod, "get_current_pos_difficulty", 0);
+	compute_tx_pos				= (compute_tx_pos_func_ptr)				get_tpo_mod_exp_addr_name(pos_mod, "compute_tx_pos", 0);
+	create_pos_block			= (create_pos_block_func_ptr)			get_tpo_mod_exp_addr_name(pos_mod, "create_pos_block", 0);
 #endif
 	
 	//get_blk_staking_infos = get_tpo_mod_exp_addr_name(pos_mod, "get_blk_staking_infos", 0);

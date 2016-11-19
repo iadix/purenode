@@ -1,4 +1,4 @@
-//copyright iadix 2016
+/*copyright iadix 2016*/
 #define LIBC_API C_EXPORT
 #include "std_def.h"
 #include "std_mem.h"
@@ -308,7 +308,6 @@ mem_area	*get_area_by_zone_ptr	(const mem_zone *zone)
 
 }
 
-//int check_zone			(const mem_zone_ref *ref)
 int check_zone	(const mem_zone *zone)
 {
 	mem_area				*area_ptr;
@@ -496,128 +495,128 @@ OS_API_C_FUNC(void) init_mem_system()
 
 	
 
-	sys_add_tpo_mod_func_name("libcon", "init_new_mem_area", init_new_mem_area, 0);
-	sys_add_tpo_mod_func_name("libcon", "get_tree_mem_area_id", get_tree_mem_area_id, 0);
-	sys_add_tpo_mod_func_name("libcon", "set_tree_mem_area_id", set_tree_mem_area_id, 0);
-	sys_add_tpo_mod_func_name("libcon", "get_mem_area_id", get_mem_area_id, 0);
-	sys_add_tpo_mod_func_name("libcon", "free_mem_area", free_mem_area, 0);
+	sys_add_tpo_mod_func_name("libcon", "init_new_mem_area",(void_func_ptr)init_new_mem_area, 0);
+	sys_add_tpo_mod_func_name("libcon", "get_tree_mem_area_id",(void_func_ptr)get_tree_mem_area_id, 0);
+	sys_add_tpo_mod_func_name("libcon", "set_tree_mem_area_id",(void_func_ptr)set_tree_mem_area_id, 0);
+	sys_add_tpo_mod_func_name("libcon", "get_mem_area_id",(void_func_ptr)get_mem_area_id, 0);
+	sys_add_tpo_mod_func_name("libcon", "free_mem_area",(void_func_ptr)free_mem_area, 0);
 
-	sys_add_tpo_mod_func_name("libcon", "realloc_zone", realloc_zone, 0);
-	sys_add_tpo_mod_func_name("libcon", "malloc_c", malloc_c, 0);
-	sys_add_tpo_mod_func_name("libcon", "calloc_c", calloc_c, 0);
-	sys_add_tpo_mod_func_name("libcon", "memset_c", memset_c, 0);
-	sys_add_tpo_mod_func_name("libcon", "rand_c", rand_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "realloc_zone",(void_func_ptr)realloc_zone, 0);
+	sys_add_tpo_mod_func_name("libcon", "malloc_c",(void_func_ptr)malloc_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "calloc_c",(void_func_ptr)calloc_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "memset_c",(void_func_ptr)memset_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "rand_c",(void_func_ptr)rand_c, 0);
 #ifdef _MSC_VER
-	sys_add_tpo_mod_func_name("libcon", "memset", memset, 0);
-	sys_add_tpo_mod_func_name("libcon", "memcpy", memcpy, 0);
+	sys_add_tpo_mod_func_name("libcon", "memset",(void_func_ptr)memset, 0);
+	sys_add_tpo_mod_func_name("libcon", "memcpy",(void_func_ptr)memcpy, 0);
 #endif
-	sys_add_tpo_mod_func_name("libcon", "memcpy_c", memcpy_c,0);
-	sys_add_tpo_mod_func_name("libcon", "memcmp_c", memcmp_c, 0);
-	sys_add_tpo_mod_func_name("libcon", "memmove_c", memmove_c, 0);
-	sys_add_tpo_mod_func_name("libcon", "memchr_c", memchr_c, 0);
-	sys_add_tpo_mod_func_name("libcon", "memchr_32_c", memchr_32_c, 0);
-	sys_add_tpo_mod_func_name("libcon", "store_bigendian", store_bigendian, 0);
-	sys_add_tpo_mod_func_name("libcon", "load_bigendian", load_bigendian, 0); 
+	sys_add_tpo_mod_func_name("libcon", "memcpy_c",(void_func_ptr)memcpy_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "memcmp_c",(void_func_ptr)memcmp_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "memmove_c",(void_func_ptr)memmove_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "memchr_c",(void_func_ptr)memchr_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "memchr_32_c",(void_func_ptr)memchr_32_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "store_bigendian",(void_func_ptr)store_bigendian, 0);
+	sys_add_tpo_mod_func_name("libcon", "load_bigendian",(void_func_ptr)load_bigendian, 0);
 	
 	 
 
 
-	sys_add_tpo_mod_func_name("libcon", "allocate_new_zone", allocate_new_zone, 0);
-	sys_add_tpo_mod_func_name("libcon", "allocate_new_empty_zone", allocate_new_empty_zone, 0);
-	sys_add_tpo_mod_func_name("libcon", "expand_zone", expand_zone, 0);
-	sys_add_tpo_mod_func_name("libcon", "get_next_aligned_ptr", get_next_aligned_ptr, 0);
-	sys_add_tpo_mod_func_name("libcon", "kernel_memory_map_c", kernel_memory_map_c, 0);
-	sys_add_tpo_mod_func_name("libcon", "inc_zone_ref", inc_zone_ref, 0);
-	sys_add_tpo_mod_func_name("libcon", "swap_zone_ref", swap_zone_ref, 0);
-	sys_add_tpo_mod_func_name("libcon", "dump_mem_used_after", dump_mem_used_after, 0);
-	sys_add_tpo_mod_func_name("libcon", "set_zone_free", set_zone_free, 0);
-	sys_add_tpo_mod_func_name("libcon", "free_c", free_c, 0);
-	sys_add_tpo_mod_func_name("libcon", "find_zones_used", find_zones_used, 0);
+	sys_add_tpo_mod_func_name("libcon", "allocate_new_zone",(void_func_ptr)allocate_new_zone, 0);
+	sys_add_tpo_mod_func_name("libcon", "allocate_new_empty_zone",(void_func_ptr)allocate_new_empty_zone, 0);
+	sys_add_tpo_mod_func_name("libcon", "expand_zone",(void_func_ptr)expand_zone, 0);
+	sys_add_tpo_mod_func_name("libcon", "get_next_aligned_ptr",(void_func_ptr)get_next_aligned_ptr, 0);
+	sys_add_tpo_mod_func_name("libcon", "kernel_memory_map_c",(void_func_ptr)kernel_memory_map_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "inc_zone_ref",(void_func_ptr)inc_zone_ref, 0);
+	sys_add_tpo_mod_func_name("libcon", "swap_zone_ref",(void_func_ptr)swap_zone_ref, 0);
+	sys_add_tpo_mod_func_name("libcon", "dump_mem_used_after",(void_func_ptr)dump_mem_used_after, 0);
+	sys_add_tpo_mod_func_name("libcon", "set_zone_free",(void_func_ptr)set_zone_free, 0);
+	sys_add_tpo_mod_func_name("libcon", "free_c",(void_func_ptr)free_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "find_zones_used", (void_func_ptr)find_zones_used, 0);
 
-	sys_add_tpo_mod_func_name("libcon", "dec_zone_ref", dec_zone_ref, 0);
-	sys_add_tpo_mod_func_name("libcon", "copy_zone_ref", copy_zone_ref, 0);
-	sys_add_tpo_mod_func_name("libcon", "get_zone_ptr", get_zone_ptr, 0);
-	sys_add_tpo_mod_func_name("libcon", "get_zone_size", get_zone_size, 0);
-	sys_add_tpo_mod_func_name("libcon", "release_zone_ref", release_zone_ref, 0);
-	sys_add_tpo_mod_func_name("libcon", "strcpy_c", strcpy_c, 0);
-	sys_add_tpo_mod_func_name("libcon", "strcpy_cs", strcpy_cs, 0);
-	sys_add_tpo_mod_func_name("libcon", "strncpy_c", strncpy_c, 0);
-	sys_add_tpo_mod_func_name("libcon", "strncpy_cs", strncpy_cs, 0);
-	sys_add_tpo_mod_func_name("libcon", "strcat_cs", strcat_cs, 0);
-	sys_add_tpo_mod_func_name("libcon", "strncat_c", strncat_c, 0);
-	sys_add_tpo_mod_func_name("libcon", "strcmp_c", strcmp_c, 0);
-	sys_add_tpo_mod_func_name("libcon", "strncmp_c", strncmp_c, 0);
-	sys_add_tpo_mod_func_name("libcon", "strincmp_c", strincmp_c, 0);
-	sys_add_tpo_mod_func_name("libcon", "strlen_c", strlen_c, 0);
-	sys_add_tpo_mod_func_name("libcon", "strlpos_c", strlpos_c, 0);
-	sys_add_tpo_mod_func_name("libcon", "strtol_c", strtol_c, 0);
-	sys_add_tpo_mod_func_name("libcon", "strtoll_c", strtoll_c, 0);
-	sys_add_tpo_mod_func_name("libcon", "str_replace_char_c", str_replace_char_c, 0);
-	sys_add_tpo_mod_func_name("libcon", "parseDate", parseDate, 0);
-	sys_add_tpo_mod_func_name("libcon", "strtoul_c", strtoul_c, 0);
-	sys_add_tpo_mod_func_name("libcon", "stricmp_c", stricmp_c, 0);
-	sys_add_tpo_mod_func_name("libcon", "uitoa_s", uitoa_s, 0);
-	sys_add_tpo_mod_func_name("libcon", "luitoa_s", luitoa_s, 0);
-	sys_add_tpo_mod_func_name("libcon", "itoa_s", itoa_s, 0);
-	sys_add_tpo_mod_func_name("libcon", "isalpha_c", isalpha_c, 0);
-	sys_add_tpo_mod_func_name("libcon", "isdigit_c", isdigit_c, 0);
-	sys_add_tpo_mod_func_name("libcon", "dtoa_c", dtoa_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "dec_zone_ref",(void_func_ptr)dec_zone_ref, 0);
+	sys_add_tpo_mod_func_name("libcon", "copy_zone_ref",(void_func_ptr)copy_zone_ref, 0);
+	sys_add_tpo_mod_func_name("libcon", "get_zone_ptr",(void_func_ptr)get_zone_ptr, 0);
+	sys_add_tpo_mod_func_name("libcon", "get_zone_size",(void_func_ptr)get_zone_size, 0);
+	sys_add_tpo_mod_func_name("libcon", "release_zone_ref",(void_func_ptr)release_zone_ref, 0);
+	sys_add_tpo_mod_func_name("libcon", "strcpy_c",(void_func_ptr)strcpy_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "strcpy_cs",(void_func_ptr)strcpy_cs, 0);
+	sys_add_tpo_mod_func_name("libcon", "strncpy_c",(void_func_ptr)strncpy_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "strncpy_cs",(void_func_ptr)strncpy_cs, 0);
+	sys_add_tpo_mod_func_name("libcon", "strcat_cs",(void_func_ptr)strcat_cs, 0);
+	sys_add_tpo_mod_func_name("libcon", "strncat_c",(void_func_ptr)strncat_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "strcmp_c",(void_func_ptr)strcmp_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "strncmp_c",(void_func_ptr)strncmp_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "strincmp_c",(void_func_ptr)strincmp_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "strlen_c",(void_func_ptr)strlen_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "strlpos_c",(void_func_ptr)strlpos_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "strtol_c",(void_func_ptr)strtol_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "strtoll_c",(void_func_ptr)strtoll_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "str_replace_char_c",(void_func_ptr)str_replace_char_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "parseDate",(void_func_ptr)parseDate, 0);
+	sys_add_tpo_mod_func_name("libcon", "strtoul_c",(void_func_ptr)strtoul_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "stricmp_c",(void_func_ptr)stricmp_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "uitoa_s",(void_func_ptr)uitoa_s, 0);
+	sys_add_tpo_mod_func_name("libcon", "luitoa_s",(void_func_ptr)luitoa_s, 0);
+	sys_add_tpo_mod_func_name("libcon", "itoa_s",(void_func_ptr)itoa_s, 0);
+	sys_add_tpo_mod_func_name("libcon", "isalpha_c",(void_func_ptr)isalpha_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "isdigit_c",(void_func_ptr)isdigit_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "dtoa_c",(void_func_ptr)dtoa_c, 0);
 
-	sys_add_tpo_mod_func_name("libcon", "muldiv64", muldiv64, 0);
-	sys_add_tpo_mod_func_name("libcon", "mul64", mul64, 0);
-	sys_add_tpo_mod_func_name("libcon", "shl64", shl64, 0);
-	sys_add_tpo_mod_func_name("libcon", "shr64", shr64, 0);
-	sys_add_tpo_mod_func_name("libcon", "big128_mul", big128_mul, 0);
+	sys_add_tpo_mod_func_name("libcon", "muldiv64",(void_func_ptr)muldiv64, 0);
+	sys_add_tpo_mod_func_name("libcon", "mul64",(void_func_ptr)mul64, 0);
+	sys_add_tpo_mod_func_name("libcon", "shl64",(void_func_ptr)shl64, 0);
+	sys_add_tpo_mod_func_name("libcon", "shr64",(void_func_ptr)shr64, 0);
+	sys_add_tpo_mod_func_name("libcon", "big128_mul",(void_func_ptr)big128_mul, 0);
 		
 
-	sys_add_tpo_mod_func_name("libcon", "calc_crc32_c", calc_crc32_c, 0);
-	sys_add_tpo_mod_func_name("libcon", "compare_z_exchange_c", compare_z_exchange_c, 0);
-	sys_add_tpo_mod_func_name("libcon", "fetch_add_c", fetch_add_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "calc_crc32_c",(void_func_ptr)calc_crc32_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "compare_z_exchange_c",(void_func_ptr)compare_z_exchange_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "fetch_add_c",(void_func_ptr)fetch_add_c, 0);
 
 
-	sys_add_tpo_mod_func_name("libcon", "init_string", init_string, 0);
-	sys_add_tpo_mod_func_name("libcon", "make_string", make_string, 0);
-	sys_add_tpo_mod_func_name("libcon", "cat_string", cat_string, 0);
-	sys_add_tpo_mod_func_name("libcon", "prepare_new_data", prepare_new_data, 0);
-	sys_add_tpo_mod_func_name("libcon", "strcat_int", strcat_int, 0);
-	sys_add_tpo_mod_func_name("libcon", "cat_cstring", cat_cstring, 0);
-	sys_add_tpo_mod_func_name("libcon", "cat_ncstring", cat_ncstring, 0);
-	sys_add_tpo_mod_func_name("libcon", "cat_cstring_p", cat_cstring_p, 0);
-	sys_add_tpo_mod_func_name("libcon", "cat_ncstring_p", cat_ncstring_p, 0);
-	sys_add_tpo_mod_func_name("libcon", "make_cstring", make_cstring, 0);
-	sys_add_tpo_mod_func_name("libcon", "make_string_l", make_string_l, 0);
-	sys_add_tpo_mod_func_name("libcon", "make_string_url", make_string_url, 0);
-	sys_add_tpo_mod_func_name("libcon", "make_string_from_uint", make_string_from_uint, 0);
-	sys_add_tpo_mod_func_name("libcon", "clone_string", clone_string, 0);
-	sys_add_tpo_mod_func_name("libcon", "free_string", free_string, 0);
-	sys_add_tpo_mod_func_name("libcon", "make_host_def", make_host_def, 0);
-	sys_add_tpo_mod_func_name("libcon", "make_host_def_url", make_host_def_url, 0);
-	sys_add_tpo_mod_func_name("libcon", "cat_tag", cat_tag, 0);
-	sys_add_tpo_mod_func_name("libcon", "free_host_def", free_host_def, 0);
-	sys_add_tpo_mod_func_name("libcon", "strcat_uint", strcat_uint, 0);
-	sys_add_tpo_mod_func_name("libcon", "strcat_float", strcat_float, 0);
-	sys_add_tpo_mod_func_name("libcon", "copy_host_def", copy_host_def, 0);
+	sys_add_tpo_mod_func_name("libcon", "init_string",(void_func_ptr)init_string, 0);
+	sys_add_tpo_mod_func_name("libcon", "make_string",(void_func_ptr)make_string, 0);
+	sys_add_tpo_mod_func_name("libcon", "cat_string",(void_func_ptr)cat_string, 0);
+	sys_add_tpo_mod_func_name("libcon", "prepare_new_data",(void_func_ptr)prepare_new_data, 0);
+	sys_add_tpo_mod_func_name("libcon", "strcat_int",(void_func_ptr)strcat_int, 0);
+	sys_add_tpo_mod_func_name("libcon", "cat_cstring",(void_func_ptr)cat_cstring, 0);
+	sys_add_tpo_mod_func_name("libcon", "cat_ncstring",(void_func_ptr)cat_ncstring, 0);
+	sys_add_tpo_mod_func_name("libcon", "cat_cstring_p",(void_func_ptr)cat_cstring_p, 0);
+	sys_add_tpo_mod_func_name("libcon", "cat_ncstring_p",(void_func_ptr)cat_ncstring_p, 0);
+	sys_add_tpo_mod_func_name("libcon", "make_cstring",(void_func_ptr)make_cstring, 0);
+	sys_add_tpo_mod_func_name("libcon", "make_string_l",(void_func_ptr)make_string_l, 0);
+	sys_add_tpo_mod_func_name("libcon", "make_string_url",(void_func_ptr)make_string_url, 0);
+	sys_add_tpo_mod_func_name("libcon", "make_string_from_uint",(void_func_ptr)make_string_from_uint, 0);
+	sys_add_tpo_mod_func_name("libcon", "clone_string",(void_func_ptr)clone_string, 0);
+	sys_add_tpo_mod_func_name("libcon", "free_string",(void_func_ptr)free_string, 0);
+	sys_add_tpo_mod_func_name("libcon", "make_host_def",(void_func_ptr)make_host_def, 0);
+	sys_add_tpo_mod_func_name("libcon", "make_host_def_url",(void_func_ptr)make_host_def_url, 0);
+	sys_add_tpo_mod_func_name("libcon", "cat_tag",(void_func_ptr)cat_tag, 0);
+	sys_add_tpo_mod_func_name("libcon", "free_host_def",(void_func_ptr)free_host_def, 0);
+	sys_add_tpo_mod_func_name("libcon", "strcat_uint",(void_func_ptr)strcat_uint, 0);
+	sys_add_tpo_mod_func_name("libcon", "strcat_float",(void_func_ptr)strcat_float, 0);
+	sys_add_tpo_mod_func_name("libcon", "copy_host_def",(void_func_ptr)copy_host_def, 0);
 
 
-	sys_add_tpo_mod_func_name("libcon", "mem_stream_init", mem_stream_init, 0);
-	sys_add_tpo_mod_func_name("libcon", "mem_stream_decomp", mem_stream_decomp, 0);
-	sys_add_tpo_mod_func_name("libcon", "mem_stream_read_8", mem_stream_read_8, 0);
-	sys_add_tpo_mod_func_name("libcon", "mem_stream_peek_8", mem_stream_peek_8, 0);
-	sys_add_tpo_mod_func_name("libcon", "mem_stream_read_16", mem_stream_read_16, 0);
-	sys_add_tpo_mod_func_name("libcon", "mem_stream_read_32", mem_stream_read_32, 0);
-	sys_add_tpo_mod_func_name("libcon", "mem_stream_peek_32", mem_stream_peek_32, 0);
-	sys_add_tpo_mod_func_name("libcon", "mem_stream_read", mem_stream_read, 0);
-	sys_add_tpo_mod_func_name("libcon", "mem_stream_skip", mem_stream_skip, 0);
-	sys_add_tpo_mod_func_name("libcon", "mem_stream_skip_to", mem_stream_skip_to, 0);
-	sys_add_tpo_mod_func_name("libcon", "mem_stream_write", mem_stream_write, 0);
-	sys_add_tpo_mod_func_name("libcon", "mem_stream_close", mem_stream_close, 0);
+	sys_add_tpo_mod_func_name("libcon", "mem_stream_init",(void_func_ptr)mem_stream_init, 0);
+	sys_add_tpo_mod_func_name("libcon", "mem_stream_decomp",(void_func_ptr)mem_stream_decomp, 0);
+	sys_add_tpo_mod_func_name("libcon", "mem_stream_read_8",(void_func_ptr)mem_stream_read_8, 0);
+	sys_add_tpo_mod_func_name("libcon", "mem_stream_peek_8",(void_func_ptr)mem_stream_peek_8, 0);
+	sys_add_tpo_mod_func_name("libcon", "mem_stream_read_16",(void_func_ptr)mem_stream_read_16, 0);
+	sys_add_tpo_mod_func_name("libcon", "mem_stream_read_32",(void_func_ptr)mem_stream_read_32, 0);
+	sys_add_tpo_mod_func_name("libcon", "mem_stream_peek_32",(void_func_ptr)mem_stream_peek_32, 0);
+	sys_add_tpo_mod_func_name("libcon", "mem_stream_read",(void_func_ptr)mem_stream_read, 0);
+	sys_add_tpo_mod_func_name("libcon", "mem_stream_skip",(void_func_ptr)mem_stream_skip, 0);
+	sys_add_tpo_mod_func_name("libcon", "mem_stream_skip_to",(void_func_ptr)mem_stream_skip_to, 0);
+	sys_add_tpo_mod_func_name("libcon", "mem_stream_write",(void_func_ptr)mem_stream_write, 0);
+	sys_add_tpo_mod_func_name("libcon", "mem_stream_close",(void_func_ptr)mem_stream_close, 0);
 
-	sys_add_tpo_mod_func_name("libcon", "tpo_mod_load_tpo", tpo_mod_load_tpo, 0);
-	sys_add_tpo_mod_func_name("libcon", "tpo_mod_init", tpo_mod_init, 0);
-	sys_add_tpo_mod_func_name("libcon", "load_module", load_module, 0);
-	sys_add_tpo_mod_func_name("libcon", "register_tpo_exports", register_tpo_exports, 0);
-	sys_add_tpo_mod_func_name("libcon", "get_tpo_mod_exp_addr_name", get_tpo_mod_exp_addr_name, 0);
-	sys_add_tpo_mod_func_name("libcon", "isRunning", isRunning, 0);
+	sys_add_tpo_mod_func_name("libcon", "tpo_mod_load_tpo",(void_func_ptr)tpo_mod_load_tpo, 0);
+	sys_add_tpo_mod_func_name("libcon", "tpo_mod_init",(void_func_ptr)tpo_mod_init, 0);
+	sys_add_tpo_mod_func_name("libcon", "load_module",(void_func_ptr)load_module, 0);
+	sys_add_tpo_mod_func_name("libcon", "register_tpo_exports",(void_func_ptr)register_tpo_exports, 0);
+	sys_add_tpo_mod_func_name("libcon", "get_tpo_mod_exp_addr_name",(void_func_ptr)get_tpo_mod_exp_addr_name, 0);
+	sys_add_tpo_mod_func_name("libcon", "isRunning",(void_func_ptr)isRunning, 0);
 
 	init_exit();
 	
@@ -1106,22 +1105,14 @@ void	free_zone		(mem_zone_ref_ptr zone_ref)
 	mem_zone *src_zone=zone_ref->zone;
 
 	if(src_zone==PTR_NULL)return;
-	
-
 	if(src_zone->n_refs>0)
-	{
-		//snooze				(10000000);
 		return;
-	}
 
 	free_zone_area			(src_zone->area_id,&src_zone->mem);
 
 	src_zone->n_refs		=0;
 	src_zone->free_func		=PTR_NULL;
 	src_zone->area_id		=0;
-
-//	zone_ref->zone			=PTR_NULL;
-
 }
 OS_API_C_FUNC(unsigned int) get_zone_numref(mem_zone_ref *zone_ref)
 {
@@ -1211,7 +1202,7 @@ OS_API_C_FUNC(unsigned int) allocate_new_empty_zone(unsigned int area_id,mem_zon
 	{
 		return 0;
 	}
-	//task_manager_aquire_semaphore	(area_ptr->lock_sema,0);
+	/* task_manager_aquire_semaphore	(area_ptr->lock_sema,0); */
 	
 	release_zone_ref				(zone_ref);
 
@@ -1236,11 +1227,11 @@ OS_API_C_FUNC(unsigned int) allocate_new_empty_zone(unsigned int area_id,mem_zon
 		n++;
 	}
 
-	//task_manager_release_semaphore(area_ptr->lock_sema,0);
+	/* task_manager_release_semaphore(area_ptr->lock_sema,0); */
 
 	if(ret==0)
 	{
-		//dump_task_infos_c	();	
+		/* dump_task_infos_c	();	*/
 	}
 
 		
@@ -1264,7 +1255,7 @@ OS_API_C_FUNC(unsigned int) allocate_new_zone(unsigned int area_id,mem_size zone
 		return 0;
 	}
 
-	//task_manager_aquire_semaphore(area_ptr->lock_sema,0);
+	/* task_manager_aquire_semaphore(area_ptr->lock_sema,0); */
 
 	release_zone_ref	(zone_ref);
 
@@ -1288,26 +1279,21 @@ OS_API_C_FUNC(unsigned int) allocate_new_zone(unsigned int area_id,mem_size zone
 					memset_c			(nzone->mem.ptr,0x00,nzone->mem.size);
 					zone_ref->	zone	=	nzone;	
 
-					//task_manager_release_semaphore(area_ptr->lock_sema,0);
+					/* task_manager_release_semaphore(area_ptr->lock_sema,0); */
 					return 1;
 
 				}
 				else
 				{
-					//task_manager_release_semaphore(area_ptr->lock_sema,0);
-
-
-					//dump_task_infos_c	();	
-					
-
-			
+					/* task_manager_release_semaphore(area_ptr->lock_sema,0); */
+					/*dump_task_infos_c	();	*/
 					return 0;
 				}
 			}
 			else
 			{
 
-				//task_manager_release_semaphore(area_ptr->lock_sema,0);
+				/*task_manager_release_semaphore(area_ptr->lock_sema,0);*/
 
 				/*
 				dump_mem_used(area_ptr->area_id);
@@ -1323,7 +1309,7 @@ OS_API_C_FUNC(unsigned int) allocate_new_zone(unsigned int area_id,mem_size zone
 		n++;
 	}
 
-	//task_manager_release_semaphore(area_ptr->lock_sema,0);
+	/*task_manager_release_semaphore(area_ptr->lock_sema,0);*/
 
 	
 
@@ -1359,7 +1345,7 @@ OS_API_C_FUNC(int) 	align_zone_memory(mem_zone_ref *zone_ref, mem_size align)
 	
 	if (find_free_zone(area_ptr, new_size, &new_zone) == 0)
 	{
-		//task_manager_release_semaphore(area_ptr->lock_sema,0);
+		/*task_manager_release_semaphore(area_ptr->lock_sema,0);*/
 		return -1;
 	}
 
@@ -1406,7 +1392,7 @@ OS_API_C_FUNC(int) 	realloc_zone	(mem_zone_ref *zone_ref,mem_size new_size)
 		return 0;
 	}
 
-	//task_manager_aquire_semaphore(area_ptr->lock_sema,0);
+	/*task_manager_aquire_semaphore(area_ptr->lock_sema,0);*/
 
 	if(new_size&0x0000000F)
 		new_size	=	((new_size&0xFFFFFFF0)+16);
@@ -1428,7 +1414,7 @@ OS_API_C_FUNC(int) 	realloc_zone	(mem_zone_ref *zone_ref,mem_size new_size)
 
 		n					=  0;
 
-		//try to find free zone contigous to the end of the current memory
+		/*try to find free zone contigous to the end of the current memory*/
 
 		while(area_ptr->zones_free[n].ptr!=PTR_NULL)
 		{
@@ -1436,24 +1422,24 @@ OS_API_C_FUNC(int) 	realloc_zone	(mem_zone_ref *zone_ref,mem_size new_size)
 
 			if(n>=MAX_MEM_ZONES)
 			{
-				//task_manager_release_semaphore(area_ptr->lock_sema,0);
+				/*task_manager_release_semaphore(area_ptr->lock_sema,0);*/
 				return -1;
 			}
 
-			//current free zone to test
+			/*current free zone to test*/
 			start_free_zone	=	area_ptr->zones_free[n].ptr;
 			end_free_zone	=	mem_add(start_free_zone,area_ptr->zones_free[n].size);
 			
 
 			if((end_zone_aligned==start_free_zone)&&(new_size<=area_ptr->zones_free[n].size))
 			{
-				//free zone big enought contigous to current memory block
+				/*free zone big enought contigous to current memory block*/
 				new_free_zone.ptr	=	new_end_zone_aligned;
 				new_free_zone.size	=	mem_sub(new_free_zone.ptr,end_free_zone);
 
 				if(new_free_zone.ptr>=end_free_zone)
 				{
-					//contigous free zone entirely consumed by the new alloc, remove it
+					/*contigous free zone entirely consumed by the new alloc, remove it*/
 					cnt=n;
 					while(area_ptr->zones_free[cnt].ptr!=PTR_NULL)
 					{
@@ -1463,17 +1449,15 @@ OS_API_C_FUNC(int) 	realloc_zone	(mem_zone_ref *zone_ref,mem_size new_size)
 				}
 				else
 				{
-					//update the free zone to start at the end of the reallocated block
+					/*update the free zone to start at the end of the reallocated block*/
 					area_ptr->zones_free[n]	= new_free_zone;
 				}
 
-				//reset newly allocated memory
+				/*reset newly allocated memory*/
 				memset_c(end_zone,0,mem_sub(end_zone,new_end_zone));
-
-				//return
 				((mem_zone *)(zone_ref->zone))->mem.size = new_size;
 
-				//task_manager_release_semaphore(area_ptr->lock_sema,0);
+				/*task_manager_release_semaphore(area_ptr->lock_sema,0);*/
 				return 1;
 			}
 			n++;
@@ -1483,13 +1467,13 @@ OS_API_C_FUNC(int) 	realloc_zone	(mem_zone_ref *zone_ref,mem_size new_size)
 
 	if(find_free_zone		(area_ptr,new_size,&new_zone)==0)
 	{
-		//task_manager_release_semaphore(area_ptr->lock_sema,0);
+		/*task_manager_release_semaphore(area_ptr->lock_sema,0);*/
 		return -1;
 	}
 	
 	if(allocate_zone(area_ptr,&new_zone)==0)
 	{
-		//task_manager_release_semaphore(area_ptr->lock_sema,0);
+		/*task_manager_release_semaphore(area_ptr->lock_sema,0);*/
 		return -1;
 	}
 	
@@ -1511,7 +1495,7 @@ OS_API_C_FUNC(int) 	realloc_zone	(mem_zone_ref *zone_ref,mem_size new_size)
 	src_zone->mem.ptr		=new_zone.ptr;
 	src_zone->mem.size		=new_zone.size;
 
-	//task_manager_release_semaphore(area_ptr->lock_sema,0);
+	/*task_manager_release_semaphore(area_ptr->lock_sema,0);*/
 
 	return 1;
 }
@@ -1632,7 +1616,7 @@ OS_API_C_FUNC(void) big128_mul(unsigned int x, struct big64 y, struct big128 *ou
 	*       z1 = x0 * y1 + x1 * y0
 	*       z0 = x0 * y0
 	*/
-	uint64_t x0 = x, x1 = 0, y0 = y.v[0], y1 = y.v[1];
+	uint64_t x0 = x, x1 = 0, y0 = y.m.v[0], y1 = y.m.v[1];
 	uint64_t z0 = x0 * y0;
 	uint64_t z1a = x1 * y0;
 	uint64_t z1b = x0 * y1;

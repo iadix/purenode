@@ -1223,15 +1223,15 @@ int load_pos_module(const char *staking_kernel,tpo_mod_file *tpomod)
 	_store_last_pos_hash = get_tpo_mod_exp_addr_name(tpomod, "store_last_pos_hash ", 0);
 	_find_last_pos_block = get_tpo_mod_exp_addr_name(tpomod, "find_last_pos_block ", 0);
 #else
-	init_pos = get_tpo_mod_exp_addr_name(tpomod, "init_pos", 0);
-	store_blk_staking = get_tpo_mod_exp_addr_name(tpomod, "store_blk_staking", 0);
-	compute_last_pos_diff = get_tpo_mod_exp_addr_name(tpomod, "compute_last_pos_diff", 0);
-	store_tx_staking = get_tpo_mod_exp_addr_name(tpomod, "store_tx_staking", 0);
-	compute_blk_staking = get_tpo_mod_exp_addr_name(tpomod, "compute_blk_staking", 0);
-	get_current_pos_difficulty = get_tpo_mod_exp_addr_name(tpomod, "get_current_pos_difficulty", 0);
-	load_last_pos_blk = get_tpo_mod_exp_addr_name(tpomod, "load_last_pos_blk", 0);
-	store_last_pos_hash = get_tpo_mod_exp_addr_name(tpomod, "store_last_pos_hash", 0);
-	find_last_pos_block = get_tpo_mod_exp_addr_name(tpomod, "find_last_pos_block", 0);
+	init_pos					= (init_pos_func_ptr)get_tpo_mod_exp_addr_name(tpomod, "init_pos", 0);
+	store_blk_staking			= (store_blk_staking_func_ptr)get_tpo_mod_exp_addr_name(tpomod, "store_blk_staking", 0);
+	compute_last_pos_diff		= (compute_last_pos_diff_func_ptr)get_tpo_mod_exp_addr_name(tpomod, "compute_last_pos_diff", 0);
+	store_tx_staking			= (store_tx_staking_func_ptr)get_tpo_mod_exp_addr_name(tpomod, "store_tx_staking", 0);
+	compute_blk_staking			= (compute_blk_staking_func_ptr)get_tpo_mod_exp_addr_name(tpomod, "compute_blk_staking", 0);
+	get_current_pos_difficulty	= (get_current_pos_difficulty_func_ptr)get_tpo_mod_exp_addr_name(tpomod, "get_current_pos_difficulty", 0);
+	load_last_pos_blk			= (load_last_pos_blk_func_ptr)get_tpo_mod_exp_addr_name(tpomod, "load_last_pos_blk", 0);
+	store_last_pos_hash			= (store_last_pos_hash_func_ptr)get_tpo_mod_exp_addr_name(tpomod, "store_last_pos_hash", 0);
+	find_last_pos_block			= (find_last_pos_block_func_ptr)get_tpo_mod_exp_addr_name(tpomod, "find_last_pos_block", 0);
 #endif
 	return 1;
 }
@@ -1273,33 +1273,33 @@ void load_node_module(mem_zone_ref_ptr node_config)
 	_queue_block_message	= get_tpo_mod_exp_addr_name(&node_mod, "queue_block_message", 0);
 	
 #else
-	node_init_self = get_tpo_mod_exp_addr_name(&node_mod, "node_init_self", 0);
-	node_set_last_block = get_tpo_mod_exp_addr_name(&node_mod, "node_set_last_block", 0);
-	node_find_last_pow_block = get_tpo_mod_exp_addr_name(&node_mod, "node_find_last_pow_block", 0);
-	node_load_last_blks = get_tpo_mod_exp_addr_name(&node_mod, "node_load_last_blks", 0);
-	node_add_block_index = get_tpo_mod_exp_addr_name(&node_mod, "node_add_block_index", 0);
-	node_is_next_block = get_tpo_mod_exp_addr_name(&node_mod, "node_is_next_block", 0);
-	node_init_rpc = get_tpo_mod_exp_addr_name(&node_mod, "node_init_rpc", 0);
-	node_init_block_explorer = get_tpo_mod_exp_addr_name(&node_mod, "node_init_block_explorer", 0);
-	check_rpc_request = get_tpo_mod_exp_addr_name(&node_mod, "check_rpc_request", 0);
-	new_peer_node = get_tpo_mod_exp_addr_name(&node_mod, "new_peer_node", 0);
-	node_add_block = get_tpo_mod_exp_addr_name(&node_mod, "node_add_block", 0);
-	read_node_msg = get_tpo_mod_exp_addr_name(&node_mod, "read_node_msg", 0);
-	send_node_messages = get_tpo_mod_exp_addr_name(&node_mod, "send_node_messages", 0);
-	node_add_block_header = get_tpo_mod_exp_addr_name(&node_mod, "node_add_block_header", 0);
-	queue_version_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_version_message", 0);
-	queue_verack_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_verack_message", 0);
-	queue_ping_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_ping_message", 0);
-	queue_pong_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_pong_message", 0);
-	queue_getaddr_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_getaddr_message", 0);
-	queue_getdata_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_getdata_message",0);
-	queue_getblocks_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_getblocks_message", 0);
-	queue_getblock_hdrs_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_getblock_hdrs_message", 0);
-	queue_send_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_send_message", 0);
-	queue_emitted_element = get_tpo_mod_exp_addr_name(&node_mod, "queue_emitted_element", 0);
-	queue_emitted_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_emitted_message", 0);
-	queue_inv_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_inv_message", 0);
-	queue_block_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_block_message", 0);
+	node_init_self				=(mem_ptr) get_tpo_mod_exp_addr_name(&node_mod, "node_init_self", 0);
+	node_set_last_block			=(mem_ptr) get_tpo_mod_exp_addr_name(&node_mod, "node_set_last_block", 0);
+	node_find_last_pow_block	=(mem_ptr) get_tpo_mod_exp_addr_name(&node_mod, "node_find_last_pow_block", 0);
+	node_load_last_blks			=(mem_ptr) get_tpo_mod_exp_addr_name(&node_mod, "node_load_last_blks", 0);
+	node_add_block_index		=(mem_ptr) get_tpo_mod_exp_addr_name(&node_mod, "node_add_block_index", 0);
+	node_is_next_block			=(mem_ptr) get_tpo_mod_exp_addr_name(&node_mod, "node_is_next_block", 0);
+	node_init_rpc				=(mem_ptr) get_tpo_mod_exp_addr_name(&node_mod, "node_init_rpc", 0);
+	node_init_block_explorer	=(mem_ptr) get_tpo_mod_exp_addr_name(&node_mod, "node_init_block_explorer", 0);
+	check_rpc_request			=(mem_ptr) get_tpo_mod_exp_addr_name(&node_mod, "check_rpc_request", 0);
+	new_peer_node				=(mem_ptr) get_tpo_mod_exp_addr_name(&node_mod, "new_peer_node", 0);
+	node_add_block				=(mem_ptr) get_tpo_mod_exp_addr_name(&node_mod, "node_add_block", 0);
+	read_node_msg				=(mem_ptr) get_tpo_mod_exp_addr_name(&node_mod, "read_node_msg", 0);
+	send_node_messages			=(mem_ptr) get_tpo_mod_exp_addr_name(&node_mod, "send_node_messages", 0);
+	node_add_block_header		=(mem_ptr) get_tpo_mod_exp_addr_name(&node_mod, "node_add_block_header", 0);
+	queue_version_message		=(mem_ptr) get_tpo_mod_exp_addr_name(&node_mod, "queue_version_message", 0);
+	queue_verack_message		=(mem_ptr) get_tpo_mod_exp_addr_name(&node_mod, "queue_verack_message", 0);
+	queue_ping_message			=(mem_ptr) get_tpo_mod_exp_addr_name(&node_mod, "queue_ping_message", 0);
+	queue_pong_message			=(mem_ptr) get_tpo_mod_exp_addr_name(&node_mod, "queue_pong_message", 0);
+	queue_getaddr_message		=(mem_ptr) get_tpo_mod_exp_addr_name(&node_mod, "queue_getaddr_message", 0);
+	queue_getdata_message		=(mem_ptr) get_tpo_mod_exp_addr_name(&node_mod, "queue_getdata_message",0);
+	queue_getblocks_message		=(mem_ptr) get_tpo_mod_exp_addr_name(&node_mod, "queue_getblocks_message", 0);
+	queue_getblock_hdrs_message =(mem_ptr) get_tpo_mod_exp_addr_name(&node_mod, "queue_getblock_hdrs_message", 0);
+	queue_send_message			=(mem_ptr) get_tpo_mod_exp_addr_name(&node_mod, "queue_send_message", 0);
+	queue_emitted_element		=(mem_ptr) get_tpo_mod_exp_addr_name(&node_mod, "queue_emitted_element", 0);
+	queue_emitted_message		=(mem_ptr) get_tpo_mod_exp_addr_name(&node_mod, "queue_emitted_message", 0);
+	queue_inv_message			=(mem_ptr) get_tpo_mod_exp_addr_name(&node_mod, "queue_inv_message", 0);
+	queue_block_message			=(mem_ptr) get_tpo_mod_exp_addr_name(&node_mod, "queue_block_message", 0);
 #endif
 }
 
@@ -1428,6 +1428,13 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 	release_zone_ref(&genesis_conf);
 	release_zone_ref(&genesis);
 
+	if (!tree_manager_create_node("peer nodes", NODE_BITCORE_NODE_LIST, &peer_nodes))
+	{
+		log_output("unable to create peer node list\n");
+		return 0;
+	}
+
+
 	tree_manager_create_node			("log", NODE_LOG_PARAMS, &log);
 	tree_manager_set_child_value_str	(&log, "host", node_hostname.str);
 	tree_manager_set_child_value_i32	(&log, "port", seed_port);
@@ -1435,7 +1442,6 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 	release_zone_ref					(&log);
 
 	seed_host = make_host_def(node_hostname.str, seed_port);
-	tree_manager_create_node("peer nodes", NODE_BITCORE_NODE_LIST, &peer_nodes);
 	if (!new_peer_node(seed_host, &peer_nodes))
 	{
 		tree_manager_create_node		("log", NODE_LOG_PARAMS, &log);

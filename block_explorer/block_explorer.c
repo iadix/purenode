@@ -61,7 +61,7 @@ OS_API_C_FUNC(int) block_explorer_set_node(mem_zone_ref_ptr node, tpo_mod_file *
 #ifdef _DEBUG
 	_get_blk_staking_infos = get_tpo_mod_exp_addr_name(pos_mod, "get_blk_staking_infos", 0);
 #else
-	get_blk_staking_infos = get_tpo_mod_exp_addr_name(pos_mod, "get_blk_staking_infos", 0);
+	get_blk_staking_infos = (get_blk_staking_infos_func_ptr)get_tpo_mod_exp_addr_name(pos_mod, "get_blk_staking_infos", 0);
 #endif
 	
 	//get_blk_staking_infos = get_tpo_mod_exp_addr_name(pos_mod, "get_blk_staking_infos", 0);

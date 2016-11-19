@@ -164,6 +164,8 @@
     <ClCompile Include="zlibexp.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="base\mem_base.h" />
+    <ClInclude Include="base\std_def.h" />
     <ClInclude Include="base\std_mem.h" />
     <ClInclude Include="base\std_str.h" />
     <ClInclude Include="include\connect.h" />

@@ -46,20 +46,18 @@ struct gfx_rect
 #endif
 LIBC_API void			C_API_FUNC init_default_mem_area	(unsigned int size);
 LIBC_API unsigned int	C_API_FUNC mem_area_enable_sem		(unsigned int area_id);
-//LIBC_API void			C_API_FUNC set_default_mem_area		(unsigned int size);
 LIBC_API unsigned int	C_API_FUNC init_new_mem_area		(mem_ptr phys_start,	mem_ptr phys_end,mem_area_type_t type);
 LIBC_API unsigned int	C_API_FUNC free_mem_area			(unsigned int area_id);
 LIBC_API unsigned int	C_API_FUNC allocate_new_zone		(unsigned int area_id,	mem_size zone_size,	mem_zone_ref *zone_ref);
 LIBC_API unsigned int	C_API_FUNC allocate_new_empty_zone	(unsigned int area_id,mem_zone_ref *zone_ref);
 LIBC_API int			C_API_FUNC expand_zone				(mem_zone_ref *ref,mem_size new_size);
-LIBC_API int 			C_API_FUNC realloc_zone				(mem_zone_ref *zone_ref,mem_size new_size);;
+LIBC_API int 			C_API_FUNC realloc_zone				(mem_zone_ref *zone_ref,mem_size new_size);
 
 		
 LIBC_API void			C_API_FUNC copy_zone_ref			(mem_zone_ref_ptr dest_zone_ref,mem_zone_ref_const_ptr zone_ref);
 LIBC_API void			C_API_FUNC copy_zone_const_ref		(mem_zone_const_ref_ptr dest_zone_ref,mem_zone_const_ref_ptr zone_ref);
 LIBC_API unsigned int	C_API_FUNC create_zone_ref			(mem_zone_ref *dest_zone_ref,mem_ptr ptr,mem_size size);
 LIBC_API void			C_API_FUNC init_mem_system			();
-//LIBC_API void			C_API_FUNC dump_free_zones			(unsigned int area_id);
 LIBC_API void			C_API_FUNC dump_mem_used			(unsigned int area_id);
 LIBC_API void			C_API_FUNC dump_mem_used_after		(unsigned int area_id,unsigned int time);
 
@@ -105,7 +103,6 @@ static __inline mem_size mem_to_size(const_mem_ptr ptr)
 static __inline int mem_to_int(const_mem_ptr ptr)
 {
 	return *((int *)&ptr);
-	//return ((int)ptr);
 }
 
 
@@ -115,13 +112,11 @@ static __inline mem_ptr uint_to_mem(unsigned int val)
 
 	val64.uint32.ints[0]=val;
 	val64.uint32.ints[1]=0;
-	return ((mem_ptr )val64.uint64.val);
+	return ((mem_ptr )((mem_size)(val64.uint64.val)));
 }
 static __inline mem_ptr size_to_mem(size_t val)
 {
 	return ((mem_ptr )val);
-
-	//return ((mem_ptr )val);
 }
 
 static __inline mem_size mem_sub(const_mem_ptr base,const_mem_ptr end)
@@ -161,9 +156,6 @@ static __inline void copy_vec4u_c	(vec_4uc_t d,const vec_4uc_t s)
 	d[2]=s[2];
 	d[3]=s[3];
 }
-
-
-
 
 LIBC_API void			C_API_FUNC release_zone_ref	(mem_zone_ref_ptr zone_ref);
 LIBC_API void			C_API_FUNC dec_zone_ref		(mem_zone_ref_ptr zone_ref);

@@ -1,4 +1,4 @@
-//copyright iadix 2016
+/* copyright iadix 2016 */
 #define LIBC_API C_EXPORT
 #include "base/std_def.h"
 #include "base/std_mem.h"
@@ -7,13 +7,12 @@
 #include "zlib.h"
 unsigned int kernel_log_id;
 
-//typedef voidpf (*alloc_func) OF((voidpf opaque, uInt items, uInt size));
+/*typedef voidpf (*alloc_func) OF((voidpf opaque, uInt items, uInt size));*/
 mem_ptr		zlib_alloc	(mem_ptr q,unsigned int n,unsigned int s)
 {
 	mem_zone_ref	pouet={PTR_NULL};
 
-	//kernel_log		(kernel_log_id,"zlib alloc called \n");
-
+	/*kernel_log		(kernel_log_id,"zlib alloc called \n");*/
 	allocate_new_zone	(0x0,n*s,&pouet);
 	
 	q	=	pouet.zone;
@@ -26,8 +25,7 @@ void zlib_free	(mem_ptr q,mem_ptr addr)
 	mem_zone_ref	pouet;
 
 	pouet.zone			=q;
-
-	//kernel_log			(kernel_log_id,"zlib free called \n");
+	/* kernel_log			(kernel_log_id,"zlib free called \n"); */
 	release_zone_ref	(&pouet);
 }
 
@@ -169,7 +167,7 @@ OS_API_C_FUNC(int) mem_stream_decomp	(mem_stream *stream,unsigned int comp_size,
 		return 0;
 	}
 
-	//kernel_log(kernel_log_id,"inflating \n");
+	/* kernel_log(kernel_log_id,"inflating \n"); */
 
 	if((ret=inflate		(&strm, Z_NO_FLUSH))!=Z_STREAM_END)
 	{

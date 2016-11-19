@@ -1,4 +1,4 @@
-//copyright iadix 2016
+/*copyright iadix 2016*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -41,33 +41,33 @@ struct string	  read_done[64]={0};
 
 OS_API_C_FUNC(int) network_init()
 {
-	sys_add_tpo_mod_func_name("libcon", "network_init", network_init, 0);
-	sys_add_tpo_mod_func_name("libcon", "network_free", network_free, 0);
-	sys_add_tpo_mod_func_name("libcon", "get_if", get_if, 0);
-	sys_add_tpo_mod_func_name("libcon", "init_read_group", init_read_group, 0);
-	sys_add_tpo_mod_func_name("libcon", "read_group_has", read_group_has, 0);
-	sys_add_tpo_mod_func_name("libcon", "set_tcp_no_delay", set_tcp_no_delay, 0);
-	sys_add_tpo_mod_func_name("libcon", "add_read_group", add_read_group, 0);
-	sys_add_tpo_mod_func_name("libcon", "get_con_error", get_con_error, 0);
-	sys_add_tpo_mod_func_name("libcon", "get_con_lastline", get_con_lastline, 0);
-	sys_add_tpo_mod_func_name("libcon", "con_move_data", con_move_data, 0);
-	sys_add_tpo_mod_func_name("libcon", "con_consume_data", con_consume_data, 0);
-	sys_add_tpo_mod_func_name("libcon", "get_con_hostd", get_con_hostd, 0);
-	sys_add_tpo_mod_func_name("libcon", "do_connect", do_connect, 0);
-	sys_add_tpo_mod_func_name("libcon", "reconnect", reconnect, 0);
-	sys_add_tpo_mod_func_name("libcon", "open_port", open_port, 0);
-	sys_add_tpo_mod_func_name("libcon", "do_get_incoming", do_get_incoming, 0);
-	sys_add_tpo_mod_func_name("libcon", "read_data", read_data, 0);
-	sys_add_tpo_mod_func_name("libcon", "send_data", send_data, 0);
-	sys_add_tpo_mod_func_name("libcon", "readline", readline, 0);
-	sys_add_tpo_mod_func_name("libcon", "do_read_group", do_read_group, 0);
-	sys_add_tpo_mod_func_name("libcon", "pop_read_done", pop_read_done, 0);
-	sys_add_tpo_mod_func_name("libcon", "con_close", con_close, 0);
-	sys_add_tpo_mod_func_name("libcon", "get_con_saddr", get_con_saddr, 0);
-	sys_add_tpo_mod_func_name("libcon", "read_av_data", read_av_data, 0);
-	sys_add_tpo_mod_func_name("libcon", "send_data_av", send_data_av, 0);
-	sys_add_tpo_mod_func_name("libcon", "create_upnp_broadcast", create_upnp_broadcast, 0);
-	sys_add_tpo_mod_func_name("libcon", "send_upnpbroadcast", send_upnpbroadcast, 0);
+	sys_add_tpo_mod_func_name("libcon", "network_init", (void_func_ptr)network_init, 0);
+	sys_add_tpo_mod_func_name("libcon", "network_free", (void_func_ptr)network_free, 0);
+	sys_add_tpo_mod_func_name("libcon", "get_if", (void_func_ptr)get_if, 0);
+	sys_add_tpo_mod_func_name("libcon", "init_read_group", (void_func_ptr)init_read_group, 0);
+	sys_add_tpo_mod_func_name("libcon", "read_group_has", (void_func_ptr)read_group_has, 0);
+	sys_add_tpo_mod_func_name("libcon", "set_tcp_no_delay", (void_func_ptr)set_tcp_no_delay, 0);
+	sys_add_tpo_mod_func_name("libcon", "add_read_group", (void_func_ptr)add_read_group, 0);
+	sys_add_tpo_mod_func_name("libcon", "get_con_error", (void_func_ptr)get_con_error, 0);
+	sys_add_tpo_mod_func_name("libcon", "get_con_lastline", (void_func_ptr)get_con_lastline, 0);
+	sys_add_tpo_mod_func_name("libcon", "con_move_data", (void_func_ptr)con_move_data, 0);
+	sys_add_tpo_mod_func_name("libcon", "con_consume_data", (void_func_ptr)con_consume_data, 0);
+	sys_add_tpo_mod_func_name("libcon", "get_con_hostd", (void_func_ptr)get_con_hostd, 0);
+	sys_add_tpo_mod_func_name("libcon", "do_connect", (void_func_ptr)do_connect, 0);
+	sys_add_tpo_mod_func_name("libcon", "reconnect", (void_func_ptr)reconnect, 0);
+	sys_add_tpo_mod_func_name("libcon", "open_port", (void_func_ptr)open_port, 0);
+	sys_add_tpo_mod_func_name("libcon", "do_get_incoming", (void_func_ptr)do_get_incoming, 0);
+	sys_add_tpo_mod_func_name("libcon", "read_data", (void_func_ptr)read_data, 0);
+	sys_add_tpo_mod_func_name("libcon", "send_data", (void_func_ptr)send_data, 0);
+	sys_add_tpo_mod_func_name("libcon", "readline", (void_func_ptr)readline, 0);
+	sys_add_tpo_mod_func_name("libcon", "do_read_group", (void_func_ptr)do_read_group, 0);
+	sys_add_tpo_mod_func_name("libcon", "pop_read_done", (void_func_ptr)pop_read_done, 0);
+	sys_add_tpo_mod_func_name("libcon", "con_close", (void_func_ptr)con_close, 0);
+	sys_add_tpo_mod_func_name("libcon", "get_con_saddr", (void_func_ptr)get_con_saddr, 0);
+	sys_add_tpo_mod_func_name("libcon", "read_av_data", (void_func_ptr)read_av_data, 0);
+	sys_add_tpo_mod_func_name("libcon", "send_data_av", (void_func_ptr)send_data_av, 0);
+	sys_add_tpo_mod_func_name("libcon", "create_upnp_broadcast", (void_func_ptr)create_upnp_broadcast, 0);
+	sys_add_tpo_mod_func_name("libcon", "send_upnpbroadcast", (void_func_ptr)send_upnpbroadcast, 0);
 }
 
 OS_API_C_FUNC(int) send_data_av(struct con *Con, unsigned char *data, size_t len)
@@ -160,7 +160,6 @@ OS_API_C_FUNC(int) network_free()
 OS_API_C_FUNC(int) get_if(const char *gw_ip, struct string *name, struct string *ip)
 {
 	struct ifaddrs *addrs,*tmp;
-	//unsigned int 	  gw_addr;
 	struct in_addr gw_addr;
 
 	gw_addr.s_addr=inet_addr(gw_ip);
@@ -545,7 +544,7 @@ OS_API_C_FUNC(struct con *)do_get_incoming(struct con *listen_con, unsigned int 
 	fd_set		    my_listen,error;
 	struct con		*newCon;
 	struct timeval	timeout;
-	int				clilen;
+	unsigned int	clilen;
 	int				new_sock;
 	
 	
@@ -561,7 +560,7 @@ OS_API_C_FUNC(struct con *)do_get_incoming(struct con *listen_con, unsigned int 
 
 	if (FD_ISSET(listen_con->sock, &my_listen))
 	{
-	newCon			=	init_con	();
+		newCon			=	init_con	();
 		clilen			=	sizeof(struct sockaddr_in);
     	newCon->sock	=	accept(listen_con->sock, (struct sockaddr *)&newCon->peer, &clilen);
 		if(newCon->sock<0)
@@ -587,17 +586,17 @@ OS_API_C_FUNC(struct con	*)open_port(const char *my_addr, unsigned short port)
 
 	newCon->host.port					=	port;
 	newCon->sock						=	socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	//fcntl				(newCon->sock, F_SETFL, O_NONBLOCK);
+	/* fcntl				(newCon->sock, F_SETFL, O_NONBLOCK); */
     /* Enable the socket to reuse the address */
     if (setsockopt(newCon->sock, SOL_SOCKET, SO_REUSEADDR, &reuseaddr, sizeof(int)) == -1) {
         perror("setsockopt");
         return NULL;
     }
-	//setup address structure
+	/* setup address structure */
     memset	((char *) &newCon->peer, 0, sizeof(struct sockaddr_in));
     newCon->peer.sin_family				=	AF_INET;
     newCon->peer.sin_port				=	htons		(port);
-	newCon->peer.sin_addr.s_addr		 =	INADDR_ANY;//inet_addr	(newCon->host.host.str);
+	newCon->peer.sin_addr.s_addr		 =	INADDR_ANY; /*inet_addr	(newCon->host.host.str);*/
 	if(bind	(newCon->sock, (struct sockaddr *)&newCon->peer,sizeof(struct sockaddr_in))<0)
 	{
 		make_string(&newCon->error,"bind error");
@@ -667,7 +666,7 @@ OS_API_C_FUNC(struct con	*)do_connect(const struct host_def *host)
 	clone_string			(&newCon->host.port_str	,&host->port_str);
 	clone_string			(&newCon->host.host		,&host->host);
 
- // Resolve the server address and port
+    /* Resolve the server address and port */
 	newCon->sock					= socket	 (AF_INET,SOCK_STREAM,IPPROTO_TCP);
 	if(newCon->sock<=0){
 		make_string(&newCon->error,"no socket");
@@ -706,7 +705,7 @@ OS_API_C_FUNC(struct con	*)create_upnp_broadcast(struct host_def *host)
 	clone_string		(&newCon->host.port_str	,&host->port_str);
 	clone_string		(&newCon->host.host		,&host->host);
 
- // Resolve the server address and port
+	/*Resolve the server address and port*/
 	newCon->sock= socket(AF_INET, SOCK_DGRAM, 0);
 	if(newCon->sock<=0){
 		make_string(&newCon->error,"no socket");
@@ -760,7 +759,7 @@ OS_API_C_FUNC(int) send_upnpbroadcast(struct con *Con, struct string *data)
 		if (FD_ISSET (Con->sock, &fd_err)){Con->last_rd=0;break;}
 		if (FD_ISSET (Con->sock, &fd_read))
 		{
-			int bcLen		=	sizeof(Con->peer);
+			size_t bcLen		=	sizeof(Con->peer);
 			Con->last_rd	=	recvfrom(Con->sock,&Con->lastLine.str[Con->lastLine.len],512,0, (struct sockaddr  *)&Con->peer, &bcLen);
 			if(Con->last_rd>0)
 			{

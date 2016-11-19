@@ -2,8 +2,7 @@
 #define LIBC_API	C_IMPORT
 #endif
 
-typedef	void		   void_func();
-typedef	void_func	   *void_func_ptr;
+
 
 typedef void			*mem_ptr;
 typedef const void		*const_mem_ptr;
@@ -12,11 +11,13 @@ typedef size_t		   mem_size;
 
 struct big64
 {
-	union
+	union N
 	{
 		uint64_t v64;
 		unsigned int v[2];
-	};
+	}n;
+
+	union N m;
 }struct_packed;
 
 struct big128
