@@ -65,7 +65,7 @@ OS_API_C_FUNC(void) tpo_mod_init			(tpo_mod_file *tpo_mod)
 }
 
 
-struct kern_mod_fn_t *find_sym(size_t sym_ofset, unsigned int deco_type)
+struct kern_mod_fn_t *find_sym(unsigned int mod_idx,size_t sym_ofset, unsigned int deco_type)
 {
 	unsigned int		n;
 	struct kern_mod_t	*mod;
@@ -74,7 +74,7 @@ struct kern_mod_fn_t *find_sym(size_t sym_ofset, unsigned int deco_type)
 	while ( (mod=tpo_get_mod_entry_idx_c(n)) != PTR_NULL)
 	{
 		struct kern_mod_fn_t	*func_ptr;
-		func_ptr = tpo_get_fn_entry_name_c(n, mod->mod_hash, sym_ofset, deco_type);
+		func_ptr = tpo_get_fn_entry_name_c(mod_idx, mod->mod_hash, sym_ofset, deco_type);
 		if (func_ptr != PTR_FF)
 			return func_ptr;
 		n++;
@@ -741,7 +741,7 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 				}
 
 				if (func_ptr == uint_to_mem(0xFFFFFFFF))
-					func_ptr = find_sym(ofset, tpo_file->deco_type);
+					func_ptr = find_sym(tpo_file->mod_idx,ofset, tpo_file->deco_type);
 			}
 			ofs_addr	=	mem_stream_read_32(file_stream);
 			if(func_ptr	!= uint_to_mem(0xFFFFFFFF))
