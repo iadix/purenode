@@ -218,13 +218,13 @@ mem_ptr _intel_fast_memcpy(mem_ptr dst_ptr,const_mem_ptr src_ptr,mem_size size)
 	return memcpy_c(dst_ptr,src_ptr,size);
 }
 */
-
+/*
 OS_API_C_FUNC(unsigned int ) rand_c()
 {
 	return rand();
 
 }
-
+*/
 OS_API_C_FUNC(mem_ptr) memmove_c(mem_ptr dst_ptr, const_mem_ptr src_ptr, mem_size size)
 {
 	const unsigned char *sptr = src_ptr;
@@ -505,7 +505,6 @@ OS_API_C_FUNC(void) init_mem_system()
 	sys_add_tpo_mod_func_name("libcon", "malloc_c",(void_func_ptr)malloc_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "calloc_c",(void_func_ptr)calloc_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "memset_c",(void_func_ptr)memset_c, 0);
-	sys_add_tpo_mod_func_name("libcon", "rand_c",(void_func_ptr)rand_c, 0);
 #ifdef _MSC_VER
 	sys_add_tpo_mod_func_name("libcon", "memset",(void_func_ptr)memset, 0);
 	sys_add_tpo_mod_func_name("libcon", "memcpy",(void_func_ptr)memcpy, 0);
@@ -560,7 +559,7 @@ OS_API_C_FUNC(void) init_mem_system()
 	sys_add_tpo_mod_func_name("libcon", "itoa_s",(void_func_ptr)itoa_s, 0);
 	sys_add_tpo_mod_func_name("libcon", "isalpha_c",(void_func_ptr)isalpha_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "isdigit_c",(void_func_ptr)isdigit_c, 0);
-	sys_add_tpo_mod_func_name("libcon", "dtoa_c",(void_func_ptr)dtoa_c, 0);
+	/* sys_add_tpo_mod_func_name("libcon", "dtoa_c",(void_func_ptr)dtoa_c, 0); */
 
 	sys_add_tpo_mod_func_name("libcon", "muldiv64",(void_func_ptr)muldiv64, 0);
 	sys_add_tpo_mod_func_name("libcon", "mul64",(void_func_ptr)mul64, 0);
@@ -594,7 +593,7 @@ OS_API_C_FUNC(void) init_mem_system()
 	sys_add_tpo_mod_func_name("libcon", "cat_tag",(void_func_ptr)cat_tag, 0);
 	sys_add_tpo_mod_func_name("libcon", "free_host_def",(void_func_ptr)free_host_def, 0);
 	sys_add_tpo_mod_func_name("libcon", "strcat_uint",(void_func_ptr)strcat_uint, 0);
-	sys_add_tpo_mod_func_name("libcon", "strcat_float",(void_func_ptr)strcat_float, 0);
+	/*sys_add_tpo_mod_func_name("libcon", "strcat_float",(void_func_ptr)strcat_float, 0);*/
 	sys_add_tpo_mod_func_name("libcon", "copy_host_def",(void_func_ptr)copy_host_def, 0);
 
 

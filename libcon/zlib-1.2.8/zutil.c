@@ -5,8 +5,12 @@
 
 /* @(#) $Id$ */
 #define LIBC_API C_EXPORT
+
 #include "../../base/std_base.h"
 #include "zutil.h"
+#include "../../base/std_def.h"
+#include "../../base/std_mem.h"
+
 #ifndef Z_SOLO
 #  include "gzguts.h"
 #endif
@@ -308,15 +312,15 @@ voidpf ZLIB_INTERNAL zcalloc (opaque, items, size)
     unsigned size;
 {
     if (opaque) items += size - size; /* make compiler happy */
-    return sizeof(uInt) > 2 ? (voidpf)malloc(items * size) :
-                              (voidpf)calloc(items, size);
+    return sizeof(uInt) > 2 ? (voidpf)malloc_c(items * size) :
+                              (voidpf)calloc_c(items, size);
 }
 
 void ZLIB_INTERNAL zcfree (opaque, ptr)
     voidpf opaque;
     voidpf ptr;
 {
-    free(ptr);
+    free_c(ptr);
     if (opaque) return; /* make compiler happy */
 }
 

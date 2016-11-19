@@ -31,3 +31,4 @@ LIBC_API int			C_API_FUNC rm_dir(const char *dir);
 LIBC_API unsigned int	C_API_FUNC get_tree_mem_area_id(void);
 LIBC_API unsigned int	C_API_FUNC get_mem_area_id(void);
 LIBC_API unsigned int	C_API_FUNC isRunning(void);
+LIBC_API int C_API_FUNC default_RNG(unsigned char *dest, size_t size);

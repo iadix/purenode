@@ -126,20 +126,8 @@ OS_API_C_FUNC(int) set_node(mem_zone_ref_ptr node,tpo_mod_file *pos_mod)
 	copy_zone_ref(&my_node, node);
 
 	
-#ifdef _DEBUG
-	_get_blk_staking_infos	= get_tpo_mod_exp_addr_name(pos_mod, "get_blk_staking_infos", 0);
-	_store_tx_staking		= get_tpo_mod_exp_addr_name(pos_mod, "store_tx_staking", 0);
-	_get_tx_pos_hash_data	= get_tpo_mod_exp_addr_name(pos_mod, "get_tx_pos_hash_data", 0);
-	_get_target_spacing		= get_tpo_mod_exp_addr_name(pos_mod, "get_target_spacing", 0);
-	_get_stake_reward		= get_tpo_mod_exp_addr_name(pos_mod, "get_stake_reward", 0);
-	_get_last_stake_modifier= get_tpo_mod_exp_addr_name(pos_mod, "get_last_stake_modifier", 0);
-	_get_current_pos_difficulty = get_tpo_mod_exp_addr_name(pos_mod, "get_current_pos_difficulty", 0);
-	
-	_compute_tx_pos			= get_tpo_mod_exp_addr_name(pos_mod, "compute_tx_pos", 0);
-	_create_pos_block		 = get_tpo_mod_exp_addr_name(pos_mod, "create_pos_block", 0);
-	
-	
-#else
+
+#ifndef _DEBUG
 	get_blk_staking_infos		= (get_blk_staking_infos_func_ptr)		get_tpo_mod_exp_addr_name(pos_mod, "get_blk_staking_infos", 0);
 	store_tx_staking			= (store_tx_staking_func_ptr)			get_tpo_mod_exp_addr_name(pos_mod, "store_tx_staking", 0);
 	get_tx_pos_hash_data		= (get_tx_pos_hash_data_func_ptr)		get_tpo_mod_exp_addr_name(pos_mod, "get_tx_pos_hash_data", 0);

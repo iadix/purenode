@@ -207,6 +207,7 @@ OS_API_C_FUNC(int) strcat_uint(struct string *str, size_t i)
 	str->len = new_len;
 	return (int)str->len;
 }
+/*
 OS_API_C_FUNC(int) strcat_float(struct string *str, double f)
 {
 	size_t		new_len,src_len;
@@ -227,7 +228,7 @@ OS_API_C_FUNC(int) strcat_float(struct string *str, double f)
 	str->len = new_len;
 	return (int)str->len;
 }
-
+*/
 OS_API_C_FUNC(int) strcat_int(struct string *str, int i)
 {
 	size_t		new_len,src_len;

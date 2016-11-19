@@ -1017,7 +1017,7 @@ OS_API_C_FUNC(int) isprint_c(int _C)
 	return 1;
 }
 
-
+#if 0
 #include <math.h>
 #define PZERO 38		/* index of 1e0 in powten[]	*/
 #define PMAX 76			/* highest index in powten[]	*/
@@ -1030,6 +1030,7 @@ double powten[] = {1e-38, 1e-37, 1e-36, 1e-35, 1e-34, 1e-33,
 	1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18,
 	1e19, 1e20, 1e21, 1e22, 1e23, 1e24, 1e25, 1e26, 1e27, 1e28, 1e29,
 	1e30, 1e31, 1e32, 1e33, 1e34, 1e35, 1e36, 1e37, 1e38};
+
 
 OS_API_C_FUNC(void) dtoa_c	(char *buff, char conv, int bsize, int dplace, double value)
 {
@@ -1119,6 +1120,7 @@ OS_API_C_FUNC(void) dtoa_c	(char *buff, char conv, int bsize, int dplace, double
     *buff++ = '\0';
     return;
 }
+#endif
 
 
 OS_API_C_FUNC(uint64_t) load_bigendian(const unsigned char *x)

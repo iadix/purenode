@@ -1,3 +1,6 @@
+#ifndef __STD_BASE__
+#define __STD_BASE__
+
 #ifdef __GNUC__
 #define C_EXPORT __attribute__ ((visibility ("default")))
 #define C_IMPORT __attribute__ ((visibility ("default"))) 
@@ -69,3 +72,4 @@ typedef enum
 #define OS_API_C_FUNC(return_type) C_EXPORT return_type C_API_FUNC 
 #define OS_API_XTRN_ASM_FUNC(return_type) extern return_type ASM_API_FUNC
 
+#endif

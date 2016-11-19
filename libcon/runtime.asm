@@ -1,10 +1,11 @@
-[BITS 32]
+BITS 32]
 section .text
 
 %ifdef ASM_EXPORT
 	export  _fetch_add_c
 	export  _memset
 	export  _memcpy
+	export  __allmul
 	export  _compare_z_exchange_c
 %endif
 
@@ -12,8 +13,10 @@ section .text
 	global  _fetch_add_c
 	global  _memset
 	global  _memcpy
+	global  __allmul
 	global  _compare_z_exchange_c
 %else
+	global  _allmul
 	GLOBAL  compare_z_exchange_c:function
 	GLOBAL  fetch_add_c:function
 	global  memset:function
@@ -94,7 +97,7 @@ compare_z_exchange_c:
 		jmp _compare_z_exchange_c_done
 	_compare_z_exchange_c_not_changed:
 		xor eax,eax
-	
+	 
 	_compare_z_exchange_c_done:
 	pop ebx
 	pop edi
@@ -111,5 +114,6 @@ fetch_add_c:
 	lock xadd [edi]	, eax
 	pop edi
 ret
+
 
 

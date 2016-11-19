@@ -91,6 +91,7 @@
       </ModuleDefinitionFile>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -107,6 +108,7 @@
     <ClCompile Include="expat\xmlparse\xmlparse.c" />
     <ClCompile Include="expat\xmltok\xmlrole.c" />
     <ClCompile Include="expat\xmltok\xmltok.c" />
+    <ClCompile Include="main.c" />
     <ClCompile Include="mem_stream.c" />
     <ClCompile Include="strs.c" />
     <ClCompile Include="tpo_mod.c" />

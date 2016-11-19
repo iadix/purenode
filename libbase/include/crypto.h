@@ -10,6 +10,9 @@
 
 typedef unsigned char dh_key_t[64];
 
+
+
+
 typedef int				C_API_FUNC crypto_extract_key_func	(dh_key_t pk, const dh_key_t sk);
 typedef crypto_extract_key_func *crypto_extract_key_func_ptr;
 

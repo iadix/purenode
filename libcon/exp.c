@@ -1,6 +1,5 @@
 /* copyright iadix 2016 */
 #define LIBC_API C_EXPORT
-
 #include "base/std_def.h"
 #include "base/std_mem.h"
 #include "base/mem_base.h"
@@ -8,6 +7,7 @@
 #include "base/utf.h"
 
 #include "strs.h"
+
 
 #define KERNEL_API C_EXPORT
 #include "mem_stream.h"
@@ -25,6 +25,10 @@ void init_funcs()
 	sys_add_tpo_mod_func_name("libcon", "utf8_encode", (void_func_ptr)utf8_encode, 0);
 	sys_add_tpo_mod_func_name("libcon", "utf8_check_first", (void_func_ptr)utf8_check_first, 0);
 	sys_add_tpo_mod_func_name("libcon", "utf8_check_full", (void_func_ptr)utf8_check_full, 0);
+
+	sys_add_tpo_mod_func_name("libcon", "default_RNG", (void_func_ptr)default_RNG, 0);
+
+	
 
 	sys_add_tpo_mod_func_name("libcon", "console_print", (void_func_ptr)console_print, 0);
 	sys_add_tpo_mod_func_name("libcon", "stat_file", (void_func_ptr)stat_file, 0);

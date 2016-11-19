@@ -109,7 +109,7 @@ extern "C"
 	you can define uECC_POSIX to use the predefined RNG. For embedded platforms there is no predefined
 	RNG function; you must provide your own.
 	*/
-	typedef int(*uECC_RNG_Function)(uint8_t *dest, unsigned size);
+	typedef int(C_API_FUNC *uECC_RNG_Function)(unsigned char *dest, size_t size);
 
 	/* uECC_set_rng() function.
 	Set the function that will be used to generate random bytes. The RNG function should

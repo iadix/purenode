@@ -43,10 +43,10 @@ int main(int argc, char **argv)
 	load_module("modz/iadixcoin.tpo", "iadixcoin", &iadix_mod);
 
 #ifndef _DEBUG
-	app_init = (app_func_ptr)get_tpo_mod_exp_addr_name(&iadix_mod, "app_init", 0);
-	app_start = (app_func_ptr)get_tpo_mod_exp_addr_name(&iadix_mod, "app_start", 0);
-	app_loop = (app_func_ptr)get_tpo_mod_exp_addr_name(&iadix_mod, "app_loop", 0);
-	app_stop = (app_func_ptr)get_tpo_mod_exp_addr_name(&iadix_mod, "app_stop", 0);
+	app_init	= (app_func_ptr)get_tpo_mod_exp_addr_name(&iadix_mod, "app_init", 0);
+	app_start	= (app_func_ptr)get_tpo_mod_exp_addr_name(&iadix_mod, "app_start", 0);
+	app_loop	= (app_func_ptr)get_tpo_mod_exp_addr_name(&iadix_mod, "app_loop", 0);
+	app_stop	= (app_func_ptr)get_tpo_mod_exp_addr_name(&iadix_mod, "app_stop", 0);
 #endif
 	if (!app_init(PTR_NULL))
 	{

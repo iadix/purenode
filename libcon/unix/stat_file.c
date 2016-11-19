@@ -688,7 +688,31 @@ OS_API_C_FUNC(unsigned int) parseDate(const char *date)
 
 	return extractDate(date);
 }
+OS_API_C_FUNC(int) default_RNG(uint8_t *dest, unsigned size) 
+{
+	int fd = open("/dev/urandom", O_RDONLY | O_CLOEXEC);
+	if (fd == -1) {
+		fd = open("/dev/random", O_RDONLY | O_CLOEXEC);
+		if (fd == -1) {
+			return 0;
+		}
+	}
 
+	char *ptr = (char *)dest;
+	size_t left = size;
+	while (left > 0) {
+		ssize_t bytes_read = read(fd, ptr, left);
+		if (bytes_read <= 0) { // read failed
+			close(fd);
+			return 0;
+		}
+		left -= bytes_read;
+		ptr += bytes_read;
+	}
+
+	close(fd);
+	return 1;
+}
 OS_API_C_FUNC(unsigned int) isRunning()
 {
 	return running;

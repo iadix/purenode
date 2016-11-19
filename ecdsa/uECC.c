@@ -6,6 +6,7 @@
 #include <sha256.h>
 #include <crypto.h>
 #include <strs.h>
+#include <fsio.h>
 
 #include "uECC.h"
 #include "uECC_vli.h"
@@ -191,11 +192,7 @@ static cmpresult_t uECC_vli_cmp_unsafe(const uECC_word_t *left,
 #include "asm_avr.inc"
 #endif
 
-#if default_RNG_defined
-static uECC_RNG_Function g_rng_function = &default_RNG;
-#else
-static uECC_RNG_Function g_rng_function = 0;
-#endif
+static uECC_RNG_Function g_rng_function = default_RNG;
 
 void uECC_set_rng(uECC_RNG_Function rng_function) {
 	g_rng_function = rng_function;

@@ -1196,6 +1196,7 @@ int process_nodes()
 }
 
 
+
 int load_pos_module(const char *staking_kernel,tpo_mod_file *tpomod)
 {
 	char str[64];
@@ -1211,18 +1212,9 @@ int load_pos_module(const char *staking_kernel,tpo_mod_file *tpomod)
 	if (!load_module(str, staking_kernel, tpomod))return 0;
 
 	log_output("loaded\n");
-#ifdef _DEBUG
-	_init_pos = get_tpo_mod_exp_addr_name(tpomod, "init_pos", 0);
-	_store_blk_staking = get_tpo_mod_exp_addr_name(tpomod, "store_blk_staking", 0);
-	_store_tx_staking  = get_tpo_mod_exp_addr_name(tpomod, "store_tx_staking", 0);
-	
-	_compute_blk_staking = get_tpo_mod_exp_addr_name(tpomod, "compute_blk_staking", 0);
-	_compute_last_pos_diff = get_tpo_mod_exp_addr_name(tpomod, "compute_last_pos_diff", 0);
-	_get_current_pos_difficulty= get_tpo_mod_exp_addr_name(tpomod, "get_current_pos_difficulty", 0);
-	_load_last_pos_blk = get_tpo_mod_exp_addr_name(tpomod, "load_last_pos_blk ", 0);
-	_store_last_pos_hash = get_tpo_mod_exp_addr_name(tpomod, "store_last_pos_hash ", 0);
-	_find_last_pos_block = get_tpo_mod_exp_addr_name(tpomod, "find_last_pos_block ", 0);
-#else
+
+
+#ifndef _DEBUG
 	init_pos					= (init_pos_func_ptr)get_tpo_mod_exp_addr_name(tpomod, "init_pos", 0);
 	store_blk_staking			= (store_blk_staking_func_ptr)get_tpo_mod_exp_addr_name(tpomod, "store_blk_staking", 0);
 	compute_last_pos_diff		= (compute_last_pos_diff_func_ptr)get_tpo_mod_exp_addr_name(tpomod, "compute_last_pos_diff", 0);
@@ -1238,41 +1230,9 @@ int load_pos_module(const char *staking_kernel,tpo_mod_file *tpomod)
 
 void load_node_module(mem_zone_ref_ptr node_config)
 {
-
-
-
 	load_module("modz/node_adx.tpo", "node_adx", &node_mod);
-#ifdef _DEBUG
-	_node_init_self = get_tpo_mod_exp_addr_name(&node_mod, "node_init_self", 0);
-	_node_set_last_block = get_tpo_mod_exp_addr_name(&node_mod, "node_set_last_block", 0);
-	_node_find_last_pow_block = get_tpo_mod_exp_addr_name(&node_mod, "node_find_last_pow_block ", 0);
-	_node_is_next_block = get_tpo_mod_exp_addr_name(&node_mod, "node_is_next_block ", 0);
-	_node_load_last_blks = get_tpo_mod_exp_addr_name(&node_mod, "node_load_last_blks", 0);
-	_node_add_block_index = get_tpo_mod_exp_addr_name(&node_mod, "node_add_block_index", 0);
 	
-	_node_init_rpc = get_tpo_mod_exp_addr_name(&node_mod, "node_init_rpc", 0);
-	_check_rpc_request = get_tpo_mod_exp_addr_name(&node_mod, "check_rpc_request", 0);
-	_node_init_block_explorer= get_tpo_mod_exp_addr_name(&node_mod, "node_init_block_explorer", 0);
-	_new_peer_node = get_tpo_mod_exp_addr_name(&node_mod, "new_peer_node", 0);
-	_node_add_block = get_tpo_mod_exp_addr_name(&node_mod, "node_add_block", 0);
-	_read_node_msg = get_tpo_mod_exp_addr_name(&node_mod, "read_node_msg", 0);
-	_send_node_messages = get_tpo_mod_exp_addr_name(&node_mod, "send_node_messages", 0);
-	_node_add_block_header = get_tpo_mod_exp_addr_name(&node_mod, "node_add_block_header", 0);
-	_queue_version_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_version_message", 0);
-	_queue_verack_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_verack_message", 0);
-	_queue_ping_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_ping_message", 0);
-	_queue_pong_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_pong_message", 0);
-	_queue_getaddr_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_getaddr_message", 0);
-	_queue_getdata_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_getdata_message",0);
-	_queue_getblocks_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_getblocks_message", 0);
-	_queue_getblock_hdrs_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_getblock_hdrs_message", 0);
-	_queue_send_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_send_message", 0);
-	_queue_emitted_element = get_tpo_mod_exp_addr_name(&node_mod, "queue_emitted_element", 0);
-	_queue_emitted_message = get_tpo_mod_exp_addr_name(&node_mod, "queue_emitted_message", 0);
-	_queue_inv_message	= get_tpo_mod_exp_addr_name(&node_mod, "queue_inv_message", 0);
-	_queue_block_message	= get_tpo_mod_exp_addr_name(&node_mod, "queue_block_message", 0);
-	
-#else
+#ifndef _DEBUG
 	node_init_self				=(mem_ptr) get_tpo_mod_exp_addr_name(&node_mod, "node_init_self", 0);
 	node_set_last_block			=(mem_ptr) get_tpo_mod_exp_addr_name(&node_mod, "node_set_last_block", 0);
 	node_find_last_pow_block	=(mem_ptr) get_tpo_mod_exp_addr_name(&node_mod, "node_find_last_pow_block", 0);
@@ -1570,7 +1530,6 @@ OS_API_C_FUNC(int) app_loop(mem_zone_ref_ptr params)
 			hash_t blk_hash = { 0 };
 			struct string signature = { PTR_NULL };
 			mem_zone_ref tx_list = { PTR_NULL };
-			unsigned int is_signed;
 			int			 ret;
 			if (!tree_manager_find_child_node(blk, NODE_HASH("txs"), NODE_BITCORE_TX_LIST, &tx_list))continue;
 			if (!tree_manager_get_child_value_istr(blk, NODE_HASH("signature"), &signature, 0))continue;

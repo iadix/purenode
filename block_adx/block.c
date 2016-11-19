@@ -414,11 +414,13 @@ OS_API_C_FUNC(void) mul_compact(unsigned int nBits, uint64_t op, hash_t hash)
 	d		= (nBits & 0xFFFFFF);
 
 	uitoa_s(nBits, dd, 16, 16);
+	/*
 	tree_manager_create_node("log", NODE_LOG_PARAMS, &log);
 	tree_manager_set_child_value_str(&log, "nBits", dd);
 	tree_manager_set_child_value_i64(&log, "op", op);
 	log_message("mul compact %op% %nBits%", &log);
 	release_zone_ref(&log);
+	*/
 
 	bop.m.v64 = op;
 	big128_mul(d, bop, &data);
