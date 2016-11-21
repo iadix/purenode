@@ -1,5 +1,6 @@
 //copyright iadix 2016
 
+#define KERNEL_API C_EXPORT
 #define LIBC_API C_EXPORT
 #include "../base/std_def.h"
 #include "../base/std_mem.h"

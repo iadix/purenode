@@ -43,10 +43,13 @@
     <IntDir>$(Configuration)\</IntDir>
     <GenerateManifest>false</GenerateManifest>
     <TargetName>$(ProjectName)_d</TargetName>
+    <ExecutablePath>C:\Users\h0bby1\AppData\Local\NASM;$(ExecutablePath)</ExecutablePath>
+    <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(SolutionDir)export\</OutDir>
     <IntDir>$(Configuration)\</IntDir>
+    <ExecutablePath>C:\Users\h0bby1\AppData\Local\NASM;$(VCInstallDir)bin;$(WindowsSdkDir)bin\NETFX 4.0 Tools;$(WindowsSdkDir)bin;$(VSInstallDir)Common7\Tools\bin;$(VSInstallDir)Common7\tools;$(VSInstallDir)Common7\ide;$(ProgramFiles)\HTML Help Workshop;$(FrameworkSDKDir)\bin;$(MSBuildToolsPath32);$(VSInstallDir);$(SystemRoot)\SysWow64;$(FxCopDir);$(PATH);</ExecutablePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -62,7 +65,7 @@
       <CallingConvention>Cdecl</CallingConvention>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>Ws2_32.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Ws2_32.lib;Shlwapi.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <ModuleDefinitionFile>
       </ModuleDefinitionFile>
@@ -79,13 +82,15 @@
       <PrecompiledHeader />
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <Optimization>Disabled</Optimization>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>Ws2_32.lib;Iphlpapi.lib;kernel32.lib;</AdditionalDependencies>
+      <AdditionalDependencies>Ws2_32.lib;Shlwapi.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>
       </ModuleDefinitionFile>
       <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -171,16 +176,16 @@
   <ItemGroup>
     <CustomBuild Include="..\runtime.asm">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"C:\Program Files\NASM\nasm" -f win32  -DPREFIX -DASM_EXPORT "%(FullPath)" -o "$(SolutionDir)\debug\%(Filename).obj"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"nasm" -f win32  -DPREFIX -DASM_EXPORT "%(FullPath)" -o "$(SolutionDir)\debug\%(Filename).obj"</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)\debug\%(Filename).obj;</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"C:\Program Files\NASM\nasm" -f win32  -DPREFIX= "%(FullPath)" -o "$(SolutionDir)\release\%(Filename).obj"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"nasm" -f win32 -DASM_EXPORT -DPREFIX= "%(FullPath)" -o "$(SolutionDir)\release\%(Filename).obj"</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)\release\%(Filename).obj;</Outputs>
     </CustomBuild>
     <CustomBuild Include="..\tpo.asm">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"C:\Program Files\NASM\nasm" -f win32  -DPREFIX -DASM_EXPORT "%(FullPath)" -o "$(SolutionDir)\debug\%(Filename).obj"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"nasm" -f win32  -DPREFIX -DASM_EXPORT "%(FullPath)" -o "$(SolutionDir)\debug\%(Filename).obj"</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)\debug\%(Filename).obj;</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"C:\Program Files\NASM\nasm" -f win32  -DPREFIX -DASM_EXPORT "%(FullPath)" -o "$(SolutionDir)\release\%(Filename).obj"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"nasm" -f win32  -DPREFIX -DASM_EXPORT "%(FullPath)" -o "$(SolutionDir)\release\%(Filename).obj"</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)\release\%(Filename).obj;</Outputs>
     </CustomBuild>
   </ItemGroup>

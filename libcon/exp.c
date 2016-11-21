@@ -25,11 +25,7 @@ void init_funcs()
 	sys_add_tpo_mod_func_name("libcon", "utf8_encode", (void_func_ptr)utf8_encode, 0);
 	sys_add_tpo_mod_func_name("libcon", "utf8_check_first", (void_func_ptr)utf8_check_first, 0);
 	sys_add_tpo_mod_func_name("libcon", "utf8_check_full", (void_func_ptr)utf8_check_full, 0);
-
 	sys_add_tpo_mod_func_name("libcon", "default_RNG", (void_func_ptr)default_RNG, 0);
-
-	
-
 	sys_add_tpo_mod_func_name("libcon", "console_print", (void_func_ptr)console_print, 0);
 	sys_add_tpo_mod_func_name("libcon", "stat_file", (void_func_ptr)stat_file, 0);
 	sys_add_tpo_mod_func_name("libcon", "create_dir", (void_func_ptr)create_dir, 0);
@@ -66,11 +62,7 @@ void init_funcs()
 
 
 	init_string	(&exe_path);
-	init_string(&home_path);
-	init_string(&log_file_name);
-
-
-	
-
-	init_zfuncs();	
+	init_string	(&home_path);
+	init_string	(&log_file_name);
+	init_zfuncs	();	
 }

@@ -14,9 +14,9 @@ unsigned int		GETDATA_BLOCK		= 2;
 unsigned int		magic				= 0xCDCDCDCD;
 unsigned int		PROTOCOL_VERSION	= 0xCDCDCDCD;
 
-hash_t				null_hash			= { PTR_INVALID };
-struct string		def_vstr			= { PTR_INVALID };
-unsigned char		def_vint[5]			= { PTR_INVALID };
+hash_t				null_hash			= { 0xFF };
+struct string		def_vstr			= { "empty" };
+unsigned char		def_vint[5]			= { 0xFF };
 unsigned char		null_vint			= 0xAB;
 unsigned int		ping_nonce			= 1;
 

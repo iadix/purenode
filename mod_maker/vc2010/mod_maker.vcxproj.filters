@@ -26,13 +26,18 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\crc_32.asm">
-      <Filter>Fichiers sources</Filter>
+    <None Include="..\..\tree\include\nasm\crc32.inc">
+      <Filter>Fichiers d%27en-tête</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\coff.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\crc_32.asm">
+      <Filter>Fichiers sources</Filter>
+    </CustomBuild>
   </ItemGroup>
 </Project>

@@ -39,7 +39,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LinkIncremental>true</LinkIncremental>
+    <LinkIncremental>false</LinkIncremental>
     <TargetName>$(ProjectName)_d</TargetName>
     <OutDir>$(SolutionDir)export\</OutDir>
   </PropertyGroup>
@@ -59,7 +59,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libbase_d.lib;libcon_d.lib;protocol_adx_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libbase_d.lib;libcon_d.lib;protocol_adx_d.lib;ecdsa_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)export\</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -96,6 +96,7 @@
   <ItemGroup>
     <ClCompile Include="..\block.c" />
     <ClCompile Include="..\main.c" />
+    <ClCompile Include="..\script.c" />
     <ClCompile Include="..\scrypt.c" />
   </ItemGroup>
   <ItemGroup>

@@ -617,6 +617,7 @@ OS_API_C_FUNC(void) init_mem_system()
 	sys_add_tpo_mod_func_name("libcon", "get_tpo_mod_exp_addr_name",(void_func_ptr)get_tpo_mod_exp_addr_name, 0);
 	sys_add_tpo_mod_func_name("libcon", "isRunning",(void_func_ptr)isRunning, 0);
 
+
 	init_exit();
 	
 	init_funcs();
