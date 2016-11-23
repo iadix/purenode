@@ -84,6 +84,7 @@
       <AdditionalIncludeDirectories>$(SolutionDir)\libcon\win32\include;$(SolutionDir)\libcon\include;$(SolutionDir)\libbase\include;$(SolutionDir)\libcon;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>None</DebugInformationFormat>
       <OmitFramePointers>true</OmitFramePointers>
+      <StructMemberAlignment>1Byte</StructMemberAlignment>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

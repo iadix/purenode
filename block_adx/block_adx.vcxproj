@@ -84,6 +84,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <UndefinePreprocessorDefinitions>
       </UndefinePreprocessorDefinitions>
+      <StructMemberAlignment>1Byte</StructMemberAlignment>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
