@@ -77,7 +77,7 @@ create_pos_block_func_ptr			create_pos_block = PTR_INVALID;
 
 C_IMPORT int			C_API_FUNC is_pow_block(const char *blk_hash);
 C_IMPORT int			C_API_FUNC get_blk_height(const char *blk_hash, uint64_t *height);
-C_IMPORT int			C_API_FUNC get_blk_txs(const char* blk_hash, mem_zone_ref_ptr txs);
+C_IMPORT int			C_API_FUNC get_blk_txs(const char* blk_hash, mem_zone_ref_ptr txs, size_t max);
 C_IMPORT int			C_API_FUNC load_blk_hdr(mem_zone_ref_ptr hdr, const char *blk_hash);
 C_IMPORT int			C_API_FUNC get_block_size(const char *blk_hash, size_t *size);
 C_IMPORT int			C_API_FUNC get_pow_block(const char *blk_hash, hash_t pos);
@@ -963,7 +963,7 @@ OS_API_C_FUNC(int) getlastblock(mem_zone_ref_const_ptr params, unsigned int rpc_
 		tree_manager_set_child_value_hash(result, "nextblockhash", nullhash);
 		tree_manager_set_child_value_float(result, "difficulty", GetDifficulty(bits));
 		tree_manager_add_child_node(result, "txs", NODE_JSON_ARRAY,&txs);
-		get_blk_txs(chash, &txs);
+		get_blk_txs(chash, &txs,10);
 		release_zone_ref(&txs);
 			/*
 			"mint" : 0.00000000,

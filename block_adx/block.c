@@ -2113,7 +2113,20 @@ OS_API_C_FUNC(int) get_block_size(const char *blk_hash,size_t *size)
 	return 1;
 }
 
-OS_API_C_FUNC(int) get_blk_txs(const char* blk_hash,mem_zone_ref_ptr txs)
+OS_API_C_FUNC(unsigned int) get_blk_ntxs(const char* blk_hash)
+{
+	struct string	blk_path = { 0 };
+	unsigned char	*ptxs;
+	size_t			len, ntx;
+
+	make_string(&blk_path, "blks");
+	cat_ncstring_p(&blk_path, blk_hash + 0, 2);
+	cat_ncstring_p(&blk_path, blk_hash + 2, 2);
+	cat_cstring_p(&blk_path, blk_hash);
+	cat_cstring_p(&blk_path, "txs");
+	return file_size(blk_path.str) / sizeof(hash_t);
+}
+OS_API_C_FUNC(int) get_blk_txs(const char* blk_hash,mem_zone_ref_ptr txs,size_t max)
 {
 	struct string	blk_path = { 0 };
 	unsigned char	*ptxs;
@@ -2130,7 +2143,7 @@ OS_API_C_FUNC(int) get_blk_txs(const char* blk_hash,mem_zone_ref_ptr txs)
 		while (ntx < len)
 		{
 			mem_zone_ref tx = { PTR_NULL };
-			tree_manager_add_child_node(txs, "tx", NODE_BITCORE_HASH, &tx);
+			tree_manager_add_child_node	(txs, "tx", NODE_BITCORE_HASH, &tx);
 			tree_manager_write_node_hash(&tx, 0, &ptxs[ntx]);
 			release_zone_ref(&tx);
 			ntx += 32;
