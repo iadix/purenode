@@ -87,6 +87,7 @@
       <AdditionalLibraryDirectories>$(SolutionDir)export;</AdditionalLibraryDirectories>
       <AdditionalDependencies>libcon.lib;iadixcoin.lib</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
+      <MinimumRequiredVersion />
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
