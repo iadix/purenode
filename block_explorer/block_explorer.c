@@ -128,6 +128,9 @@ OS_API_C_FUNC(int) block(const char *params, const struct http_req *req, mem_zon
 	unsigned int version, time, bits, nonce;
 	uint64_t	 height;
 	size_t		 nxt_prm_pos;
+	uint64_t nblks;
+	
+	nblks = get_last_block_height();
 
 	nxt_prm_pos = strlpos_c(params, 0, '/');
 	if (nxt_prm_pos == INVALID_SIZE)
@@ -157,8 +160,7 @@ OS_API_C_FUNC(int) block(const char *params, const struct http_req *req, mem_zon
 	}
 	else
 	{
-		uint64_t nblks;
-		nblks = get_last_block_height();
+
 		
 		if ((nblks>0) && (node_get_hash_idx( nblks - 1, block_hash)))
 		{
@@ -198,7 +200,7 @@ OS_API_C_FUNC(int) block(const char *params, const struct http_req *req, mem_zon
 	tree_manager_set_child_value_i64(result, "height", height);
 	tree_manager_set_child_value_i32(result, "size", size);
 	tree_manager_set_child_value_hash(result, "hash", block_hash);
-	tree_manager_set_child_value_i32(result, "confirmations", 0);
+	tree_manager_set_child_value_i32(result, "confirmations", nblks-height);
 	tree_manager_set_child_value_i32(result, "time", time);
 	tree_manager_set_child_value_i32(result, "version", version);
 	tree_manager_set_child_value_i32(result, "bits", bits);
