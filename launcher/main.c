@@ -48,7 +48,7 @@ int main(int argc, char **argv)
 	app_loop	= (app_func_ptr)get_tpo_mod_exp_addr_name(&iadix_mod, "app_loop", 0);
 	app_stop	= (app_func_ptr)get_tpo_mod_exp_addr_name(&iadix_mod, "app_stop", 0);
 #endif
-	if (!app_init(PTR_NULL))
+	if (!app_init((mem_zone_ref_ptr)PTR_NULL))
 	{
 		console_print("could not initialize app ");
 		console_print(iadix_mod.name);

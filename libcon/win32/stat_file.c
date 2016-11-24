@@ -21,9 +21,9 @@
 #include "shlobj.h"
 
 char path_sep='\\';
-struct string log_file_name = { PTR_INVALID };
-struct string home_path = { PTR_INVALID };
-struct string exe_path = { PTR_INVALID };
+struct string log_file_name = { (char*)PTR_INVALID,0,0 };
+struct string home_path = { (char*)PTR_INVALID,0,0 };
+struct string exe_path = { (char*)PTR_INVALID,0,0 };
 unsigned int running = 1;
 struct tm tmtime = { 0xCD };
 struct thread
@@ -425,6 +425,8 @@ OS_API_C_FUNC(int) set_exe_path()
 {
 	char path[512];
 	get_cwd(path, 512);
+
+	init_string(&exe_path);
 	make_string(&exe_path, path);
 
 	return 1;
@@ -433,6 +435,7 @@ OS_API_C_FUNC(int) set_exe_path()
 
 OS_API_C_FUNC(int) set_home_path(const char *name)
 {
+	init_string  (&home_path);
 	get_home_dir (&home_path);
 	cat_cstring_p(&home_path, name);
 	create_dir	 (home_path.str);

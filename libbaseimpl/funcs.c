@@ -154,10 +154,11 @@ OS_API_C_FUNC(  unsigned int)		 node_array_pop(mem_zone_ref_ptr node_array, mem_
 OS_API_C_FUNC(  unsigned int)		 node_array_get_free_element(mem_zone_ref_ptr node_array, mem_zone_ref_ptr	node){return 0;}
 OS_API_C_FUNC(  void	)			 init_node_array(mem_zone_ref_ptr node_array, unsigned int n_elems, const char *name, unsigned int type, unsigned int size_alloc){return ;}
 OS_API_C_FUNC(const struct http_hdr *)	find_key(const struct http_hdr *hdrs, const char *key){ return PTR_NULL; }
-
+OS_API_C_FUNC(struct http_hdr *) add_key(struct http_hdr *hdrs, const char *key, size_t key_len, const char *data, size_t data_len){return PTR_NULL;}
 OS_API_C_FUNC(int)			tree_manager_copy_children_ref(mem_zone_ref_ptr dest_ref_ptr, mem_zone_ref_const_ptr src_ref_ptr){ return 0; }
 
 
+OS_API_C_FUNC(void) free_http_infos(struct http_infos *infos){}
 OS_API_C_FUNC(  void )		tree_manager_init(size_t x){return ;}
 OS_API_C_FUNC(  int	)	tree_manager_json_loadb(const char *buffer, size_t buflen, mem_zone_ref_ptr result){return 0;}
 OS_API_C_FUNC(  int	)	tree_manager_free_node_array(mem_zone_ref_ptr childs_ref_ptr){return 0;}

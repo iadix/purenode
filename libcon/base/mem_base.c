@@ -494,7 +494,7 @@ OS_API_C_FUNC(void) init_mem_system()
 	area_lock				=	0;
 
 	
-
+#ifndef _DEBUG
 	sys_add_tpo_mod_func_name("libcon", "init_new_mem_area",(void_func_ptr)init_new_mem_area, 0);
 	sys_add_tpo_mod_func_name("libcon", "get_tree_mem_area_id",(void_func_ptr)get_tree_mem_area_id, 0);
 	sys_add_tpo_mod_func_name("libcon", "set_tree_mem_area_id",(void_func_ptr)set_tree_mem_area_id, 0);
@@ -616,9 +616,9 @@ OS_API_C_FUNC(void) init_mem_system()
 	sys_add_tpo_mod_func_name("libcon", "register_tpo_exports",(void_func_ptr)register_tpo_exports, 0);
 	sys_add_tpo_mod_func_name("libcon", "get_tpo_mod_exp_addr_name",(void_func_ptr)get_tpo_mod_exp_addr_name, 0);
 	sys_add_tpo_mod_func_name("libcon", "isRunning",(void_func_ptr)isRunning, 0);
+#endif
 
-
-	init_exit();
+	//init_exit();
 	
 	init_funcs();
 

@@ -43,7 +43,8 @@ OS_API_C_FUNC(int) clone_string(struct string *str, const struct string *str1)
 OS_API_C_FUNC(int) make_string(struct string *str, const char *toto)
 {
 	str->len			=	strlen_c(toto);
-	if(str->str!=PTR_NULL)free_c(str->str);
+	if((str->str!=PTR_NULL)&&(str->str!=PTR_INVALID)&&(str->size>0))
+		free_c(str->str);
 	str->size			=	str->len+1;
 	str->str			=	malloc_c(str->size);
 	if (str->str == PTR_NULL)return 0;

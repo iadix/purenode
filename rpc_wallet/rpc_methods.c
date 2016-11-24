@@ -117,8 +117,7 @@ C_IMPORT int			C_API_FUNC	build_merkel_tree(mem_zone_ref_ptr txs, hash_t merkleR
 unsigned int			WALLET_VERSION = 60000;
 unsigned int			min_staking_depth = 2;
 mem_zone_ref			my_node = { PTR_INVALID };
-
-btc_addr_t		 src_addr_list[1024] = { 0xCDFF };
+btc_addr_t				src_addr_list[1024] = { 0xCDFF };
 
 OS_API_C_FUNC(int) set_node(mem_zone_ref_ptr node,tpo_mod_file *pos_mod)
 {
