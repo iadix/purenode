@@ -610,6 +610,12 @@ OS_API_C_FUNC(int) txs(const char *params, const struct http_req *req, mem_zone_
 		}
 			
 
+		if (time > 0)
+		{
+			tree_manager_set_child_value_i32(result, "to"		, time);
+			tree_manager_set_child_value_i32(result, "from"		, block_time);
+			tree_manager_set_child_value_i32(result, "numtxs"	, tidx);
+		}
 		tidx = 0;
 		cur = 0;
 		
@@ -674,12 +680,6 @@ OS_API_C_FUNC(int) txs(const char *params, const struct http_req *req, mem_zone_
 
 		
 
-		if (time > 0)
-		{
-			tree_manager_set_child_value_i32(result, "to", block_time);
-			tree_manager_set_child_value_i32(result, "from", time);
-			tree_manager_set_child_value_i32(result, "numtxs", tidx);
-		}
 		
 		return 1;
 	}
