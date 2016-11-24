@@ -613,12 +613,12 @@ OS_API_C_FUNC(int) txs(const char *params, const struct http_req *req, mem_zone_
 		tidx = 0;
 		cur = 0;
 		
-		while (block_time>=time)
+		while ((block_time >= time) && (idx>1))
 		{
 			int ntx;
 			tree_manager_get_node_str	(&block_index_node, idx * 32, chash, 65, 0);
 			ntx = get_blk_ntxs			(chash);
-			if (ntx <= 0)break;
+
 			if (((tidx + ntx) >= page_num*limit) && (cur<limit))
 			{
 				if (tree_manager_create_node("txs", NODE_BITCORE_HASH_LIST, &txs))
