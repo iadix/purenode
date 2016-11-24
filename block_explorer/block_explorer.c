@@ -576,7 +576,7 @@ OS_API_C_FUNC(int) txs(const char *params, const struct http_req *req, mem_zone_
 	else
 	{
 		char			chash[65], prm[65];
-		mem_zone_ref	block_index_node = { PTR_NULL };
+		mem_zone_ref	time_index_node = { PTR_NULL },block_index_node = { PTR_NULL };
 		uint64_t		nblks;
 		unsigned int	tidx;
 		ctime_t			time;
@@ -584,12 +584,12 @@ OS_API_C_FUNC(int) txs(const char *params, const struct http_req *req, mem_zone_
 
 		tree_manager_get_child_value_i64(&my_node, NODE_HASH("block height"), &nblks);
 		tree_manager_find_child_node(&my_node, NODE_HASH("block index"), NODE_BITCORE_HASH, &block_index_node);
-		
+		tree_manager_find_child_node(&my_node, NODE_HASH("block time"), NODE_GFX_INT, &time_index_node);
+
 		idx = nblks;
 		if ((hdr = find_key(req->query_vars, "BlockDate")) != PTR_NULL)
 		{
-			mem_zone_ref	time_index_node = { PTR_NULL };
-			tree_manager_find_child_node(&my_node, NODE_HASH("block time"), NODE_GFX_INT, &time_index_node);
+
 			time = parseDate(hdr->value.str);
 			block_time = 0xFFFFFFFF;
 			while ((block_time > (time + 24 * 3600)) && (idx > 1))
@@ -597,23 +597,30 @@ OS_API_C_FUNC(int) txs(const char *params, const struct http_req *req, mem_zone_
 				if (!tree_mamanger_get_node_dword(&time_index_node, (--idx) * 4, &block_time))
 					break;
 			}
-			release_zone_ref(&time_index_node);
 			if (idx <= 1)
 			{
+				release_zone_ref(&time_index_node);
 				release_zone_ref(&block_index_node);
+				release_zone_ref(&tx_list);
 				return 1;
 			}
 		}
+		else
+		{
+			time = 0;
+			tree_mamanger_get_node_dword(&time_index_node, idx * 4, &block_time);
+		}
+			
 
 		tidx = 0;
 		cur = 0;
 		
-		while ((cur < limit) && ((idx--)>1))
+		while (block_time>=time)
 		{
 			int ntx;
 			tree_manager_get_node_str	(&block_index_node, idx * 32, chash, 65, 0);
 			ntx = get_blk_ntxs			(chash);
-			if ((tidx + ntx) >= page_num*limit)
+			if (((tidx + ntx) >= page_num*limit) && (cur<limit))
 			{
 				tree_manager_create_node("txs", NODE_BITCORE_HASH_LIST, &txs);
 				get_blk_txs(chash, &txs, limit - cur);
@@ -644,8 +651,16 @@ OS_API_C_FUNC(int) txs(const char *params, const struct http_req *req, mem_zone_
 			}
 			else
 				tidx += ntx;
+
+			if (!tree_mamanger_get_node_dword(&time_index_node, idx * 4, &block_time))
+				break;
 		}
 		release_zone_ref(&block_index_node);
+		release_zone_ref(&time_index_node);
+
+		tree_manager_set_child_value_i32(result, "limit", limit);
+		tree_manager_set_child_value_i32(result, "page_num", page_num);
+		tree_manager_set_child_value_i32(result, "numtxs", tidx);
 		
 		return 1;
 	}
