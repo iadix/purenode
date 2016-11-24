@@ -1017,7 +1017,7 @@ OS_API_C_FUNC(int) isprint_c(int _C)
 	return 1;
 }
 
-#if 0
+#if 1
 #include <math.h>
 #define PZERO 38		/* index of 1e0 in powten[]	*/
 #define PMAX 76			/* highest index in powten[]	*/
