@@ -652,7 +652,7 @@ OS_API_C_FUNC(int) txs(const char *params, const struct http_req *req, mem_zone_
 			else
 				tidx += ntx;
 
-			idx++;
+			idx--;
 
 			if (!tree_mamanger_get_node_dword(&time_index_node, idx * 4, &block_time))
 				break;
