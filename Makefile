@@ -1,7 +1,7 @@
 CONSRC=libcon/base/utf.c libcon/base/string.c libcon/base/mem_base.c libcon/unix/stat_file.c libcon/unix/connect.c libcon/strs.c libcon/mem_stream.c libcon/tpo_mod.c libcon/exp.c libcon/zlibexp.c
 XMLSRC=libcon/expat/xmlparse/xmlparse.c libcon/expat/xmltok/xmltok.c libcon/expat/xmltok/xmlrole.c
 ZLIBSRC=libcon/zlib-1.2.8/zutil.c libcon/zlib-1.2.8/uncompr.c libcon/zlib-1.2.8/inftrees.c libcon/zlib-1.2.8/compress.c libcon/zlib-1.2.8/infback.c libcon/zlib-1.2.8/trees.c libcon/zlib-1.2.8/inflate.c libcon/zlib-1.2.8/crc32.c libcon/zlib-1.2.8/inffast.c libcon/zlib-1.2.8/adler32.c libcon/zlib-1.2.8/deflate.c
-CFLAGS=-m32 -O2 -std=c99 -pedantic -D_DEFAULT_SOURCE
+CFLAGS=-m32 #-O2 -std=c99 -pedantic -D_DEFAULT_SOURCE
 
 default: export/libcon.a export/launcher
 	@echo 'done'
@@ -30,7 +30,7 @@ export/libprotocol_adx.so:protocol_adx/main.c protocol_adx/protocol.c export/lib
 export/libbase.so:libbaseimpl/funcs.c
 	gcc $(CFLAGS) -Ilibcon  -Ilibcon/zlib-1.2.8/ -Ilibcon/include -Ilibbase/include  libbaseimpl/funcs.c -shared -o export/libbase.so
 
-modz:export/modz/protocol_adx.tpo export/modz/block_adx.tpo export/modz/iadixcoin.tpo export/libstake_pos3.so
+modz:export/modz/protocol_adx.tpo export/modz/block_adx.tpo export/modz/iadixcoin.tpo export/modz/stake_pos3.tpo export/modz/block_explorer.tpo
 	@echo "modz ok"
 
 export/modz/block_explorer.tpo:export/mod_maker export/libblock_explorer.so
@@ -58,7 +58,7 @@ export/modz/protocol_adx.tpo:export/mod_maker export/libprotocol_adx.so
 	mv export/modz/libprotocol_adx.tpo export/modz/protocol_adx.tpo
 
 export/mod_maker:  export/libcon.so
-	gcc  $(CFLAGS) -Lexport  -lpthread -Ilibcon -Ilibcon/zlib-1.2.8/ -Ilibcon/include mod_maker/coff.c mod_maker/main.c mod_maker/elf.c export/libcon.a -o export/mod_maker
+	gcc -m32 -Lexport  -lpthread -Ilibcon -Ilibcon/zlib-1.2.8/ -Ilibcon/include mod_maker/coff.c mod_maker/main.c mod_maker/elf.c export/libcon.a -o export/mod_maker
 	
 export/libcon.a: $(CONSRC) $(XMLSRC) $(ZLIBSRC)
 	nasm -f elf32 libcon/tpo.asm -o tpo.o
@@ -68,8 +68,8 @@ export/libcon.a: $(CONSRC) $(XMLSRC) $(ZLIBSRC)
 	ar -cvq export/libcon.a *.o
 
 clean:
-	rm -f export/libcon.a export/launcher *.o
+	rm -f export/libcon.a export/libcon.so export/launcher *.o
 
 clean_mod:
-	rm -f export/mod_maker export/libprotocol_adx.so export/libblock_adx.so export/libiadixcoin.so export/libstake_pos3.so export/libstake_pos2.so export/modz/protocol_adx.tpo export/modz/block_adx.tpo export/modz/iadixcoin.tpo export/modz/stake_pos3.so export/modz/stake_pos2.so
+	rm -f export/mod_maker export/libblock_explorer.so export/libprotocol_adx.so export/libblock_adx.so export/libiadixcoin.so export/libstake_pos3.so export/libstake_pos2.so export/modz/protocol_adx.tpo export/modz/block_adx.tpo export/modz/iadixcoin.tpo export/modz/stake_pos3.tpo  export/modz/stake_pos2.tpo export/modz/block_explorer.tpo
 
