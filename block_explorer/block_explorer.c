@@ -656,7 +656,7 @@ OS_API_C_FUNC(int) txs(const char *params, const struct http_req *req, mem_zone_
 			else
 				tidx += ntx;
 
-			if ((time != 0) && (cur>=limit))
+			if ((time == 0) && (cur>=limit))
 				break;
 
 			idx--;
@@ -669,7 +669,9 @@ OS_API_C_FUNC(int) txs(const char *params, const struct http_req *req, mem_zone_
 
 		tree_manager_set_child_value_i32(result, "limit", limit);
 		tree_manager_set_child_value_i32(result, "page_num", page_num);
-		tree_manager_set_child_value_i32(result, "numtxs", tidx);
+
+		if (time>0)
+			tree_manager_set_child_value_i32(result, "numtxs", tidx);
 		
 		return 1;
 	}
