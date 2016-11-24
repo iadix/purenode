@@ -585,16 +585,14 @@ OS_API_C_FUNC(int) txs(const char *params, const struct http_req *req, mem_zone_
 		tree_manager_get_child_value_i64(&my_node, NODE_HASH("block height"), &nblks);
 		tree_manager_find_child_node(&my_node, NODE_HASH("block index"), NODE_BITCORE_HASH, &block_index_node);
 		tree_manager_find_child_node(&my_node, NODE_HASH("block time"), NODE_GFX_INT, &time_index_node);
-
-		idx = nblks;
+		block_time = 0xFFFFFFFF;
+		idx = nblks-1;
 		if ((hdr = find_key(req->query_vars, "BlockDate")) != PTR_NULL)
 		{
-
 			time = parseDate(hdr->value.str);
-			block_time = 0xFFFFFFFF;
 			while ((block_time > (time + 24 * 3600)) && (idx > 1))
 			{
-				if (!tree_mamanger_get_node_dword(&time_index_node, (--idx) * 4, &block_time))
+				if (!tree_mamanger_get_node_dword(&time_index_node, idx * 4, &block_time))
 					break;
 			}
 			if (idx <= 1)
@@ -622,32 +620,38 @@ OS_API_C_FUNC(int) txs(const char *params, const struct http_req *req, mem_zone_
 			ntx = get_blk_ntxs			(chash);
 			if (((tidx + ntx) >= page_num*limit) && (cur<limit))
 			{
-				tree_manager_create_node("txs", NODE_BITCORE_HASH_LIST, &txs);
-				get_blk_txs(chash, &txs, limit - cur);
-				for (tree_manager_get_first_child(&txs, &my_list, &ptx); ((ptx != PTR_NULL) && (ptx->zone != PTR_NULL)); tree_manager_get_next_child(&my_list, &ptx), tidx++)
+				if (tree_manager_create_node("txs", NODE_BITCORE_HASH_LIST, &txs))
 				{
-					char			tx_hash[65];
-					mem_zone_ref	my_tx = { PTR_NULL };
-					unsigned int	n;
-
-					if (tidx < page_num*limit)continue;
-					if (cur >= limit)continue;
-					tree_manager_get_node_str(ptx, 0, tx_hash, 65, 16);
-					n = 0;
-					while (n < 32)
+					get_blk_txs(chash, &txs, limit - cur);
+					for (tree_manager_get_first_child(&txs, &my_list, &ptx); ((ptx != PTR_NULL) && (ptx->zone != PTR_NULL)); tree_manager_get_next_child(&my_list, &ptx), tidx++)
 					{
-						prm[(31 - n) * 2 + 0] = tx_hash[n * 2 + 0];
-						prm[(31 - n) * 2 + 1] = tx_hash[n * 2 + 1];
-						n++;
-					}
-					prm[64] = 0;
+						char			tx_hash[65];
+						mem_zone_ref	my_tx = { PTR_NULL };
+						unsigned int	n;
 
-					tree_manager_add_child_node(&tx_list, "tx", NODE_GFX_OBJECT, &my_tx);
-					tx(prm, PTR_NULL, &my_tx);
-					release_zone_ref(&my_tx);
-					cur++;
+						memset_c(tx_hash, 0, 65);
+
+						if (tidx < page_num*limit)continue;
+						if (cur >= limit)continue;
+						if (!tree_manager_get_node_str(ptx, 0, tx_hash, 65, 16))continue;
+						n = 0;
+						while (n < 32)
+						{
+							prm[(31 - n) * 2 + 0] = tx_hash[n * 2 + 0];
+							prm[(31 - n) * 2 + 1] = tx_hash[n * 2 + 1];
+							n++;
+						}
+						prm[64] = 0;
+
+						if (tree_manager_add_child_node(&tx_list, "tx", NODE_GFX_OBJECT, &my_tx))
+						{
+							tx(prm, PTR_NULL, &my_tx);
+							release_zone_ref(&my_tx);
+						}
+						cur++;
+					}
+					release_zone_ref(&txs);
 				}
-				release_zone_ref(&txs);
 			}
 			else
 				tidx += ntx;
