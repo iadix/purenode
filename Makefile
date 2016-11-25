@@ -18,6 +18,9 @@ export/libstake_pos2.so:export/libbase.so export/libcon.so stake_pos2/kernel.c
 export/libstake_pos3.so:export/libbase.so export/libcon.so stake_pos3/kernel.c
 	gcc $(CFLAGS)  -Lexport -lcon -lbase -Ilibcon  -Ilibcon/zlib-1.2.8/ -lblock_adx -Ilibcon/include -Ilibbase/include -Ilibcon/zlib-1.2.8 stake_pos3/kernel.c  -nodefaultlibs -nostdlib -Wl,--export-dynamic,-soname,libstake_pos3.so,-melf_i386 -shared -o export/libstake_pos3.so
 
+export/libblock_explorer.so:export/libblock_adx.so export/libbase.so export/libcon.so block_explorer/block_explorer.c
+	gcc $(CFLAGS)  -Lexport -lcon -lbase -lblock_adx -Ilibcon  -Ilibcon/zlib-1.2.8/ -lblock_adx -Ilibcon/include -Ilibbase/include -Ilibcon/zlib-1.2.8 block_explorer/block_explorer.c  -nodefaultlibs -nostdlib -Wl,--export-dynamic,-soname,libstake_pos3.so,-melf_i386 -shared -o export/libblock_explorer.so
+
 export/libblock_adx.so:block_adx/main.c block_adx/script.c block_adx/block.c block_adx/scrypt.c export/libprotocol_adx.so export/libbase.so export/libcon.so
 	gcc $(CFLAGS)  -Lexport -lcon -lbase -lprotocol_adx  -Ilibcon/zlib-1.2.8/ -Ilibcon -Ilibcon/include -Ilibbase/include block_adx/main.c block_adx/block.c block_adx/script.c block_adx/scrypt.c -nodefaultlibs -nostdlib  -Wl,--export-dynamic,-soname,libblock_adx.so,-melf_i386 -shared -o export/libblock_adx.so
 
@@ -29,6 +32,10 @@ export/libbase.so:libbaseimpl/funcs.c
 
 modz:export/modz/protocol_adx.tpo export/modz/block_adx.tpo export/modz/iadixcoin.tpo export/libstake_pos3.so
 	@echo "modz ok"
+
+export/modz/block_explorer.tpo:export/mod_maker export/libblock_explorer.so
+	export/mod_maker export/libblock_explorer.so ./export/modz
+	mv export/modz/libblock_explorer.tpo export/modz/block_explorer.tpo
 
 export/modz/stake_pos2.tpo:export/mod_maker export/libstake_pos2.so
 	export/mod_maker export/libstake_pos2.so ./export/modz
