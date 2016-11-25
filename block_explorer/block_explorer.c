@@ -737,7 +737,7 @@ OS_API_C_FUNC(int) blocks(const char *params, const struct http_req *req, mem_zo
 			return 1;
 		}
 
-		tree_manager_get_node_str(&block_index_node, idx * 32, chash, 65, 0);
+		tree_manager_get_node_str(&block_index_node, idx * 32, chash, 65, 16);
 		n = 0;
 		while (n < 32)
 		{
@@ -776,6 +776,8 @@ OS_API_C_FUNC(int) blocks(const char *params, const struct http_req *req, mem_zo
 				prm[64] = 0;
 			}
 		}
+		tree_manager_set_child_value_i32(result, "limit", limit);
+		tree_manager_set_child_value_i32(result, "page_num", page_num);
 		tree_manager_set_child_value_i32(result, "numblocks", tidx);
 	}
 	else if ((sinceblock = find_key(req->query_vars, "SinceBlock")) != PTR_NULL)
