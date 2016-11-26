@@ -449,7 +449,7 @@ int list_spent(btc_addr_t addr, mem_zone_ref_ptr spents)
 
 int get_balance(btc_addr_t addr, uint64_t *conf_amount, uint64_t *amount, unsigned int minconf)
 {
-	struct string		unspent_path = { 0 };
+	struct string		unspent_path;
 	unsigned int		n;
 	unsigned int		dir_list_len;
 	struct string		dir_list = { PTR_NULL };
@@ -457,9 +457,10 @@ int get_balance(btc_addr_t addr, uint64_t *conf_amount, uint64_t *amount, unsign
 	size_t				cur, nfiles;
 	uint64_t			sheight;
 
-	make_string(&unspent_path, "adrs");
-	cat_ncstring_p(&unspent_path, addr, 34);
-	cat_cstring_p(&unspent_path, "unspent");
+	init_string		(&unspent_path);
+	make_string		(&unspent_path, "adrs");
+	cat_ncstring_p	(&unspent_path, addr, 34);
+	cat_cstring_p	(&unspent_path, "unspent");
 
 	if (stat_file(unspent_path.str) != 0)
 	{
@@ -474,25 +475,24 @@ int get_balance(btc_addr_t addr, uint64_t *conf_amount, uint64_t *amount, unsign
 	dir_list_len = dir_list.len;
 	optr = dir_list.str;
 	cur = 0;
-	while (cur < nfiles)
+	while ((cur < nfiles) && (dir_list_len>0))
 	{
-		struct string	tx_path = { 0 };
+		struct string	tx_path;
 		unsigned int	output = 0xFFFFFFFF;
 		size_t			sz, len;
 		unsigned char	*data;
 
 		ptr = memchr_c(optr, 10, dir_list_len);
-		sz = mem_sub(optr, ptr);
+		if (ptr == PTR_NULL)break;
+		sz	= mem_sub(optr, ptr);
 
-		clone_string(&tx_path, &unspent_path);
-		cat_ncstring_p(&tx_path, optr, sz);
+		init_string		(&tx_path);
+		clone_string	(&tx_path, &unspent_path);
+		cat_ncstring_p	(&tx_path, optr, sz);
 
 		if (get_file(tx_path.str, &data, &len)>0)
 		{
 			unsigned int nconf;
-
-
-
 			if (len >= sizeof(uint64_t))
 			{
 				hash_t			hash;
@@ -533,7 +533,7 @@ int get_balance(btc_addr_t addr, uint64_t *conf_amount, uint64_t *amount, unsign
 		free_string(&tx_path);
 		cur++;
 		optr = ptr + 1;
-		dir_list_len -= sz;
+		dir_list_len -= (sz+1);
 	}
 	free_string(&dir_list);
 
@@ -2349,20 +2349,22 @@ OS_API_C_FUNC(int) getpubaddrs(mem_zone_ref_const_ptr params, unsigned int rpc_m
 	mem_zone_ref username_n = { PTR_NULL }, addr_list = { PTR_NULL };
 	struct string username = { PTR_NULL };
 	struct string user_key_file = { PTR_NULL };
-	size_t keys_data_len = 0;
+	size_t			keys_data_len = 0;
 	uint64_t		conf_amount, unconf_amount;
 	unsigned int	minconf;
 	unsigned char	*keys_data = PTR_NULL;
 
-	if (!tree_manager_add_child_node(result, "addrs", NODE_JSON_ARRAY, &addr_list))
+	if (!tree_manager_get_child_at(params, 0, &username_n))
 		return 0;
 
-	tree_manager_get_child_at(params, 0, &username_n);
-	tree_manager_get_node_istr(&username_n, 0, &username, 0);
-	release_zone_ref(&username_n);
+	tree_manager_get_node_istr	(&username_n, 0, &username, 0);
+	release_zone_ref			(&username_n);
 
-	make_string(&user_key_file, "keypairs");
-	cat_cstring_p(&user_key_file, username.str);
+	if (!tree_manager_add_child_node(result, "addrs", NODE_JSON_ARRAY, &addr_list))
+		return 0;
+	
+	make_string		(&user_key_file, "keypairs");
+	cat_cstring_p	(&user_key_file, username.str);
 
 	minconf = 1;
 
