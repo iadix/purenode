@@ -2124,7 +2124,9 @@ OS_API_C_FUNC(unsigned int) get_blk_ntxs(const char* blk_hash)
 	cat_ncstring_p(&blk_path, blk_hash + 2, 2);
 	cat_cstring_p(&blk_path, blk_hash);
 	cat_cstring_p(&blk_path, "txs");
-	return file_size(blk_path.str) / sizeof(hash_t);
+	ntx = file_size(blk_path.str) / sizeof(hash_t);
+	free_string(&blk_path);
+	return ntx;
 }
 OS_API_C_FUNC(int) get_blk_txs(const char* blk_hash,mem_zone_ref_ptr txs,size_t max)
 {
