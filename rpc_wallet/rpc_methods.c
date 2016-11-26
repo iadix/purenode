@@ -455,7 +455,7 @@ int get_balance(btc_addr_t addr, uint64_t *conf_amount, uint64_t *amount, unsign
 	struct string		dir_list = { PTR_NULL };
 	const char			*ptr, *optr;
 	size_t				cur, nfiles;
-	uint64_t			sheight;
+	unsigned int		sheight;
 
 	init_string		(&unspent_path);
 	make_string		(&unspent_path, "adrs");
