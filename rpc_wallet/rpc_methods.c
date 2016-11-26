@@ -2350,8 +2350,9 @@ OS_API_C_FUNC(int) getpubaddrs(mem_zone_ref_const_ptr params, unsigned int rpc_m
 	struct string username = { PTR_NULL };
 	struct string user_key_file = { PTR_NULL };
 	size_t keys_data_len = 0;
-	uint64_t conf_amount, unconf_amount, minconf;
-	unsigned char *keys_data = PTR_NULL;
+	uint64_t		conf_amount, unconf_amount;
+	unsigned int	minconf;
+	unsigned char	*keys_data = PTR_NULL;
 
 	if (!tree_manager_add_child_node(result, "addrs", NODE_JSON_ARRAY, &addr_list))
 		return 0;
@@ -2368,7 +2369,7 @@ OS_API_C_FUNC(int) getpubaddrs(mem_zone_ref_const_ptr params, unsigned int rpc_m
 	if (get_file(user_key_file.str, &keys_data, &keys_data_len))
 	{
 		mem_ptr keys_ptr=keys_data;
-		while (keys_data_len > 0)
+		while (keys_data_len >= (sizeof(btc_addr_t) + sizeof(dh_key_t)))
 		{
 			mem_zone_ref new_addr = { PTR_NULL };
 			conf_amount = 0;
@@ -2384,7 +2385,6 @@ OS_API_C_FUNC(int) getpubaddrs(mem_zone_ref_const_ptr params, unsigned int rpc_m
 			}			
 			keys_ptr		 =	mem_add(keys_ptr ,(sizeof(btc_addr_t) + sizeof(dh_key_t)));
 			keys_data_len   -= (sizeof(btc_addr_t) + sizeof(dh_key_t));
-
 		}
 		free_c(keys_data);
 	}
