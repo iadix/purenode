@@ -2354,17 +2354,28 @@ OS_API_C_FUNC(int) getpubaddrs(mem_zone_ref_const_ptr params, unsigned int rpc_m
 	unsigned int	minconf;
 	unsigned char	*keys_data = PTR_NULL;
 
+	log_output("getpubaddrs\n");
+	
 	if (!tree_manager_get_child_at(params, 0, &username_n))
 		return 0;
 
 	tree_manager_get_node_istr	(&username_n, 0, &username, 0);
 	release_zone_ref			(&username_n);
 
+	log_output("username : '");
+	log_output(username.str);
+	log_output("'\n");
+
 	if (!tree_manager_add_child_node(result, "addrs", NODE_JSON_ARRAY, &addr_list))
 		return 0;
 	
 	make_string		(&user_key_file, "keypairs");
 	cat_cstring_p	(&user_key_file, username.str);
+
+
+	log_output("file : '");
+	log_output(user_key_file.str);
+	log_output("'\n");
 
 	minconf = 1;
 
@@ -2374,8 +2385,17 @@ OS_API_C_FUNC(int) getpubaddrs(mem_zone_ref_const_ptr params, unsigned int rpc_m
 		while (keys_data_len >= (sizeof(btc_addr_t) + sizeof(dh_key_t)))
 		{
 			mem_zone_ref new_addr = { PTR_NULL };
+			char kk[35];
+
+			memcpy_c(kk, keys_ptr, sizeof(btc_addr_t));
+			kk[34] = 0;
+
 			conf_amount = 0;
 			unconf_amount = 0;
+
+			log_output("key : '");
+			log_output(kk);
+			log_output("'\n");
 
 			get_balance	(keys_ptr, &conf_amount, &unconf_amount, minconf);
 			if(tree_manager_add_child_node			(&addr_list	, "addr"		 , NODE_GFX_OBJECT, &new_addr))
@@ -2384,13 +2404,17 @@ OS_API_C_FUNC(int) getpubaddrs(mem_zone_ref_const_ptr params, unsigned int rpc_m
 				tree_manager_set_child_value_i64	(&new_addr	, "amount"		 , conf_amount);
 				tree_manager_set_child_value_i64	(&new_addr	, "unconf_amount", unconf_amount);
 				release_zone_ref					(&new_addr);
-			}			
+			}		
+
+			log_output("next key\n");
 			keys_ptr		 =	mem_add(keys_ptr ,(sizeof(btc_addr_t) + sizeof(dh_key_t)));
 			keys_data_len   -= (sizeof(btc_addr_t) + sizeof(dh_key_t));
 		}
+		log_output("key done\n");
 		free_c(keys_data);
 	}
 	
+	log_output("return\n");
 	release_zone_ref			(&addr_list);
 	free_string					(&user_key_file);
 	free_string					(&username);
