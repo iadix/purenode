@@ -676,6 +676,7 @@ OS_API_C_FUNC(int) txs(const char *params, const struct http_req *req, mem_zone_
 		}
 		release_zone_ref(&block_index_node);
 		release_zone_ref(&time_index_node);
+		release_zone_ref(&tx_list);
 
 		tree_manager_set_child_value_i32(result, "limit", limit);
 		tree_manager_set_child_value_i32(result, "page_num", page_num);
