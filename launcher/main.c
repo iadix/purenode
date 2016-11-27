@@ -32,11 +32,14 @@ int main(int argc, char **argv)
 	int done = 0;
 	init_mem_system			();
 	init_default_mem_area	(8 * 1024 * 1024);
-	network_init			();
-	
 	set_exe_path			();
-	set_home_path			("purenode");
+	if (!set_home_path("purenode"))
+	{
+		console_print("could not set home dir 'purenode' \n");
+		return 0;
+	}
 
+	network_init();
 	load_module("modz/libbase.tpo", "libbase", &libbase_mod);
 	load_module("modz/protocol_adx.tpo", "protocol_adx", &protocol_mod);
 	load_module("modz/block_adx.tpo", "block_adx", &block_mod);

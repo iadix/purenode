@@ -278,6 +278,18 @@ int serialize_script(mem_zone_ref_ptr script_node, struct string *script)
 	}
 	return 1;
 }
+void keyrh_to_addr(unsigned char *pkeyh, btc_addr_t addr)
+{
+	hash_t			tmp_hash, fhash;
+	unsigned char	hin[32];
+
+	hin[0] = pubKeyPrefix;
+	memcpy_c		(&hin[1],pkeyh, 20);
+	mbedtls_sha256	(hin, 21, tmp_hash, 0);
+	mbedtls_sha256	(tmp_hash, 32, fhash, 0);
+	memcpy_c		(&hin[21], fhash, 4);
+	base58			(hin, addr);
+}
 void keyh_to_addr(unsigned char *pkeyh, btc_addr_t addr)
 {
 	hash_t			tmp_hash, fhash;
@@ -497,7 +509,7 @@ OS_API_C_FUNC(int) get_out_script_address(struct string *script, struct string *
 	}
 	else if ((p[0] == 0x76) && (p[1] == 0xA9) && (p[24] == 0xAC))
 	{
-		keyh_to_addr(script->str + 3, addr);
+		keyrh_to_addr(script->str + 3, addr);
 		return 2;
 	}
 	return 0;
@@ -517,7 +529,7 @@ int check_txout_key(mem_zone_ref_ptr output, unsigned char *pkey)
 			int n = 32;
 			
 
-			key_to_addr(ppk, inaddr);
+			key_to_addr				(ppk, inaddr);
 			get_out_script_address	(&oscript, PTR_NULL, outaddr);
 			ret = (memcmp_c(outaddr, inaddr, sizeof(btc_addr_t)) == 0) ? 1 : 0;
 		}

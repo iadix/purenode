@@ -1441,7 +1441,6 @@ OS_API_C_FUNC(int) tx_sign(mem_zone_ref_const_ptr tx, unsigned int nIn, unsigned
 			{
 				struct string			sign = { 0 };
 				unsigned char			htype;
-				unsigned int			n;
 				if (parse_sig_seq(sign_seq, &sign, &htype, 1))
 				{
 					ret = check_sign	(&sign, &pubk, tx_hash);
@@ -2116,8 +2115,7 @@ OS_API_C_FUNC(int) get_block_size(const char *blk_hash,size_t *size)
 OS_API_C_FUNC(unsigned int) get_blk_ntxs(const char* blk_hash)
 {
 	struct string	blk_path = { 0 };
-	unsigned char	*ptxs;
-	size_t			len, ntx;
+	size_t			ntx;
 
 	make_string(&blk_path, "blks");
 	cat_ncstring_p(&blk_path, blk_hash + 0, 2);
@@ -2560,7 +2558,81 @@ OS_API_C_FUNC(int) store_tx_addresses(btc_addr_t addr,hash_t tx_hash)
 
 }
 
+OS_API_C_FUNC(int) store_tx_index(const char * blk_hash, mem_zone_ref_ptr tx, hash_t thash)
+{
 
+	char				tx_hash[65];
+	mem_zone_ref		txout_list = { PTR_NULL }, txin_list = { PTR_NULL }, my_list = { PTR_NULL };
+	mem_zone_ref_ptr	out = PTR_NULL, input = PTR_NULL;
+	unsigned int		oidx, n_in_addr,vin;
+	btc_addr_t			nulladdr;
+	int					n;
+
+
+	if (!tree_manager_find_child_node(tx, NODE_HASH("txsout"), NODE_BITCORE_VOUTLIST, &txout_list))return 0;
+	if (!tree_manager_find_child_node(tx, NODE_HASH("txsin"), NODE_BITCORE_VINLIST, &txin_list)){ release_zone_ref(&txout_list); return 0; }
+
+	memset_c(nulladdr, '0', sizeof(btc_addr_t));
+	n = 0;
+	while (n<32)
+	{
+		tx_hash[n * 2 + 0] = hex_chars[thash[n] >> 4];
+		tx_hash[n * 2 + 1] = hex_chars[thash[n] & 0x0F];
+		n++;
+	}
+	tx_hash[64] = 0;
+	n_in_addr	= 0;
+
+	for (vin = 0, tree_manager_get_first_child(&txin_list, &my_list, &input); ((input != NULL) && (input->zone != NULL)); tree_manager_get_next_child(&my_list, &input), vin++)
+	{
+		hash_t			blk_hash, prev_hash = { 0 };
+		btc_addr_t		prev_addr;
+		mem_zone_ref	prev_tx = { PTR_NULL }, vout = { PTR_NULL };
+		unsigned int	oidx;
+		tree_manager_get_child_value_hash(input, NODE_HASH("tx hash"), prev_hash);
+		if (!memcmp_c(prev_hash, null_hash, sizeof(hash_t)))
+		{
+			tree_manager_set_child_value_btcaddr(input, "src addr", nulladdr);
+			continue;
+		}
+		if (!load_tx(&prev_tx, blk_hash, prev_hash))continue;
+		
+		tree_manager_get_child_value_i32(input, NODE_HASH("idx"), &oidx);
+		if (get_tx_output(&prev_tx, oidx, &vout))
+		{
+			struct string   oscript;
+			init_string							(&oscript);
+			tree_manager_get_child_value_istr	(&vout, NODE_HASH("script"), &oscript,0);
+			
+			if(get_out_script_address(&oscript, PTR_NULL, prev_addr)>0)
+				store_tx_addresses(prev_addr, thash);
+
+			release_zone_ref					(&vout);
+			free_string							(&oscript);
+		}
+		release_zone_ref		(&prev_tx);
+	}
+
+	for (oidx = 0, tree_manager_get_first_child(&txout_list, &my_list, &out); ((out != NULL) && (out->zone != NULL)); oidx++, tree_manager_get_next_child(&my_list, &out))
+	{
+		btc_addr_t		out_addr;
+		struct string   oscript;
+
+		init_string(&oscript);
+
+		tree_manager_get_child_value_istr(out, NODE_HASH("script"), &oscript,0);
+
+		if (get_out_script_address(&oscript, PTR_NULL, out_addr)>0)
+			store_tx_addresses(out_addr, thash);
+
+		free_string(&oscript);
+		
+	}
+
+	release_zone_ref(&txout_list);
+	release_zone_ref(&txin_list);
+	return 1;
+}
 
 OS_API_C_FUNC(int) store_tx_outputs(const char * blk_hash, mem_zone_ref_ptr tx, hash_t thash, unsigned int wallet)
 {

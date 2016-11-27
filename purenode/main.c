@@ -45,7 +45,8 @@ C_IMPORT int			C_API_FUNC add_moneysupply(uint64_t amount);
 C_IMPORT int			C_API_FUNC is_tx_null(mem_zone_ref_const_ptr tx);
 C_IMPORT int			C_API_FUNC is_vout_null(mem_zone_ref_const_ptr tx, unsigned int idx);
 C_IMPORT int			C_API_FUNC get_tx_output_amount(const hash_t tx_hash, unsigned int idx, uint64_t *amount);
-C_IMPORT int			C_API_FUNC load_tx(mem_zone_ref_ptr tx, hash_t blk_hash, const char *tx_hash);
+
+C_IMPORT int			C_API_FUNC load_tx(mem_zone_ref_ptr tx, hash_t blk_hash, const hash_t tx_hash);
 C_IMPORT int			C_API_FUNC load_blk_txs(const char* blk_hash, mem_zone_ref_ptr txs);
 C_IMPORT int			C_API_FUNC	SetCompact(unsigned int bits, hash_t out);
 C_IMPORT int			C_API_FUNC	is_pow_block(const char *blk_hash);
@@ -57,6 +58,9 @@ C_IMPORT int			C_API_FUNC	spend_tx_addr(btc_addr_t addr, const char *tx_hash, un
 C_IMPORT int			C_API_FUNC	get_tx_output_addr(const hash_t tx_hash, unsigned int idx, btc_addr_t addr);
 C_IMPORT int			C_API_FUNC	check_block_sign(const struct string *sign, const hash_t hash, const struct string *pubk);
 C_IMPORT int			C_API_FUNC	 get_blk_sign(const char *blk_hash, struct string *sign);
+C_IMPORT int			C_API_FUNC	 store_tx_index(const char * blk_hash, mem_zone_ref_ptr tx, hash_t thash);
+
+
 //node module
 typedef int				C_API_FUNC node_init_self_func(mem_zone_ref_ptr out_self_node, mem_zone_ref_ptr node_config);
 typedef int				C_API_FUNC node_set_last_block_func(mem_zone_ref_ptr header);
@@ -524,6 +528,77 @@ OS_API_C_FUNC(int) rescan_addr(btc_addr_t addr)
 */
 
 
+OS_API_C_FUNC(int) rebuild_block_index()
+{
+	char			chash[65];
+	struct string	adr_path = { 0 };
+	unsigned int	n_blks, last_blk;
+	unsigned char	*data;
+	size_t			data_len;
+
+	log_output("building block index ... \n");
+
+	if (get_file("./blk_indexes", &data, &data_len)<=0)
+		return 0;
+
+	n_blks = 0;
+	last_blk = 0;
+	while (n_blks<data_len)
+	{
+		struct string	blk_path = { 0 };
+		mem_zone_ref	log = { PTR_NULL };
+		int				n;
+		unsigned char	*tx_list;
+		unsigned int	txs_len, ntx;
+
+		if (last_blk > 100)
+		{
+			tree_manager_create_node("log", NODE_LOG_PARAMS, &log);
+			tree_manager_set_child_value_i32(&log, "blk", n_blks / 32);
+			tree_manager_set_child_value_i32(&log, "nblk", data_len / 32);
+			log_message("processing block %blk% / %nblk% \n", &log);
+			release_zone_ref(&log);
+			last_blk = 0;
+		}
+
+		n = 0;
+		while (n<32)
+		{
+			chash[n * 2 + 0] = hex_chars[data[n_blks + n] >> 4];
+			chash[n * 2 + 1] = hex_chars[data[n_blks + n] & 0x0F];
+			n++;
+		}
+		chash[64] = 0;
+
+		make_string(&blk_path, "blks");
+		cat_ncstring_p(&blk_path, chash + 0, 2);
+		cat_ncstring_p(&blk_path, chash + 2, 2);
+		cat_cstring_p(&blk_path, chash);
+		cat_cstring_p(&blk_path, "txs");
+		if (get_file(blk_path.str, &tx_list, &txs_len) >0)
+		{
+			ntx = 0;
+			while (ntx < txs_len)
+			{
+				hash_t b;
+				mem_zone_ref tx = { PTR_NULL };
+
+				if (!load_tx(&tx, b, &tx_list[ntx]))continue;
+				store_tx_index(chash, &tx, &tx_list[ntx]);
+				release_zone_ref(&tx);
+				ntx += 32;
+			}
+			free_c(tx_list);
+		}
+		n_blks += 32;
+		last_blk++;
+		free_string(&blk_path);
+	}
+	free_c(data);
+	free_string(&adr_path);
+
+	return 1;
+}
 
 int handle_version(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 {
@@ -1279,7 +1354,7 @@ OS_API_C_FUNC(int) app_init(mem_zone_ref_ptr params)
 	node_hostname.str = PTR_NULL;
 	node_hostname.len = 0;
 	node_hostname.size = 0;
-
+	self_node.zone = PTR_NULL;
 	node_config.zone = PTR_NULL;
 	init_string(&user_agent);
 	peer_nodes.zone = PTR_NULL;
@@ -1299,25 +1374,40 @@ OS_API_C_FUNC(int) app_init(mem_zone_ref_ptr params)
 		return 0;
 	}
 	free_c(data);
-	
+
+	create_dir("txs");
+	if (stat_file("txs") != 0)
+	{
+		log_message("unable to create tx dir \n", PTR_NULL);
+		return 0;
+	}
+	create_dir("blks");
+	if (stat_file("blks") != 0)
+	{
+		log_message("unable to create blks dir \n", PTR_NULL);
+		return 0;
+	}
 	
 	tree_manager_get_child_value_istr	(&node_config, NODE_HASH("seed_node_host"), &node_hostname, 0);
 	tree_manager_get_child_value_i32	(&node_config, NODE_HASH("seed_node_port"), &seed_port);
 	tree_manager_get_child_value_i32	(&node_config, NODE_HASH("p2p_port"), &node_port);
 	tree_manager_get_child_value_istr	(&node_config, NODE_HASH("name"), &user_agent, 0);
 	
-	self_node.zone = PTR_NULL;
-		
-	create_dir("adrs");
-	create_dir("txs");
-	create_dir("blks");
+	load_node_module					(&node_config);
 
-	load_node_module(&node_config);
 	if (!node_init_self(&self_node, &node_config))
 	{
 		console_print("unable to init self node \n");
 		return 0;
 	}
+	if (stat_file("adrs") != 0)
+	{
+		create_dir("adrs");
+		rebuild_block_index();
+	}
+
+
+
 
 	tree_manager_create_node("log", NODE_LOG_PARAMS, &log);
 	tree_manager_set_child_value_i32(&log, "port", node_port);

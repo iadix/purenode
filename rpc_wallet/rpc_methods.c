@@ -2167,27 +2167,65 @@ OS_API_C_FUNC(int) getstaking(mem_zone_ref_const_ptr params, unsigned int rpc_mo
 
 	return ret;
 }
-
+struct key_entry
+{
+	char label[32];
+	btc_addr_t addr;
+	dh_key_t key;
+};
 OS_API_C_FUNC(int) importkeypair(mem_zone_ref_const_ptr params, unsigned int rpc_mode, mem_zone_ref_ptr result)
 {
-	btc_addr_t pubaddr;
-	dh_key_t pub, priv;
-	mem_zone_ref username_n = { PTR_NULL }, pubkey_n = { PTR_NULL }, privkey_n = { PTR_NULL };
-	struct string username = { PTR_NULL }, xpubkey = { PTR_NULL }, xprivkey = { PTR_NULL };
-	struct string user_key_file = { PTR_NULL };
+	dh_key_t	pub, priv;
+	char		clabel[32];
+	btc_addr_t	pubaddr;
+	mem_zone_ref username_n = { PTR_NULL }, pubkey_n = { PTR_NULL }, privkey_n = { PTR_NULL }, rescan_n = { PTR_NULL }, label_n = { PTR_NULL };
+	mem_zone_ref tx_list = { PTR_NULL }, my_list = { PTR_NULL };
+	mem_zone_ref_ptr tx = PTR_NULL;
+	struct string username, xpubkey, xprivkey,  label;
+	struct string user_key_file, adr_path;
 	size_t keys_data_len = 0;
 	unsigned char *keys_data = PTR_NULL;
-	int found;
+	unsigned int found, rescan;
 
+	create_dir("keypairs");
+	if (stat_file("keypairs") != 0)
+		return 0;
+	
+	init_string	(&username);
+	init_string	(&xpubkey);
+	init_string	(&xprivkey);
+	init_string	(&label);
+	memset_c	(clabel, 0, 32);
+	
 	tree_manager_get_child_at(params, 0, &username_n);
-	tree_manager_get_child_at(params, 1, &pubkey_n);
-	tree_manager_get_child_at(params, 2, &privkey_n);
-	tree_manager_get_node_istr(&username_n, 0, &username, 0);
-	tree_manager_get_node_istr(&pubkey_n, 0, &xpubkey, 0);
-	tree_manager_get_node_istr(&privkey_n, 0, &xprivkey, 0);
+	tree_manager_get_child_at(params, 1, &label_n);
+	tree_manager_get_child_at(params, 2, &pubkey_n);
+	tree_manager_get_child_at(params, 3, &privkey_n);
+	tree_manager_get_child_at(params, 4, &rescan_n);
+	
+	tree_manager_get_node_istr	(&username_n, 0, &username, 0);
+	tree_manager_get_node_str	(&label_n, 0, clabel,32, 0);
+	tree_manager_get_node_istr	(&pubkey_n, 0, &xpubkey, 0);
+	tree_manager_get_node_istr	(&privkey_n, 0, &xprivkey, 0);
+	
+	if (!tree_mamanger_get_node_dword(&rescan_n, 0, &rescan))
+		rescan = 0;
+
+				
+	release_zone_ref(&rescan_n);
 	release_zone_ref(&privkey_n);
 	release_zone_ref(&pubkey_n);
+	release_zone_ref(&label_n);
 	release_zone_ref(&username_n);
+
+	if ((username.len < 1) || (xpubkey.len < 66))
+	{
+		free_string(&username);
+		free_string(&xpubkey);
+		free_string(&xprivkey);
+		free_string(&label);
+		return 0;
+	}
 
 	if (xpubkey.len == 66)
 	{
@@ -2204,9 +2242,9 @@ OS_API_C_FUNC(int) importkeypair(mem_zone_ref_const_ptr params, unsigned int rpc
 	}
 
 	memset_c(priv, 0, sizeof(dh_key_t));
-	if ((xprivkey.len > 0) && (xprivkey.len <= sizeof(dh_key_t)))
+	if (xprivkey.len > 0) 
 	{
-		int n = xprivkey.len;
+		int n = (xprivkey.len < sizeof(dh_key_t)) ? xprivkey.len : sizeof(dh_key_t);
 		while (n--)
 		{
 			char    hex[3];
@@ -2217,76 +2255,85 @@ OS_API_C_FUNC(int) importkeypair(mem_zone_ref_const_ptr params, unsigned int rpc
 		}
 	}
 
-	create_dir("keypairs");
-	make_string(&user_key_file, "keypairs");
-	cat_cstring_p(&user_key_file, username.str);
+	
+	init_string		(&user_key_file);
+	make_string		(&user_key_file, "keypairs");
+	cat_cstring_p	(&user_key_file, username.str);
 
 	found = 0;
 
 	if (get_file(user_key_file.str, &keys_data, &keys_data_len))
 	{
-		mem_ptr keys_ptr = keys_data;
+
+		struct key_entry *keys_ptr = keys_data;
+		size_t flen;
+		flen = keys_data_len;
 		while (keys_data_len > 0)
 		{
-			if (!memcmp_c(keys_ptr, pubaddr, sizeof(btc_addr_t)))
+			if (!memcmp_c(keys_ptr->addr, pubaddr, sizeof(btc_addr_t)))
 			{
+				if (strcmp_c(clabel, keys_ptr->label))
+				{
+					memcpy_c	(keys_ptr->label, clabel, 32);
+					put_file	(user_key_file.str, keys_data, flen);
+				}
 				found = 1;
 				break;
 			}
-			keys_ptr = mem_add(keys_ptr, (sizeof(btc_addr_t) + sizeof(dh_key_t)));
-			keys_data_len -= (sizeof(btc_addr_t) + sizeof(dh_key_t));
+			keys_ptr++;
+			keys_data_len -= sizeof(struct key_entry);
 		}
 		free_c(keys_data);
 	}
 
 	if (!found)
 	{
-		mem_zone_ref tx_list = { PTR_NULL }, my_list = { PTR_NULL };
-		mem_zone_ref_ptr tx = PTR_NULL;
-
+		append_file(user_key_file.str, clabel, 32);
 		append_file(user_key_file.str, pubaddr, sizeof(btc_addr_t));
 		append_file(user_key_file.str, priv, sizeof(dh_key_t));
+	}
+	free_string(&user_key_file);
+
+	init_string		(&adr_path);
+	make_string		(&adr_path, "adrs");
+	cat_ncstring_p	(&adr_path, pubaddr, 34);
+	if ((!found) || (rescan))
+	{
+		if (stat_file(adr_path.str) == 0)
+		{
+			struct string path = { 0 };
+			clone_string(&path, &adr_path);
+			cat_cstring_p(&path, "spent");
+			rm_dir(path.str);
+			free_string(&path);
+
+			clone_string(&path, &adr_path);
+			cat_cstring_p(&path, "unspent");
+			rm_dir(path.str);
+			free_string(&path);
+
+			clone_string(&path, &adr_path);
+			cat_cstring_p(&path, "stakes");
+			del_file(path.str);
+			free_string(&path);
+		}
+		rm_dir		(adr_path.str);
+		create_dir	(adr_path.str);
 		if (tree_manager_create_node("txs", NODE_BITCORE_HASH_LIST, &tx_list))
 		{
-			struct string	 adr_path = { 0 };
-			make_string(&adr_path, "adrs");
-			cat_ncstring_p(&adr_path, pubaddr, 34);
-			if (stat_file(adr_path.str) == 0)
-			{
-				struct string path = { 0 };
-				clone_string(&path, &adr_path);
-				cat_cstring_p(&path, "spent");
-				rm_dir(path.str);
-				free_string(&path);
-
-				clone_string(&path, &adr_path);
-				cat_cstring_p(&path, "unspent");
-				rm_dir(path.str);
-				free_string(&path);
-
-				clone_string(&path, &adr_path);
-				cat_cstring_p(&path, "stakes");
-				del_file(path.str);
-				free_string(&path);
-			}
-
-			create_dir(adr_path.str);
-
-			free_string(&adr_path);
-
-			load_tx_addresses(pubaddr, &tx_list);
+			load_tx_addresses	(pubaddr, &tx_list);
 			for (tree_manager_get_first_child(&tx_list, &my_list, &tx); ((tx != NULL) && (tx->zone != NULL)); tree_manager_get_next_child(&my_list, &tx))
 			{
 				hash_t tx_hash;
-
 				tree_manager_get_node_hash(tx, 0, tx_hash);
 				store_tx_wallet(pubaddr, tx_hash);
 			}
 			release_zone_ref(&tx_list);
 		}
-
 	}
-	free_string(&user_key_file);
+	
+
+	free_string(&adr_path);
 	free_string(&username);
 	free_string(&xpubkey);
 	free_string(&xprivkey);
@@ -2314,27 +2361,26 @@ OS_API_C_FUNC(int) getprivaddr(mem_zone_ref_const_ptr params, unsigned int rpc_m
 	cat_cstring_p	(&user_key_file, username.str);
 	if (get_file(user_key_file.str, &keys_data, &keys_data_len))
 	{
-		unsigned char *keys_ptr = keys_data;
+		struct key_entry *keys_ptr = keys_data;
 		while (keys_data_len > 0)
 		{
-			if (!strncmp_c(keys_ptr, pubaddr.str , sizeof(btc_addr_t)))
+			if (!strncmp_c(keys_ptr->addr, pubaddr.str , sizeof(btc_addr_t)))
 			{
 				char hexk[129];
 				int  n=0;
 				while (n < 64)
 				{
-					hexk[n * 2 + 0] = hex_chars[keys_ptr[sizeof(btc_addr_t) + n] >> 4];
-					hexk[n * 2 + 1] = hex_chars[keys_ptr[sizeof(btc_addr_t) + n] & 0x0F];
+					hexk[n * 2 + 0] = hex_chars[keys_ptr->key[n] >> 4];
+					hexk[n * 2 + 1] = hex_chars[keys_ptr->key[n] & 0x0F];
 					n++;
 				}
-				hexk[64]	= 0;
+				hexk[128]	= 0;
 				ret			= 1;
 				tree_manager_set_child_value_str(result, "privkey", hexk);
 				break;
 			}
-			keys_ptr		 = mem_add(keys_ptr, (sizeof(btc_addr_t) + sizeof(dh_key_t)));
-			keys_data_len	-= (sizeof(btc_addr_t) + sizeof(dh_key_t));
-		
+			keys_ptr++;
+			keys_data_len  -= sizeof(struct key_entry);
 		}
 		free_c(keys_data);
 	}
@@ -2353,8 +2399,6 @@ OS_API_C_FUNC(int) getpubaddrs(mem_zone_ref_const_ptr params, unsigned int rpc_m
 	uint64_t		conf_amount, unconf_amount;
 	unsigned int	minconf;
 	unsigned char	*keys_data = PTR_NULL;
-
-	log_output("getpubaddrs\n");
 	
 	if (!tree_manager_get_child_at(params, 0, &username_n))
 		return 0;
@@ -2362,59 +2406,43 @@ OS_API_C_FUNC(int) getpubaddrs(mem_zone_ref_const_ptr params, unsigned int rpc_m
 	tree_manager_get_node_istr	(&username_n, 0, &username, 0);
 	release_zone_ref			(&username_n);
 
-	log_output("username : '");
-	log_output(username.str);
-	log_output("'\n");
-
 	if (!tree_manager_add_child_node(result, "addrs", NODE_JSON_ARRAY, &addr_list))
 		return 0;
 	
 	make_string		(&user_key_file, "keypairs");
 	cat_cstring_p	(&user_key_file, username.str);
 
-
-	log_output("file : '");
-	log_output(user_key_file.str);
-	log_output("'\n");
-
 	minconf = 1;
 
 	if (get_file(user_key_file.str, &keys_data, &keys_data_len))
 	{
-		mem_ptr keys_ptr=keys_data;
-		while (keys_data_len >= (sizeof(btc_addr_t) + sizeof(dh_key_t)))
+		struct key_entry *keys_ptr = keys_data;
+		while (keys_data_len >= sizeof(struct key_entry))
 		{
 			mem_zone_ref new_addr = { PTR_NULL };
 			char kk[35];
 
-			memcpy_c(kk, keys_ptr, sizeof(btc_addr_t));
+			memcpy_c(kk, keys_ptr->addr, sizeof(btc_addr_t));
 			kk[34] = 0;
 
 			conf_amount = 0;
 			unconf_amount = 0;
 
-			log_output("key : '");
-			log_output(kk);
-			log_output("'\n");
-
-			get_balance	(keys_ptr, &conf_amount, &unconf_amount, minconf);
+			get_balance	(keys_ptr->addr, &conf_amount, &unconf_amount, minconf);
 			if(tree_manager_add_child_node			(&addr_list	, "addr"		 , NODE_GFX_OBJECT, &new_addr))
 			{
-				tree_manager_set_child_value_btcaddr(&new_addr	, "address"		 , keys_ptr);
+				tree_manager_set_child_value_str	(&new_addr	, "label"		 , keys_ptr->label);
+				tree_manager_set_child_value_btcaddr(&new_addr	, "address"		 , keys_ptr->addr);
 				tree_manager_set_child_value_i64	(&new_addr	, "amount"		 , conf_amount);
 				tree_manager_set_child_value_i64	(&new_addr	, "unconf_amount", unconf_amount);
 				release_zone_ref					(&new_addr);
 			}		
-
-			log_output("next key\n");
-			keys_ptr		 =	mem_add(keys_ptr ,(sizeof(btc_addr_t) + sizeof(dh_key_t)));
-			keys_data_len   -= (sizeof(btc_addr_t) + sizeof(dh_key_t));
+			keys_ptr++;
+			keys_data_len -= sizeof(struct key_entry);
 		}
-		log_output("key done\n");
 		free_c(keys_data);
 	}
 	
-	log_output("return\n");
 	release_zone_ref			(&addr_list);
 	free_string					(&user_key_file);
 	free_string					(&username);
