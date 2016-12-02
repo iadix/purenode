@@ -143,6 +143,34 @@ OS_API_C_FUNC(int) set_node(mem_zone_ref_ptr node,tpo_mod_file *pos_mod)
 }
 
 
+int find_mem_hash(hash_t hash, unsigned char *mem_hash, unsigned int num)
+{
+	unsigned int n = 0;
+	if (num == 0)return 0;
+	if (mem_hash == PTR_NULL)return 0;
+	while (n<(num * 32))
+	{
+		if (!memcmp_c(&mem_hash[n], hash, sizeof(hash_t)))
+			return 1;
+		n += 32;
+	}
+	return 0;
+}
+
+int find_stake_hash(hash_t hash, unsigned char *stakes, unsigned int len)
+{
+	unsigned int n = 0;
+	if (len == 0)return 0;
+	if (stakes == PTR_NULL)return 0;
+	while (n<len)
+	{
+		if (!memcmp_c(&stakes[n + 8], hash, sizeof(hash_t)))
+			return 1;
+		n += 40;
+	}
+	return 0;
+}
+
 int list_unspent(btc_addr_t addr, mem_zone_ref_ptr unspents, size_t min_conf, size_t max_conf, uint64_t *total_unspent, size_t *ntx, size_t *max)
 {
 	struct string		unspent_path = { 0 };
@@ -216,9 +244,10 @@ int list_unspent(btc_addr_t addr, mem_zone_ref_ptr unspents, size_t min_conf, si
 			{
 				(*ntx)++;
 				*total_unspent += *((uint64_t*)data);
-				if  ((((*max)--) > 0) && (nconf >= min_conf) && (nconf <= max_conf))
+				if  (((*max) > 0) && (nconf >= min_conf) && (nconf <= max_conf))
 				{
 					mem_zone_ref	unspent = { PTR_NULL };
+					(*max)--;
 					if (tree_manager_add_child_node(unspents, "unspent", NODE_GFX_OBJECT, &unspent))
 					{
 						tree_manager_set_child_value_hash(&unspent, "txid", hash);
@@ -271,34 +300,8 @@ int list_unspent(btc_addr_t addr, mem_zone_ref_ptr unspents, size_t min_conf, si
 	return 1;
 }
 
-int find_mem_hash(hash_t hash, unsigned char *mem_hash, unsigned int num)
-{
-	unsigned int n = 0;
-	if (num == 0)return 0;
-	if (mem_hash == PTR_NULL)return 0;
-	while (n<(num * 32))
-	{
-		if (!memcmp_c(&mem_hash[n], hash, sizeof(hash_t)))
-			return 1;
-		n += 32;
-	}
-	return 0;
-}
 
-int find_stake_hash(hash_t hash, unsigned char *stakes, unsigned int len)
-{
-	unsigned int n = 0;
-	if (len == 0)return 0;
-	if (stakes == PTR_NULL)return 0;
-	while (n<len)
-	{
-		if (!memcmp_c(&stakes[n + 8], hash, sizeof(hash_t)))
-			return 1;
-		n += 40;
-	}
-	return 0;
-}
-int list_spent(btc_addr_t addr, mem_zone_ref_ptr spents)
+int list_spent(btc_addr_t addr, mem_zone_ref_ptr spents, size_t min_conf, size_t max_conf, uint64_t *total_spent, size_t *ntx, size_t *max)
 {
 	struct string		spent_path = { 0 };
 	unsigned int		dir_list_len;
@@ -347,6 +350,8 @@ int list_spent(btc_addr_t addr, mem_zone_ref_ptr spents)
 		unsigned int	prev_out = 0xFFFFFFFF;
 		size_t			sz, len;
 		unsigned char	*data;
+		int				n;
+		
 
 		ptr = memchr_c(optr, 10, dir_list_len);
 		sz = mem_sub(optr, ptr);
@@ -355,10 +360,33 @@ int list_spent(btc_addr_t addr, mem_zone_ref_ptr spents)
 		cat_ncstring_p(&tx_path, optr, sz);
 		if (get_file(tx_path.str, &data, &len) > 0)
 		{
+			hash_t		hash;
+			uint64_t	height, tx_time, block_time, nconf;
+
 			if (optr[64] == '_')
 				prev_out = strtoul_c(&optr[65], PTR_NULL, 10);
 			else
 				prev_out = 0xFFFFFFFF;
+			
+			n = 0;
+			while (n<32)
+			{
+				char    hex[3];
+				hex[0] = optr[n * 2 + 0];
+				hex[1] = optr[n * 2 + 1];
+				hex[2] = 0;
+				hash[n] = strtoul_c(hex, PTR_NULL, 16);
+				n++;
+			}
+
+			if (get_tx_blk_height(hash, &height, &block_time, &tx_time))
+				nconf = sheight - height;
+			else
+			{
+				block_time = 0;
+				tx_time = 0;
+				nconf = 0;
+			}
 
 			if (len >= sizeof(uint64_t))
 			{
@@ -367,69 +395,47 @@ int list_spent(btc_addr_t addr, mem_zone_ref_ptr spents)
 				unsigned char *cdata;
 				mem_zone_ref spent = { PTR_NULL };
 
-				cdata = data + sizeof(uint64_t);
-				n_in_addr = *((unsigned int *)(cdata));
-				cdata += sizeof(unsigned int) + n_in_addr*sizeof(btc_addr_t);
-				memcpy_c(hash, cdata, sizeof(hash_t));
-				cdata += sizeof(hash_t);
-				vin = *((unsigned int *)(cdata));
-				cdata += sizeof(unsigned int);
+				(*ntx)++;
+				*total_spent += *((uint64_t*)data);
 
-				/*
-				char chash[65];
-				n = 0;
-				while (n<32)
+				if (((*max) > 0) && (nconf >= min_conf) && (nconf <= max_conf))
 				{
-				chash[n * 2 + 0] = hex_chars[hash[n] >> 4];
-				chash[n * 2 + 1] = hex_chars[hash[n] & 0x0F];
-				n++;
-				}
-				chash[64] = 0;
-				free_string(&tx_path);
-				clone_string(&tx_path, &stake_path);
-				cat_cstring_p(&tx_path, chash);
-				sRet = stat_file(tx_path.str) == 0 ? 1 : 0;
-				free_string(&tx_path);
-				if (!sRet)
-				*/
-				if (!find_stake_hash(hash, stakes, len_stakes))
-				{
-					if (tree_manager_add_child_node(spents, "spent", NODE_GFX_OBJECT, &spent))
+					cdata = data + sizeof(uint64_t);
+					n_in_addr = *((unsigned int *)(cdata));
+					cdata += sizeof(unsigned int) + n_in_addr*sizeof(btc_addr_t);
+					memcpy_c(hash, cdata, sizeof(hash_t));
+					cdata += sizeof(hash_t);
+					vin = *((unsigned int *)(cdata));
+					cdata += sizeof(unsigned int);
+
+					if (!find_stake_hash(hash, stakes, len_stakes))
 					{
-						mem_zone_ref  addr_list = { PTR_NULL };
-						uint64_t	  height, tx_time, block_time, nconf;
-
-						if (get_tx_blk_height(hash, &height, &block_time, &tx_time))
-							nconf = sheight - height;
-						else
+						if (tree_manager_add_child_node(spents, "spent", NODE_GFX_OBJECT, &spent))
 						{
-							block_time = 0;
-							tx_time = 0;
-							nconf = 0;
-						}
-
-						tree_manager_set_child_value_hash(&spent, "txid", hash);
-						tree_manager_set_child_value_i32(&spent, "vin", vin);
-						tree_manager_set_child_value_i64(&spent, "amount", *((uint64_t*)data));
-						tree_manager_set_child_value_i32(&spent, "time", tx_time);
-						tree_manager_set_child_value_i64(&spent, "confirmations", nconf);
-
-
-						if (tree_manager_add_child_node(&spent, "addresses", NODE_JSON_ARRAY, &addr_list))
-						{
-							while (cdata < (data + len))
+							mem_zone_ref  addr_list = { PTR_NULL };
+							
+							tree_manager_set_child_value_hash(&spent, "txid", hash);
+							tree_manager_set_child_value_i32(&spent, "vin", vin);
+							tree_manager_set_child_value_i64(&spent, "amount", *((uint64_t*)data));
+							tree_manager_set_child_value_i32(&spent, "time", tx_time);
+							tree_manager_set_child_value_i64(&spent, "confirmations", nconf);
+							
+							if (tree_manager_add_child_node(&spent, "addresses", NODE_JSON_ARRAY, &addr_list))
 							{
-								mem_zone_ref new_addr = { PTR_NULL };
-								if (tree_manager_add_child_node(&addr_list, "address", NODE_BITCORE_WALLET_ADDR, &new_addr))
+								while (cdata < (data + len))
 								{
-									tree_manager_write_node_btcaddr(&new_addr, 0, cdata);
-									release_zone_ref(&new_addr);
+									mem_zone_ref new_addr = { PTR_NULL };
+									if (tree_manager_add_child_node(&addr_list, "address", NODE_BITCORE_WALLET_ADDR, &new_addr))
+									{
+										tree_manager_write_node_btcaddr(&new_addr, 0, cdata);
+										release_zone_ref(&new_addr);
+									}
+									cdata = mem_add(cdata, sizeof(btc_addr_t));
 								}
-								cdata = mem_add(cdata, sizeof(btc_addr_t));
+								release_zone_ref(&addr_list);
 							}
-							release_zone_ref(&addr_list);
+							release_zone_ref(&spent);
 						}
-						release_zone_ref(&spent);
 					}
 				}
 			}
@@ -1282,13 +1288,22 @@ OS_API_C_FUNC(int) listspent(mem_zone_ref_const_ptr params, unsigned int rpc_mod
 	mem_zone_ref minconf = { PTR_NULL }, maxconf = { PTR_NULL }, spents = { PTR_NULL }, addrs = { PTR_NULL };
 	mem_zone_ref  my_list = { PTR_NULL };
 	mem_zone_ref_ptr addr;
+	uint64_t			total = 0;
+	size_t				min_conf, max_conf;
+	size_t				max = 200, ntx = 0;
 
-	if (!tree_manager_create_node("spents", NODE_JSON_ARRAY, &spents))
+	if (!tree_manager_add_child_node(result, "spents", NODE_JSON_ARRAY, &spents))
 		return 0;
 
 	tree_manager_get_child_at(params, 0, &minconf);
 	tree_manager_get_child_at(params, 1, &maxconf);
 	tree_manager_get_child_at(params, 2, &addrs);
+
+	tree_mamanger_get_node_dword(&minconf, 0, &min_conf);
+	tree_mamanger_get_node_dword(&maxconf, 0, &max_conf);
+
+	release_zone_ref(&maxconf);
+	release_zone_ref(&minconf);
 
 
 	for (tree_manager_get_first_child(&addrs, &my_list, &addr); ((addr != NULL) && (addr->zone != NULL)); tree_manager_get_next_child(&my_list, &addr))
@@ -1296,15 +1311,15 @@ OS_API_C_FUNC(int) listspent(mem_zone_ref_const_ptr params, unsigned int rpc_mod
 		btc_addr_t my_addr;
 
 		tree_manager_get_node_btcaddr(addr, 0, my_addr);
-		list_spent(my_addr, &spents);
+		list_spent(my_addr, &spents, min_conf, max_conf, &total, &ntx, &max);
 	}
 
-	tree_manager_node_add_child(result, &spents);
-	release_zone_ref(&spents);
+	tree_manager_set_child_value_i64(result, "ntx", ntx);
+	tree_manager_set_child_value_i64(result, "total", total);
 
+	release_zone_ref(&spents);
 	release_zone_ref(&addrs);
-	release_zone_ref(&maxconf);
-	release_zone_ref(&minconf);
+
 
 	return 1;
 }
