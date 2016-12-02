@@ -1336,11 +1336,11 @@ OS_API_C_FUNC(int) listunspent(mem_zone_ref_const_ptr params, unsigned int rpc_m
 	{
 		btc_addr_t						my_addr;
 		tree_manager_get_node_btcaddr	(addr, 0, my_addr);
-		list_unspent					(my_addr, &unspents, min_conf, max_conf, &ntx, &max, &total);
+		list_unspent					(my_addr, &unspents, min_conf, max_conf, &total, &ntx, &max);
 	}
 
 
-	tree_manager_set_child_value_i64(result, "ntx", total);
+	tree_manager_set_child_value_i64(result, "ntx", ntx);
 	tree_manager_set_child_value_i64(result, "total",total );
 
 	release_zone_ref			(&addrs);
