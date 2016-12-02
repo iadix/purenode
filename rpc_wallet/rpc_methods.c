@@ -360,7 +360,7 @@ int list_spent(btc_addr_t addr, mem_zone_ref_ptr spents, size_t min_conf, size_t
 		cat_ncstring_p(&tx_path, optr, sz);
 		if (get_file(tx_path.str, &data, &len) > 0)
 		{
-			hash_t		hash;
+			hash_t		thash;
 			uint64_t	height, tx_time, block_time, nconf;
 
 			if (optr[64] == '_')
@@ -375,11 +375,11 @@ int list_spent(btc_addr_t addr, mem_zone_ref_ptr spents, size_t min_conf, size_t
 				hex[0] = optr[n * 2 + 0];
 				hex[1] = optr[n * 2 + 1];
 				hex[2] = 0;
-				hash[n] = strtoul_c(hex, PTR_NULL, 16);
+				thash[n] = strtoul_c(hex, PTR_NULL, 16);
 				n++;
 			}
 
-			if (get_tx_blk_height(hash, &height, &block_time, &tx_time))
+			if (get_tx_blk_height(thash, &height, &block_time, &tx_time))
 				nconf = sheight - height;
 			else
 			{
@@ -391,25 +391,26 @@ int list_spent(btc_addr_t addr, mem_zone_ref_ptr spents, size_t min_conf, size_t
 			if (len >= sizeof(uint64_t))
 			{
 				hash_t		  hash;
+				mem_zone_ref  spent = { PTR_NULL };
 				unsigned int  n_in_addr;
 				unsigned char *cdata;
-				mem_zone_ref spent = { PTR_NULL };
 
-				(*ntx)++;
-				*total_spent += *((uint64_t*)data);
+				cdata = data + sizeof(uint64_t);
+				n_in_addr = *((unsigned int *)(cdata));
+				cdata += sizeof(unsigned int) + n_in_addr*sizeof(btc_addr_t);
+				memcpy_c(hash, cdata, sizeof(hash_t));
+				cdata += sizeof(hash_t);
+				vin = *((unsigned int *)(cdata));
+				cdata += sizeof(unsigned int);
 
-				if (((*max) > 0) && (nconf >= min_conf) && (nconf <= max_conf))
+				if (!find_stake_hash(hash, stakes, len_stakes))
 				{
-					cdata = data + sizeof(uint64_t);
-					n_in_addr = *((unsigned int *)(cdata));
-					cdata += sizeof(unsigned int) + n_in_addr*sizeof(btc_addr_t);
-					memcpy_c(hash, cdata, sizeof(hash_t));
-					cdata += sizeof(hash_t);
-					vin = *((unsigned int *)(cdata));
-					cdata += sizeof(unsigned int);
+					(*ntx)++;
+					*total_spent += *((uint64_t*)data);
 
-					if (!find_stake_hash(hash, stakes, len_stakes))
+					if (((*max) > 0) && (nconf >= min_conf) && (nconf <= max_conf))
 					{
+						(*max)--;
 						if (tree_manager_add_child_node(spents, "spent", NODE_GFX_OBJECT, &spent))
 						{
 							mem_zone_ref  addr_list = { PTR_NULL };
