@@ -971,7 +971,6 @@ OS_API_C_FUNC(int) spend_tx_addr(btc_addr_t addr, const char *tx_hash, unsigned 
 int cancel_unspend_tx_addr(btc_addr_t addr, const char *tx_hash, unsigned int oidx)
 {
 	struct string	unspent_path = { 0 };
-	int ret;
 
 	make_string(&unspent_path, "adrs");
 	cat_ncstring_p(&unspent_path, addr, 34);
@@ -982,7 +981,7 @@ int cancel_unspend_tx_addr(btc_addr_t addr, const char *tx_hash, unsigned int oi
 	del_file(unspent_path.str);
 	free_string(&unspent_path);
 
-	return ret;
+	return 1;
 }
 
 int cancel_spend_tx_addr(btc_addr_t addr, const char *tx_hash, unsigned int oidx)
@@ -2449,9 +2448,11 @@ OS_API_C_FUNC(int) load_tx_addresses(btc_addr_t addr, mem_zone_ref_ptr tx_hashes
 			while (nn < ntx)
 			{
 				mem_zone_ref new_hash = { PTR_NULL };
-				tree_manager_add_child_node(tx_hashes, "tx", NODE_BITCORE_HASH, &new_hash);
-				tree_manager_write_node_hash(&new_hash, 0, first_tx + nn*sizeof(hash_t));
-				release_zone_ref(&new_hash);
+				if (tree_manager_add_child_node(tx_hashes, "tx", NODE_BITCORE_HASH, &new_hash))
+				{
+					tree_manager_write_node_hash(&new_hash, 0, first_tx + nn*sizeof(hash_t));
+					release_zone_ref(&new_hash);
+				}
 				nn++;
 			}
 		}
