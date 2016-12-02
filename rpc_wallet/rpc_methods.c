@@ -214,7 +214,7 @@ int list_unspent(btc_addr_t addr, mem_zone_ref_ptr unspents, size_t min_conf, si
 		{
 			if (len >= sizeof(uint64_t))
 			{
-				*ntx++;
+				(*ntx)++;
 				*total_unspent += *((uint64_t*)data);
 				if  ((((*max)--) > 0) && (nconf >= min_conf) && (nconf <= max_conf))
 				{
