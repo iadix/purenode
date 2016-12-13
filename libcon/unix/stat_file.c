@@ -526,14 +526,14 @@ OS_API_C_FUNC(int) truncate_file(const char *path, size_t ofset, const void *dat
 		{
 			fseek(f, ofset, SEEK_SET);
 			len = fwrite(data, data_len, 1, f);
+			ret = (len > 0) ? 1 : 0;
 		}
 		fclose(f);
 	}
 	else
-		truncate(path, ofset);
-
-	
-	return 1;
+		ret=truncate(path, ofset);
+		
+	return ret;
 }
 
 OS_API_C_FUNC(void *) kernel_memory_map_c(unsigned int size)
