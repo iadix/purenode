@@ -7,7 +7,7 @@
 #include "../base/std_str.h"
 #include "strs.h"
 #include "fsio.h"
-
+#include "mem_stream.h"
 #include <sys_include.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -458,7 +458,49 @@ OS_API_C_FUNC(size_t) file_size(const char *path)
 	fclose(f);
 	return len;
 }
+OS_API_C_FUNC(int) get_file_to_memstream(const char *path, mem_stream *stream)
+{
+	struct string	cpath = { PTR_NULL };
+	mem_zone_ref	fileMem = { PTR_NULL };
+	FILE			*f;
+	size_t			len = 0, data_len;
+	int				ret;
 
+	f = fopen(path, "rb");
+	if (f == NULL)
+	{
+		init_string(&cpath);
+		if (!make_string(&cpath, exe_path.str))
+			return -1;
+
+		cat_cstring_p(&cpath, path);
+		f = fopen(cpath.str, "rb");
+		free_string(&cpath);
+
+		if (f == NULL)
+			return -1;
+	}
+
+	fseek(f, 0, SEEK_END);
+	data_len = ftell(f);
+	rewind(f);
+	if (data_len>0)
+	{
+		unsigned char *data;
+		allocate_new_zone(0, data_len+1, &fileMem);
+		data = (unsigned char *)get_zone_ptr(&fileMem, 0);
+		if (data != PTR_NULL)
+		{
+			len = fread(data, data_len, 1, f);
+			data[data_len] = 0;
+			mem_stream_init(stream, &fileMem, 0);
+		}
+		else
+			len = 0;
+	}
+	fclose(f);
+	return (int)len;
+}
 OS_API_C_FUNC(int) get_file(const char *path, unsigned char **data, size_t *data_len)
 {
 	struct string	cpath = { PTR_NULL };
@@ -546,9 +588,15 @@ OS_API_C_FUNC(int) kernel_memory_free_c(mem_ptr ptr)
 	return 1;
 }
 
-OS_API_C_FUNC(unsigned int)	 get_system_time_c()
+
+OS_API_C_FUNC(ctime_t) get_system_time_c()
 {
-	return time(0);
+	ctime_t            ms; // Milliseconds
+	ctime_t          s;  // Seconds
+	struct timespec spec;
+	clock_gettime(CLOCK_REALTIME, &spec);
+	ms = spec.tv_sec * 1000 + muldiv64(spec.tv_nsec, 1, 1000000); // Convert nanoseconds to milliseconds
+	return ms;
 }
 
 

@@ -11,6 +11,8 @@
 #include "tpo_mod.h"
 #include "fsio.h"
 
+#include "libc_math.h"
+
 #include <math.h>
 #include <stdlib.h>
 
@@ -516,9 +518,19 @@ OS_API_C_FUNC(void) init_mem_system()
 	sys_add_tpo_mod_func_name("libcon", "memchr_32_c",(void_func_ptr)memchr_32_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "store_bigendian",(void_func_ptr)store_bigendian, 0);
 	sys_add_tpo_mod_func_name("libcon", "load_bigendian",(void_func_ptr)load_bigendian, 0);
-	
-	 
 
+	
+	sys_add_tpo_mod_func_name("libcon", "libc_sinf", (void_func_ptr)libc_sinf, 0);
+	sys_add_tpo_mod_func_name("libcon", "libc_cosf", (void_func_ptr)libc_cosf, 0);
+	sys_add_tpo_mod_func_name("libcon", "libc_atanf", (void_func_ptr)libc_atanf, 0);
+	sys_add_tpo_mod_func_name("libcon", "libc_ftol", (void_func_ptr)libc_ftol, 0);
+	
+
+	sys_add_tpo_mod_func_name("libcon", "libc_sqrtd", (void_func_ptr)libc_sqrtd, 0);
+	sys_add_tpo_mod_func_name("libcon", "libc_sind", (void_func_ptr)libc_sind, 0);
+	sys_add_tpo_mod_func_name("libcon", "powd_c", (void_func_ptr)powd_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "libc_cosd", (void_func_ptr)libc_cosd, 0);
+	sys_add_tpo_mod_func_name("libcon", "libc_atand", (void_func_ptr)libc_atand, 0);
 
 	sys_add_tpo_mod_func_name("libcon", "allocate_new_zone",(void_func_ptr)allocate_new_zone, 0);
 	sys_add_tpo_mod_func_name("libcon", "allocate_new_empty_zone",(void_func_ptr)allocate_new_empty_zone, 0);
@@ -1644,3 +1656,11 @@ OS_API_C_FUNC(double) exp_c(double a)
 	return exp(a);
 }
 */
+
+OS_API_C_FUNC(double) powf_c(double a, double b)
+{
+	double result;
+	powd_c(a, b, &result);
+	return result;
+
+}

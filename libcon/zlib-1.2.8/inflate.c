@@ -102,7 +102,7 @@ local int updatewindow OF((z_streamp strm, const unsigned char FAR *end,
 local unsigned syncsearch OF((unsigned FAR *have, const unsigned char FAR *buf,
                               unsigned len));
 
-int ZEXPORT inflateResetKeep(strm)
+OS_API_C_FUNC(int) inflateResetKeep(strm)
 z_streamp strm;
 {
     struct inflate_state FAR *state;
@@ -127,7 +127,7 @@ z_streamp strm;
     return Z_OK;
 }
 
-int ZEXPORT inflateReset(strm)
+OS_API_C_FUNC(int) inflateReset(strm)
 z_streamp strm;
 {
     struct inflate_state FAR *state;
@@ -140,7 +140,7 @@ z_streamp strm;
     return inflateResetKeep(strm);
 }
 
-int ZEXPORT inflateReset2(strm, windowBits)
+OS_API_C_FUNC(int) inflateReset2(strm, windowBits)
 z_streamp strm;
 int windowBits;
 {
@@ -220,7 +220,7 @@ int stream_size;
     return ret;
 }
 
-int ZEXPORT inflateInit_(strm, version, stream_size)
+OS_API_C_FUNC(int)  inflateInit_(strm, version, stream_size)
 z_streamp strm;
 const char *version;
 int stream_size;

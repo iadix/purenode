@@ -29,3 +29,4 @@ LIBC_API size_t			C_API_FUNC	mem_stream_skip_to(mem_stream *stream, size_t posit
 LIBC_API size_t			C_API_FUNC	mem_stream_write(mem_stream *stream, char *data, size_t len);
 LIBC_API void			C_API_FUNC	mem_stream_close(mem_stream *stream);
 
+LIBC_API int			C_API_FUNC  get_file_to_memstream(const char *path, mem_stream *stream);

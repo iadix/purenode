@@ -55,7 +55,7 @@ text_new_tpo_hash				:db 'new tpo hash added ',10,0
 sys_num_tpo_mod_loaded			:dd 0
 sys_num_tpo_mod_func_loaded		:dd 0
 
-
+ret_val:dd 0
 
 align 16
 sys_tpo_mod_loaded				:times 16 dd 0
@@ -891,16 +891,20 @@ _sys_add_tpo_mod_func_name:
 sys_add_tpo_mod_func_name:
 %endif
   
-  mov	eax						,	[esp+4]
+  push ebp
+  mov  ebp, esp
+  pusha
+
+  mov	eax						,	[ebp+8]
   mov	[sys_tpo_mod_name_ptr]	,	eax
   
-  mov	eax						,	[esp+8]
+  mov	eax						,	[ebp+12]
   mov	[sys_tpo_fn_name_ptr]	,	eax
 
-  mov	eax						,	[esp+12]
+  mov	eax						,	[ebp+16]
   mov	[sys_tpo_fn_addr]		,	eax
   
-  mov	eax						,	[esp+16]
+  mov	eax						,	[ebp+20]
   mov   [tpo_module_deco_type]	,	eax
  
   mov esi						,	[sys_tpo_mod_name_ptr]
@@ -910,8 +914,13 @@ sys_add_tpo_mod_func_name:
 			
   call	calc_export_hash	
   call	sys_add_tpo_mod_func
+
+  mov dword [ret_val],esi
+  popa
+  mov esp,ebp
+  pop ebp
   
-  mov eax,esi
+  mov eax,[ret_val]   
   
 ret
 

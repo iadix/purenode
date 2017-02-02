@@ -199,7 +199,7 @@ struct static_tree_desc_s {int dummy;}; /* for buggy compilers */
     zmemzero((Bytef *)s->head, (unsigned)(s->hash_size-1)*sizeof(*s->head));
 
 /* ========================================================================= */
-int ZEXPORT deflateInit_(strm, level, version, stream_size)
+OS_API_C_FUNC(int) deflateInit_(strm, level, version, stream_size)
     z_streamp strm;
     int level;
     const char *version;
@@ -211,7 +211,7 @@ int ZEXPORT deflateInit_(strm, level, version, stream_size)
 }
 
 /* ========================================================================= */
-int ZEXPORT deflateInit2_(strm, level, method, windowBits, memLevel, strategy,
+OS_API_C_FUNC(int) deflateInit2_(strm, level, method, windowBits, memLevel, strategy,
                   version, stream_size)
     z_streamp strm;
     int  level;
@@ -425,7 +425,7 @@ int ZEXPORT deflateResetKeep (strm)
 }
 
 /* ========================================================================= */
-int ZEXPORT deflateReset (strm)
+OS_API_C_FUNC(int) deflateReset (strm)
     z_streamp strm;
 {
     int ret;
@@ -663,7 +663,7 @@ local void flush_pending(strm)
 }
 
 /* ========================================================================= */
-int ZEXPORT deflate (strm, flush)
+OS_API_C_FUNC(int) deflate (strm, flush)
     z_streamp strm;
     int flush;
 {
@@ -977,7 +977,7 @@ int ZEXPORT deflate (strm, flush)
 }
 
 /* ========================================================================= */
-int ZEXPORT deflateEnd (strm)
+OS_API_C_FUNC(int) deflateEnd (strm)
     z_streamp strm;
 {
     int status;

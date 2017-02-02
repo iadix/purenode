@@ -8,6 +8,7 @@
 #include "../base/std_str.h"
 #include "strs.h"
 #include "fsio.h"
+#include "mem_stream.h"
 
 #include <sys_include.h>
 #include <time.h>
@@ -98,6 +99,17 @@ ctime_t FileTime_to_POSIX(FILETIME ft)
 	ti = muldiv64(t.m.v64 - 116444736000000000, 1, 10000000);
 	return (ti );
 }
+ctime_t FileTime_to_Milli(FILETIME ft)
+{
+	struct big64 t;
+	uint64_t ti;
+
+	t.m.v[0] = ft.dwLowDateTime;
+	t.m.v[1] = ft.dwHighDateTime;
+	ti = muldiv64(t.m.v64 - 116444736000000000, 1, 10000);
+	return (ti);
+}
+
 OS_API_C_FUNC(int) set_ftime(const char *path,ctime_t time)
 {
 	int ret;
@@ -218,7 +230,48 @@ OS_API_C_FUNC(int) get_sub_files(const char *path, struct string *file_list)
 }
 
 
+OS_API_C_FUNC(int) get_file_to_memstream(const char *path, mem_stream *stream)
+{
+	HANDLE hFile;
+	mem_zone_ref fileMem = { PTR_NULL };
+	size_t len, data_len;
 
+	if ((hFile = CreateFile(path, FILE_READ_DATA | FILE_READ_ATTRIBUTES, 0, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0)) == INVALID_HANDLE_VALUE)
+	{
+		struct string t;
+		clone_string(&t, &exe_path);
+		cat_cstring_p(&t, path);
+		hFile = CreateFile(t.str, FILE_READ_DATA | FILE_READ_ATTRIBUTES, 0, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
+		free_string(&t);
+		if (hFile == INVALID_HANDLE_VALUE)
+		{
+			stream->data.zone = PTR_NULL;
+			return -1;
+		}
+	}
+
+	data_len = GetFileSize(hFile, NULL);
+	if (data_len>0)
+	{
+		unsigned char *data;
+		allocate_new_zone(0, data_len+1, &fileMem);
+		data = (unsigned char *)get_zone_ptr(&fileMem, 0);
+		if (data != PTR_NULL)
+		{
+			SetFilePointer(hFile, 0, 0, FILE_BEGIN);
+			ReadFile(hFile, data, data_len, &len, PTR_NULL);
+			data[data_len] = 0;
+			mem_stream_init(stream, &fileMem, 0);
+		}
+		else
+			len = 0;
+	}
+	else
+		len = 0;
+	CloseHandle(hFile);
+
+	return (int)len;
+}
 OS_API_C_FUNC(int) get_file(const char *path, unsigned char **data, size_t *data_len)
 {
 	HANDLE hFile;
@@ -257,40 +310,6 @@ OS_API_C_FUNC(int) get_file(const char *path, unsigned char **data, size_t *data
 	CloseHandle	(hFile);
 
 	return (int)len;
-
-	/*
-	ret	=	fopen_s	(&f,path,"rb");
-	if(f==NULL)
-	{
-		struct string t;
-		clone_string(&t, &exe_path);
-		cat_cstring_p(&t, path);
-		ret = fopen_s(&f, t.str, "rb");
-		free_string(&t);
-		if (f == NULL)
-		{
-			*data_len = 0;
-			return -1;
-		}
-	}
-	fseek(f,0,SEEK_END);
-	(*data_len) = ftell(f);
-	rewind(f);
-	if((*data_len)>0)
-	{
-		(*data)		= malloc_c((*data_len)+1);
-		if ((*data) != PTR_NULL)
-		{
-			len = fread((*data), *data_len, 1, f);
-			(*data)[*data_len] = 0;
-		}
-		else
-			len = 0;
-	}
-	fclose(f);
-	return (int)len;
-	*/
-
 }
 
 OS_API_C_FUNC(int) get_hash_idx(const char *path, size_t idx, hash_t hash)
@@ -598,9 +617,14 @@ OS_API_C_FUNC(int)kernel_memory_free_c(mem_ptr ptr)
 {
 	return HeapFree(GetProcessHeap(),0,ptr);
 }
- unsigned int 	 get_system_time_c				()
+OS_API_C_FUNC(ctime_t) get_system_time_c()
 {
-	return 0;
+	SYSTEMTIME st;
+	FILETIME   ft;
+
+	GetSystemTime(&st);
+	SystemTimeToFileTime(&st, &ft);
+	return FileTime_to_Milli(ft);
 }
 
 

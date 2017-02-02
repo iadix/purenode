@@ -1132,20 +1132,7 @@ int handle_element(mem_zone_ref_ptr node, mem_zone_ref_ptr element)
 
 	return 0;
 }
-/*
-int C_API_FUNC scanaddr_func(mem_zone_ref_ptr p, unsigned int *status)
-{
-	btc_addr_t			new_addr;
-	tree_manager_init(1024 * 1024);
-	tree_manager_get_node_btcaddr(p, 0, new_addr);
-	*status = 1;
 
-	rescan_addr(new_addr);
-	tree_manager_free();
-
-	return 1;
-}
-*/
 OS_API_C_FUNC(int) scan_addresses()
 {
 	mem_zone_ref scan_list = { PTR_NULL };
@@ -1669,48 +1656,3 @@ unsigned int C_API_FUNC _DllMainCRTStartup(unsigned int *prev, unsigned int *cur
 
 	return 1;
 }
-
-/*
-int main(int argc, char **argv)
-{
-	tpo_mod_file		protocol_mod = { 0 }, block_mod = { 0 }, node_mod = { 0 }, libbase_mod = { 0 };
-	unsigned int		done = 0;
-	mem_zone_ref		node_addr = { PTR_NULL },log = { PTR_NULL };
-	mem_zone_ref		tx = { PTR_NULL };
-
-	unsigned char		*data;
-	size_t				data_len;
-	unsigned int		*tree_area_ptr;
-
-
-
-	load_module		("modz/libbase.tpo", "libbase",&libbase_mod);
-	load_module		("modz/protocol_adx.tpo", "protocol_adx", &protocol_mod);
-	load_module		("modz/block_adx.tpo", "block_adx", &block_mod);
-	load_module		("modz/node_adx.tpo", "node_adx", &node_mod);
-	load_node_module(&node_mod);
-
-	tree_area_ptr = (unsigned int *)get_tpo_mod_exp_addr_name(&libbase_mod, "tree_mem_area_id",0);
-	*tree_area_ptr = tree_mem_area_id;
-	
-	daemonize						(user_agent.str);
-
-
-	//load_tx(&tx,"C535E440C35184E7EBD13D686F0DE23EADC84D4C6C241E0685EDA456454C7FB2");
-	//check_txs();
-	//load_block_indexes(&self_node);
-	//get_addr_amounts("BPkMQCc6sjmbDpwpMNvyzMY7RuEQMAetHM", &total);
-	while (!done)
-	{
-
-
-	}
-
-	return 0;
-}
-
-void mainCRTStartup(void)
-{
-	main(0, PTR_NULL);
-}
-*/

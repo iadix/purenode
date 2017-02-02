@@ -9,6 +9,9 @@ default: export/libcon.a export/launcher
 export/launcher: launcher/main.c export/libcon.a
 	gcc $(CFLAGS) -lc -lm -pthread -Ilibcon  -Ilibcon/zlib-1.2.8/ -Ilibcon/include -Ilibbase/include launcher/main.c export/libcon.a -o export/launcher
 
+export/raytrace: raytrace/main.c export/libcon.a
+	gcc $(CFLAGS) -lc -lm -pthread -Ilibcon  -Ilibcon/zlib-1.2.8/ -Ilibcon/include -Ilibbase/include raytrace/main.c export/libcon.a -o export/raytrace
+
 export/libiadixcoin.so:export/libbase.so export/libcon.so purenode/main.c
 	gcc $(CFLAGS)  -Lexport -lcon -lblock_adx -lbase -Ilibcon  -Ilibcon/zlib-1.2.8/ -Ilibcon/include -Ilibbase/include -Ilibcon/zlib-1.2.8 purenode/main.c  -nodefaultlibs -nostdlib -Wl,--export-dynamic,-soname,libiadixcoin.so,-melf_i386 -shared -o export/libiadixcoin.so
 
