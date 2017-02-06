@@ -46,7 +46,8 @@ OS_API_C_FUNC(int) set_mem_exe(mem_zone_ref_ptr zone)
 	ptr = uint_to_mem(mem_to_uint(get_zone_ptr(zone, 0))&(~0xFFF));
 	size = (get_zone_size(zone)&(~0xFFF)) + 4096;
 	ret = mprotect(ptr,size , PROT_READ | PROT_EXEC | PROT_WRITE);
-	printf("mprotect %X %d, ret %d\n", ptr, size,ret);
+	
+	//printf("mprotect %X %d, ret %d\n", ptr, size,ret);
 
 	return ret;
 }

@@ -128,7 +128,8 @@ OS_API_C_FUNC(  int	)			tree_manager_allocate_child_data(mem_zone_ref_ptr parent
 OS_API_C_FUNC(  int	)			tree_manager_set_child_value_i16(mem_zone_ref_ptr	p_node_ref, const char *name, unsigned short value){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_set_child_value_i32(mem_zone_ref_ptr	p_node_ref, const char *name, unsigned int value){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_set_child_value_i64(mem_zone_ref_ptr	p_node_ref, char *name, uint64_t value){return 0;}
-OS_API_C_FUNC(  int	)			tree_manager_set_child_value_float(mem_zone_ref_ptr	p_node_ref, const char *name, double value){return 0;}
+OS_API_C_FUNC(  int	)			tree_manager_set_child_value_float(mem_zone_ref_ptr	p_node_ref, const char *name, float value){return 0;}
+OS_API_C_FUNC(  int	)			tree_manager_set_child_value_double(mem_zone_ref_ptr	p_node_ref, const char *name, double value){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_set_child_value_4uc(mem_zone_ref_ptr	p_node_ref, const char *name, const vec_4uc_t value){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_set_child_value_rect(mem_zone_ref	*p_node_ref, const char *name, const struct gfx_rect *rect){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_set_child_value_bool(mem_zone_ref_ptr	p_node_ref, const char *name, unsigned int value){return 0;}
