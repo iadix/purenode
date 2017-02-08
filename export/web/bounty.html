@@ -1,0 +1,113 @@
+<html>
+<head>
+    <title>bountry sign</title>
+    <script src="/ecdsa_bundle.js"></script>
+    <script src="/jsSHA-2.2.0/src/sha_dev.js"></script>
+    <script src="/jquery-3.1.1.min.js"></script>
+    <style type="text/css">
+        .infos {
+            border: 1px solid;
+            display:block;
+            font-size:smaller;
+            font-style:italic;
+        }
+        .frm_inp{
+            width:500px;
+        }
+    </style>
+
+    <script type="text/javascript">
+
+        var signkeys;
+        function sha256(s) {                      // Requires jsSHA
+            var shaObj = new jsSHA("SHA-256", "TEXT");
+            shaObj.update(s);
+            return shaObj.getHash("HEX");
+        }
+
+        function toHexString(arr) {
+            var str = '';
+            for (var i = 0; i < arr.length ; i++) {
+                str += ((arr[i] < 16) ? "0" : "") + arr[i].toString(16);
+            }
+            return str;
+        }
+        function rpc_call(in_method, in_params, in_success) {
+            $.ajax({
+                url: '/jsonrpc',
+                data: JSON.stringify({ jsonrpc: '2.0', method: in_method, params: in_params, id: 1 }),  // id is needed !!
+                type: "POST",
+                dataType: "json",
+                success: in_success,
+                error: function (err) { alert("Error"); }
+            });
+        }
+
+        function pubkey_to_addr(pubkey) {
+            rpc_call('pubkeytoaddr', [pubkey], function (data) {
+                $('#pubaddr').val(data.result.addr);
+            });
+        }
+
+        function generateKeys() {
+            var ec = new EC('secp256k1');
+            // Generate keys
+            signkeys = ec.genKeyPair();
+            $('#privkey').val(signkeys.getPrivate('hex'));
+
+            pubkey = signkeys.getPublic().encodeCompressed('hex');
+            privkey = signkeys.getPrivate('hex');
+            pubkey_to_addr(pubkey);
+        }
+        function sign_hash() {
+            var signature = signkeys.sign($('#bounty_hash').val());
+            // Export DER encoded signature in Array
+            var derSign = signature.toDER('hex');
+
+            $('#bounty_sig').val(derSign);
+
+
+        }
+        function twit_id_from_url(url_html_id)
+        {
+            var urlsegs, username, funcseg;
+            var urlinput = document.getElementById(url_html_id);
+            var twit_url = urlinput.value;
+            var parser   = document.createElement('a');
+            
+            parser.href = twit_url;
+
+            urlsegs = parser.pathname.split('/');
+            username = urlsegs[1];
+            funcseg = urlsegs[2];
+            twit_id = urlsegs[3];
+
+            if((parser.hostname.toLowerCase()!="twitter.com")){
+                return false;
+            }
+            if ((funcseg.toLowerCase() != "status")) {
+                return false;
+            }
+
+
+            $('#twit_id').val(twit_id);
+            $('#twit_user').val(username);
+            $('#bounty_hash').val(sha256(twit_id));
+
+        }
+    </script>
+    </head>
+    <body>
+        <table>
+            
+            <tr><td>twit url</td><td ><span class="infos">(eg. https://twitter.com/iadixOfficial/status/828039195939704832 )</span><input type="text" name="twit_url" id="twit_url" /><input type="button" value="ok" onclick="twit_id_from_url('twit_url');" /></td></tr>
+            <tr><td>twit user</td><td><input type="text" name="twit_user" id="twit_user" /></td></tr>
+            <tr><td>twit id</td><td><input type="text" name="twit_id" id="twit_id" /></td></tr>
+            <tr><td>bounty hash</td><td><input type="text" class="frm_inp" name=" bounty_hash" id="bounty_hash" /></td></tr>
+            <tr><td>bounty pubaddr</td><td><input type="text" class="frm_inp" name="pubaddr" id="pubaddr" /> ( private key : <input size="64" type="text" id="privkey" name="privkey" value="" /> ) <input type="button" value="new" onclick="generateKeys();" /></td></tr>
+            <tr><td>bounty signature</td><td><input type="text" class="frm_inp" name="bounty_sig" id="bounty_sig" /><input type="button" value="sign" onclick="sign_hash();" /></td></tr>
+        </table>
+
+    </body>
+
+</html>
