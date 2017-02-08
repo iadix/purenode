@@ -476,11 +476,11 @@ OS_API_C_FUNC(void) swap_zone_ref(mem_zone_ref_ptr dest_zone_ref, mem_zone_ref_p
 extern void init_funcs(void);
 
 
-#ifdef _MSC_VER
-extern mem_ptr			ASM_API_FUNC memset(mem_ptr ptr, int value, unsigned int size);
-extern mem_ptr			ASM_API_FUNC memcpy(mem_ptr ptr, int value, unsigned int size);
 
-#endif
+extern mem_ptr			ASM_API_FUNC memset_asm(mem_ptr ptr, int value, unsigned int size);
+extern mem_ptr			ASM_API_FUNC memcpy_asm(mem_ptr ptr, int value, unsigned int size);
+
+
 OS_API_C_FUNC(void) init_mem_system()
 {
 	if(__global_mem_areas	!= PTR_INVALID)return;
@@ -510,12 +510,9 @@ OS_API_C_FUNC(void) init_mem_system()
 	sys_add_tpo_mod_func_name("libcon", "calloc_c",(void_func_ptr)calloc_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "memset_c",(void_func_ptr)memset_c, 0);
 
+	sys_add_tpo_mod_func_name("libcon", "memset", (void_func_ptr)memset_asm, 0);
+	sys_add_tpo_mod_func_name("libcon", "memcpy", (void_func_ptr)memcpy_asm, 0);
 
-#ifdef _MSC_VER
-	sys_add_tpo_mod_func_name("libcon", "memset", (void_func_ptr)memset, 0);
-	sys_add_tpo_mod_func_name("libcon", "memcpy",(void_func_ptr)memcpy, 0);
-	
-#endif
 	sys_add_tpo_mod_func_name("libcon", "memcpy_c",(void_func_ptr)memcpy_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "memcmp_c",(void_func_ptr)memcmp_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "memmove_c",(void_func_ptr)memmove_c, 0);

@@ -21,8 +21,8 @@ section .text
 
 %ifdef PREFIX
 	global  _fetch_add_c
-	global  _memset
-	global  _memcpy
+	global  _memset_asm
+	global  _memcpy_asm
 	global  _compare_z_exchange_c
 
 	global _libc_sind
@@ -38,8 +38,8 @@ section .text
 
 %else
 	GLOBAL  fetch_add_c:function 
-;	global  memset:function
-;	global  memcpy:function
+	global  memset_asm:function
+	global  memcpy_asm:function
 	GLOBAL  compare_z_exchange_c:function
 	
 	global libc_sind:function
@@ -55,7 +55,10 @@ section .text
 
 
 %ifdef PREFIX
-_memcpy:
+_memcpy_asm:
+%else
+memcpy_asm:
+%endif
    push ebp
    mov  ebp, esp
    
@@ -73,10 +76,14 @@ _memcpy:
    pop ebp
    mov eax, [ebp]      ; eax = return value = dest
 ret
-%endif
+
 
 %ifdef PREFIX
-_memset:
+_memset_asm:
+%else
+memset_asm:
+%endif
+
  push ebp
     mov ebp, esp
     add ebp, 4 ; We pushed one register to stack, count it
@@ -99,7 +106,7 @@ _memset:
     pop ebp
 
 ret
-%endif
+
 
 %ifdef PREFIX
 _compare_z_exchange_c:
