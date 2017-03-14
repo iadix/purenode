@@ -37,7 +37,7 @@ OS_API_C_FUNC(  void	)			tree_manager_set_node_name(mem_zone_ref_ptr node_ref, c
 
 OS_API_C_FUNC(  int  		)		tree_manager_add_child_node(mem_zone_ref_ptr parent_ref_ptr, const char *name, unsigned int type, mem_zone_ref *ref_ptr){return 0;}
 OS_API_C_FUNC(  unsigned int)		tree_manager_node_add_child(mem_zone_ref_ptr parent_ref_ptr, mem_zone_ref_const_ptr child_ref_ptr){return 0;}
-OS_API_C_FUNC(  int			)	tree_manager_node_dup(mem_zone_ref_ptr new_parent, mem_zone_ref_ptr src_ref_ptr, mem_zone_ref_ptr new_ref_ptr){return 0;}
+OS_API_C_FUNC(  int			)	tree_manager_node_dup(mem_zone_ref_ptr new_parent, mem_zone_ref_const_ptr src_ref_ptr, mem_zone_ref_ptr new_ref_ptr){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_node_dup_one(mem_zone_ref_ptr src_ref_ptr, mem_zone_ref_ptr new_ref_ptr){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_copy_children(mem_zone_ref_ptr dest_ref_ptr, mem_zone_ref_const_ptr src_ref_ptr){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_get_child_at(mem_zone_ref_const_ptr parent_ref_ptr, unsigned int index, mem_zone_ref_ptr ref_ptr){return 0;}
