@@ -3,7 +3,12 @@
 #include "base/mem_base.h"
 #include "base/std_str.h"
 
+
 #define LIBBASE_API C_EXPORT
+
+#include "strs.h"
+#include "tree.h"
+
 #include "sha256.h"
 
 OS_API_C_FUNC(  void)				tree_manager_dump_mem(unsigned int time){return ;}
