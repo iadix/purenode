@@ -29,7 +29,9 @@ tpo_mod_file protocol_mod = { 0 }, block_mod = { 0 }, libbase_mod = { 0 }, iadix
 
 int main(int argc, char **argv)
 {
-	int done = 0;
+	mem_zone_ref			 params = { PTR_NULL };
+	mem_ptr					*params_ptr;
+	int done = 0,n;
 	init_mem_system			();
 	init_default_mem_area	(8 * 1024 * 1024);
 	set_exe_path			();
@@ -63,7 +65,19 @@ int main(int argc, char **argv)
 		console_print("daemonize failed \n");
 		return 0;
 	}
-	if (!app_start(PTR_NULL))
+	
+	if (argc > 1)
+	{
+		allocate_new_zone(0, argc*sizeof(mem_ptr), &params);
+		for (n = 0; n < (argc-1); n++)
+		{
+			params_ptr		= get_zone_ptr(&params, n*sizeof(mem_ptr));
+			(*params_ptr)	= argv[n+1];
+		}
+		params_ptr		= get_zone_ptr(&params, n*sizeof(mem_ptr));
+		(*params_ptr)	= PTR_NULL;
+	}
+	if (!app_start(&params))
 	{
 		console_print("could not start app ");
 		console_print(iadix_mod.name);
@@ -79,8 +93,66 @@ int main(int argc, char **argv)
 	app_stop(PTR_NULL);
 }
 
-
+#ifdef _WIN32
+#include <Windows.h>
 void mainCRTStartup(void)
 {
-	main(0, PTR_NULL);
+	char		*command;
+	char		*argv[32];
+	int			argc;
+	size_t		cmd_len;
+
+	argc	= 0;
+	command	=	GetCommandLine();
+	if (command != PTR_NULL)
+	{
+		cmd_len = strlen_c(command);
+		if (cmd_len > 0)
+		{
+			const char *last_cmd = command;
+			int			open_quote = 0;
+			size_t		n;
+			for (n = 0; n < cmd_len;n++)
+			{
+				if ((open_quote == 0) && (command[n] == '"'))
+				{ 
+					last_cmd = (command + n + 1); 
+					open_quote = 1; 
+					continue; 
+				}
+				
+				if (((open_quote == 0)&&(command[n] == ' '))||
+					((open_quote == 1)&&(command[n] == '"')))
+				{
+					if (command[n+1] != 0 )
+					{
+						argv[argc++]	= last_cmd;
+
+						if (open_quote)
+						{
+							last_cmd = (command + n + 2);
+							command[n] = 0;
+							n++;
+						}
+						else
+						{
+							last_cmd = (command + n + 1);
+							command[n] = 0;
+						}
+						
+					}
+					open_quote		= 0;
+				}
+			}
+			argv[argc++] = last_cmd;
+		}
+	}
+	else
+	{
+		argc	= 0;
+		argv[0]	= PTR_NULL;
+		argv[1] = PTR_NULL;
+	}
+	main(argc, argv);
 }
+#endif

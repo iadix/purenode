@@ -63,7 +63,34 @@ OS_API_C_FUNC(int) make_string_l(struct string *str, const char *toto, size_t le
 	return 1;
 }
 
+OS_API_C_FUNC(int) make_string_from_url(struct string *str, const char *toto, size_t len)
+{
+	size_t	n = 0;
+	int		n_o = 0;
 
+	str->len = len;
+	if (str->str != NULL)free_c(str->str);
+	str->size = str->len + 1;
+	str->str = malloc_c(str->size);
+	
+	while (n<len)
+	{
+		if (toto[n] == '%')
+		{
+			char hex[3];
+
+			hex[0] = toto[n + 1];
+			hex[1] = toto[n + 2];
+			hex[2] = 0;
+			str->str[n_o++] = strtol_c(hex, NULL, 16);
+			n += 3;
+		}
+		else
+			str->str[n_o++] = toto[n++];
+	}
+	str->str[n_o] = 0;
+	return n_o;
+}
 
 OS_API_C_FUNC(int) cat_cstring(struct string *str, const char *src)
 {

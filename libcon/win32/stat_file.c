@@ -343,7 +343,7 @@ OS_API_C_FUNC(int) put_file(const char *path, void *data, size_t data_len)
 	HANDLE		hFile;
 	size_t		len;
 
-	if ((hFile = CreateFile(path, FILE_WRITE_ATTRIBUTES | FILE_WRITE_DATA, 0, 0, CREATE_NEW, FILE_FLAG_BACKUP_SEMANTICS, 0)) == INVALID_HANDLE_VALUE)
+	if ((hFile = CreateFile(path, GENERIC_WRITE, 0, 0, CREATE_ALWAYS, FILE_FLAG_BACKUP_SEMANTICS, 0)) == INVALID_HANDLE_VALUE)
 		return 0;
 
 	if (data_len > 0)
@@ -395,7 +395,7 @@ OS_API_C_FUNC(int) truncate_file(const char *path, size_t ofset, const void *dat
 		return 1;
 	}
 
-	if ((hFile = CreateFile(path, FILE_APPEND_DATA, 0, 0, OPEN_ALWAYS, FILE_FLAG_BACKUP_SEMANTICS, 0)) == INVALID_HANDLE_VALUE)
+	if ((hFile = CreateFile(path, GENERIC_WRITE, 0, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0)) == INVALID_HANDLE_VALUE)
 		return 0;
 
 	if (SetFilePointer(hFile, ofset, 0, FILE_BEGIN) == INVALID_SET_FILE_POINTER)

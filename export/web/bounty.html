@@ -17,7 +17,34 @@
     </style>
 
     <script type="text/javascript">
+              function twit_id_from_url(url_html_id)
+        {
+            var urlsegs, username, funcseg;
+            var urlinput = document.getElementById(url_html_id);
+            var twit_url = urlinput.value;
+            var parser   = document.createElement('a');
+            
+            parser.href = twit_url;
 
+            urlsegs = parser.pathname.split('/');
+            username = urlsegs[1];
+            funcseg = urlsegs[2];
+            twit_id = urlsegs[3];
+
+            if((parser.hostname.toLowerCase()!="twitter.com")){
+                return false;
+            }
+            if ((funcseg.toLowerCase() != "status")) {
+                return false;
+            }
+
+
+            $('#twit_id').val(twit_id);
+            $('#twit_user').val(username);
+            $('#bounty_hash').val(sha256(twit_id));
+
+        }
+    </script>
         var signkeys;
         function sha256(s) {                      // Requires jsSHA
             var shaObj = new jsSHA("SHA-256", "TEXT");

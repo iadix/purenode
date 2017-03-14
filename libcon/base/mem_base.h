@@ -1,6 +1,6 @@
 
-#define MAX_MEM_AREAS 8
-#define MAX_MEM_ZONES 1024*16
+#define MAX_MEM_AREAS 4
+#define MAX_MEM_ZONES 1024*32
 #define PTR_NULL	(void *)0x00000000L
 #define PTR_INVALID (void *)0xDEADBEEFLL
 #define PTR_FF		(void *)0xFFFFFFFFLL

@@ -600,6 +600,7 @@ OS_API_C_FUNC(void) init_mem_system()
 	sys_add_tpo_mod_func_name("libcon", "make_string_l",(void_func_ptr)make_string_l, 0);
 	sys_add_tpo_mod_func_name("libcon", "make_string_url",(void_func_ptr)make_string_url, 0);
 	sys_add_tpo_mod_func_name("libcon", "make_string_from_uint",(void_func_ptr)make_string_from_uint, 0);
+	sys_add_tpo_mod_func_name("libcon", "make_string_from_url",(void_func_ptr)make_string_from_url, 0);
 	sys_add_tpo_mod_func_name("libcon", "clone_string",(void_func_ptr)clone_string, 0);
 	sys_add_tpo_mod_func_name("libcon", "free_string",(void_func_ptr)free_string, 0);
 	sys_add_tpo_mod_func_name("libcon", "make_host_def",(void_func_ptr)make_host_def, 0);

@@ -26,7 +26,7 @@ typedef  get_tx_pos_hash_data_func *get_tx_pos_hash_data_func_ptr;
 typedef int	C_API_FUNC get_target_spacing_func(unsigned int *target);
 typedef  get_target_spacing_func   *get_target_spacing_func_ptr;
 
-typedef int	C_API_FUNC get_stake_reward_func(uint64_t *reward);
+typedef int	C_API_FUNC get_stake_reward_func(uint64_t height,uint64_t *reward);
 typedef get_stake_reward_func   *get_stake_reward_func_ptr;
 
 typedef int	C_API_FUNC  get_last_stake_modifier_func(mem_zone_ref_ptr pindex, hash_t nStakeModifier, unsigned int *nModifierTime);
@@ -48,7 +48,7 @@ C_IMPORT int			C_API_FUNC		get_blk_staking_infos(mem_zone_ref_ptr blk, const cha
 C_IMPORT int			C_API_FUNC		store_tx_staking(mem_zone_ref_ptr tx, hash_t tx_hash, btc_addr_t stake_addr, uint64_t	stake_in);
 C_IMPORT int			C_API_FUNC		get_target_spacing(unsigned int *target);
 C_IMPORT unsigned int	C_API_FUNC		get_current_pos_difficulty();
-C_IMPORT int			C_API_FUNC		get_stake_reward(uint64_t *reward);
+C_IMPORT int			C_API_FUNC		get_stake_reward(uint64_t height,uint64_t *reward);
 C_IMPORT int			C_API_FUNC		compute_tx_pos(mem_zone_ref_ptr tx, hash_t StakeModifier, unsigned int txTime, hash_t pos_hash, hash_t prevOutHash, unsigned int *prevOutIdx);
 C_IMPORT int			C_API_FUNC		create_pos_block(hash_t pHash, mem_zone_ref_ptr tx, mem_zone_ref_ptr newBlock);
 
@@ -2081,10 +2081,13 @@ OS_API_C_FUNC(int) getstaketx(mem_zone_ref_const_ptr params, unsigned int rpc_mo
 	if (ret)
 	{
 		uint64_t			half_am,rew;
+		uint64_t			lb;
 
 		ret = 0;
 
-		get_stake_reward	(&rew);
+		lb = get_last_block_height();
+
+		get_stake_reward	(lb,&rew);
 		half_am = muldiv64	(amount+rew, 1, 2);
 
 		if (tree_manager_add_child_node(result, "transaction", NODE_BITCORE_TX, &newtx))

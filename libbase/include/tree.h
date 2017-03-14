@@ -154,7 +154,15 @@
 #define		NODE_RT_CYLINDER				0x0D000080
 
 
+const enum op_type { CMP_E, CMP_L, CMP_G, CMPL_E, CMPL_L, CMPL_G };
 
+struct key_val
+{
+	char			key[32];
+	unsigned int	kcrc;
+	enum op_type	op;
+	struct string	value;
+};
 
 struct node_hash_val_t
 {
@@ -205,6 +213,8 @@ LIBBASE_API  int			C_API_FUNC	tree_manager_list_child_type			(mem_zone_ref_ptr c
 LIBBASE_API  int			C_API_FUNC	tree_node_find_child_by_type_value		(mem_zone_ref_const_ptr node,unsigned int type,unsigned int value,mem_zone_ref_ptr p_node_out_ref);
 LIBBASE_API  int			C_API_FUNC	tree_node_find_child_by_type			(mem_zone_ref_const_ptr p_node_ref		,unsigned int node_type					,mem_zone_ref_ptr p_node_out_ref,unsigned int index);
 LIBBASE_API  int			C_API_FUNC	tree_node_find_child_by_id				(mem_zone_ref_const_ptr p_node_ref		,unsigned int node_id,mem_zone_ref_ptr p_node_out_ref);
+LIBBASE_API  int			C_API_FUNC	tree_node_eval_i64						(mem_zone_ref_const_ptr p_node_ref, const char *key, enum key_op op,int64_t ivalue);
+LIBBASE_API  int			C_API_FUNC	tree_node_keval_i64						(mem_zone_ref_const_ptr p_node_ref, struct key_val *key);
 LIBBASE_API  int			C_API_FUNC	tree_find_child_node_by_id_name			(mem_zone_ref_const_ptr  p_node_ref,unsigned int child_type,const char *id_name,unsigned int id_val,mem_zone_ref_ptr out_node);
 //LIBBASE_API  int			C_API_FUNC	tree_find_child_node_by_value			(mem_zone_ref_const_ptr  p_node_ref,unsigned int child_type,const char *id_name,unsigned int id_val,mem_zone_ref_ptr out_node);
 LIBBASE_API  int			C_API_FUNC  tree_find_child_node_idx_by_id			(mem_zone_ref *p_node_ref,unsigned int child_type,unsigned int child_id,unsigned int *out_idx);
@@ -218,8 +228,7 @@ LIBBASE_API  int			C_API_FUNC	tree_remove_child_by_id					(mem_zone_ref_ptr p_no
 
 LIBBASE_API  int			C_API_FUNC	tree_remove_child_by_value_dword		(mem_zone_ref_ptr p_node_ref,unsigned int value);
 LIBBASE_API  int			C_API_FUNC	tree_remove_child_by_member_value_dword	(mem_zone_ref_ptr p_node_ref,unsigned int child_type,const char *member_name,unsigned int value);
-
-
+LIBBASE_API  int			C_API_FUNC	tree_remove_child_by_member_value_lt_dword(mem_zone_ref_ptr p_node_ref, unsigned int child_type, const char *member_name, unsigned int value);
 
 
 

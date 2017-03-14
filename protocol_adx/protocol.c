@@ -269,14 +269,18 @@ OS_API_C_FUNC(size_t)	get_node_size(mem_zone_ref_ptr key)
 		szData += 32;
 		szData += 4;
 		data = tree_manager_get_child_data(key, NODE_HASH_script, 0);
-		if (*data < 0xFD)
-			szData += 1 + *data;
-		else if ((*data) == 0xFD)
-			szData += 3 + (*((unsigned short *)(data + 1)));
-		else if ((*data) == 0xFE)
-			szData += 5 + (*((unsigned int *)(data + 1)));
-		else if ((*data) == 0xFF)
-			szData += 9 + (*((uint64_t *)(data + 1)));
+
+		if (data != PTR_NULL)
+		{
+			if (*data < 0xFD)
+				szData += 1 + *data;
+			else if ((*data) == 0xFD)
+				szData += 3 + (*((unsigned short *)(data + 1)));
+			else if ((*data) == 0xFE)
+				szData += 5 + (*((unsigned int *)(data + 1)));
+			else if ((*data) == 0xFF)
+				szData += 9 + (*((uint64_t *)(data + 1)));
+		}
 		szData += 4;
 		break;
 	case NODE_BITCORE_TXOUT:
@@ -1085,6 +1089,9 @@ OS_API_C_FUNC(char *) serialize_message(mem_zone_ref_ptr msg)
 	if (!tree_manager_get_child_value_str(msg, NODE_HASH_cmd, cmd_node, 12, 16))return PTR_NULL;
 	
 	buffer = calloc_c(24 + szData, 1);
+	if (buffer == PTR_NULL)
+		return PTR_NULL;
+
 	memcpy_c(buffer, &magic, 4);
 	
 	memset_c	(&buffer[4], 0, 12);
@@ -1154,7 +1161,7 @@ OS_API_C_FUNC(int) create_getdata_message(mem_zone_ref_ptr node, mem_zone_ref_pt
 
 	return 1;
 }
-OS_API_C_FUNC(int) create_getheaders_message(mem_zone_ref_ptr node, mem_zone_ref_ptr blk_locator, mem_zone_ref_ptr blk_hdr_pack)
+OS_API_C_FUNC(int) create_getheaders_message(mem_zone_ref_ptr node, mem_zone_ref_ptr blk_locator,hash_t hashstop, mem_zone_ref_ptr blk_hdr_pack)
 {
 	mem_zone_ref		payload = { PTR_NULL };
 	size_t				pl_size;
@@ -1179,7 +1186,7 @@ OS_API_C_FUNC(int) create_getheaders_message(mem_zone_ref_ptr node, mem_zone_ref
 		}
 
 	}
-	tree_manager_set_child_value_hash(&payload, "hashstop", null_hash);
+	tree_manager_set_child_value_hash(&payload, "hashstop", hashstop);
 
 	pl_size = compute_payload_size(&payload);
 	release_zone_ref(&payload);

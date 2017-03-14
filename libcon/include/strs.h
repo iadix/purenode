@@ -29,6 +29,7 @@ LIBC_API		int 				C_API_FUNC make_cstring(const struct string *str, char *toto, 
 LIBC_API		int 				C_API_FUNC make_string_l(struct string *str, const char *toto, size_t len);
 LIBC_API		int 				C_API_FUNC make_string_url(struct string *str, const char *toto, size_t len);
 LIBC_API		int 				C_API_FUNC make_string_from_uint(struct string *str, size_t i);
+LIBC_API		int 				C_API_FUNC make_string_from_url(struct string *str, const char *toto, size_t len);
 LIBC_API		int					C_API_FUNC clone_string(struct string *str, const struct string *str1);
 LIBC_API		void				C_API_FUNC free_string(struct string *str);
 LIBC_API		struct host_def *	C_API_FUNC make_host_def(const char *host, unsigned short port);

@@ -389,12 +389,12 @@ int compute_next_stake_modifier(mem_zone_ref_ptr pindexPrev, mem_zone_ref_ptr ne
 	tree_manager_set_child_value_i64(newBlock, "StakeMod", nStakeModifierNew);
 	return 1;
 }
-OS_API_C_FUNC(int) compute_blk_staking(mem_zone_ref_ptr hdr, mem_zone_ref_ptr tx_list, uint64_t *staking_reward)
+OS_API_C_FUNC(int) compute_blk_staking(mem_zone_ref_ptr prev, mem_zone_ref_ptr hdr, mem_zone_ref_ptr tx_list, uint64_t *staking_reward)
 {
 	char				prevHash[65];
 	uint64_t			lastStakeModifier;
 	unsigned int		lastStakeModifiertime;
-	mem_zone_ref		my_list = { PTR_NULL }, prev = { PTR_NULL };
+	mem_zone_ref		my_list = { PTR_NULL };
 	mem_zone_ref_ptr	ttx = PTR_NULL, tx = PTR_NULL, tx2 = PTR_NULL;
 	int					ret;
 	tree_manager_get_child_value_str(hdr, NODE_HASH("prev"), prevHash, 65, 16);
@@ -417,10 +417,8 @@ OS_API_C_FUNC(int) compute_blk_staking(mem_zone_ref_ptr hdr, mem_zone_ref_ptr tx
 	}
 	tx2 = ttx;
 		
-	tree_manager_add_child_node(hdr, "blk prev", NODE_BITCORE_BLK_HDR, &prev);
-	ret = load_blk_hdr(&prev, prevHash);
-	if (ret)
-		ret=get_last_stake_modifier(&prev, &lastStakeModifier, &lastStakeModifiertime);
+
+	ret=get_last_stake_modifier(prev, &lastStakeModifier, &lastStakeModifiertime);
 
 	if (is_tx_null(tx) && is_vout_null(tx2, 0))
 	{
@@ -436,12 +434,11 @@ OS_API_C_FUNC(int) compute_blk_staking(mem_zone_ref_ptr hdr, mem_zone_ref_ptr tx
 		ret = 1;
 		*staking_reward = 0;
 	}
-	ret = compute_next_stake_modifier(&prev, hdr);
+	ret = compute_next_stake_modifier(prev, hdr);
 	
 
 	release_zone_ref(tx);
 	release_zone_ref(tx2);
-	release_zone_ref(&prev);
 	release_zone_ref(&my_list);
 	return ret;
 }

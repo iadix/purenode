@@ -69,7 +69,10 @@ OS_API_C_FUNC(  int	)			tree_manager_copy_node_data(mem_zone_ref_ptr dst_node, m
 OS_API_C_FUNC(  int	 )			tree_manager_write_node_dword(mem_zone_ref_ptr node_ref, mem_size ofset, unsigned int value){return 0;}
 OS_API_C_FUNC(  int	 )			tree_manager_cmp_z_xchg_node_dword(mem_zone_ref_ptr node_ref, mem_size ofset, unsigned int value){return 0;}
 OS_API_C_FUNC(  int		)		tree_manager_write_node_qword(mem_zone_ref *node_ref, mem_size ofset, uint64_t value){return 0;}
-OS_API_C_FUNC(  int		)		tree_manager_write_node_float(mem_zone_ref *node_ref, mem_size ofset, double value){return 0;}
+OS_API_C_FUNC(  int		)		tree_manager_write_node_float(mem_zone_ref *node_ref, mem_size ofset, float value){return 0;}
+
+OS_API_C_FUNC(int)				tree_manager_write_node_double(mem_zone_ref *node_ref, mem_size ofset, double value){ return 0; }
+
 OS_API_C_FUNC(  int	)			tree_manager_write_node_hash(mem_zone_ref_ptr node_ref, mem_size ofset, const hash_t hash){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_write_node_rhash(mem_zone_ref_ptr node_ref, mem_size ofset, const hash_t hash){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_write_node_vstr(mem_zone_ref_ptr node_ref, mem_size ofset, const struct string *str){return 0;}
@@ -99,7 +102,8 @@ OS_API_C_FUNC(  int	)			tree_manager_get_node_hash(mem_zone_ref_const_ptr node_r
 OS_API_C_FUNC(  int		)		tree_manager_get_node_rhash(mem_zone_ref_const_ptr node_ref, mem_size ofset, hash_t hash){return 0;}
 OS_API_C_FUNC( int	)		    tree_manager_get_node_btcaddr(mem_zone_ref_ptr node_ref, mem_size ofset, btc_addr_t addr){return 0;}
 OS_API_C_FUNC(  int	)			tree_mamanger_get_node_qword(mem_zone_ref_const_ptr node_ref, mem_size ofset, uint64_t *val){return 0;}
-OS_API_C_FUNC(  int	)			tree_mamanger_get_node_float(mem_zone_ref_const_ptr node_ref, mem_size ofset, double *val){return 0;}
+OS_API_C_FUNC(  int	)			tree_mamanger_get_node_float(mem_zone_ref_const_ptr node_ref, mem_size ofset, float *val){return 0;}
+OS_API_C_FUNC(int)				tree_mamanger_get_node_double(mem_zone_ref_const_ptr node_ref, mem_size ofset, double *val){ return 0; }
 OS_API_C_FUNC(  int		)		tree_mamanger_get_node_signed_dword(mem_zone_ref_const_ptr node_ref, mem_size ofset, int *val){return 0;}
 OS_API_C_FUNC(  int		)		tree_mamanger_get_node_word(mem_zone_ref_const_ptr node_ref, mem_size ofset, unsigned short *val){return 0;}
 OS_API_C_FUNC(  int		)		tree_mamanger_get_node_signed_word(mem_zone_ref_const_ptr node_ref, mem_size ofset, short *val){return 0;}
@@ -107,8 +111,9 @@ OS_API_C_FUNC(  int		)		tree_mamanger_get_node_byte(mem_zone_ref_const_ptr node_
 OS_API_C_FUNC(  mem_ptr	)		tree_mamanger_get_node_data_ptr(mem_zone_ref_const_ptr node_ref, mem_size ofset){return 0;}
 OS_API_C_FUNC(  unsigned int)		tree_manager_compare_node_crc(mem_zone_ref_ptr node_ref, unsigned int crc){return 0;}
 OS_API_C_FUNC(  int		)		tree_mamanger_compare_node_dword(mem_zone_ref_ptr node_ref, mem_size ofset, unsigned int val){return 0;}
-
-//OS_API_C_FUNC(  void				tree_mamanger_get_node_data_ref			(mem_zone_ref_const_ptr node_ref,mem_zone_ref_ptr out){return 0;}
+OS_API_C_FUNC(int)				tree_node_keval_i64(mem_zone_ref_const_ptr p_node_ref, struct key_val *key){ return 0; }
+OS_API_C_FUNC(int)				tree_node_eval_i64(mem_zone_ref_const_ptr p_node_ref, const char *key, enum key_op op, int64_t ivalue){ return 0; }
+OS_API_C_FUNC(int)				tree_remove_child_by_member_value_lt_dword(mem_zone_ref_ptr p_node_ref, unsigned int child_type, const char *member_name, unsigned int value){ return 0; }
 
 OS_API_C_FUNC(  int	)			tree_manager_get_child_value_i16(mem_zone_ref_const_ptr parent_ref_ptr, unsigned int crc_name, unsigned short *value){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_get_child_value_i32(mem_zone_ref_const_ptr parent_ref_ptr, unsigned int crc_name, unsigned int *value){return 0;}
@@ -173,3 +178,13 @@ OS_API_C_FUNC(void) mbedtls_sha256_finish(mbedtls_sha256_context *ctx, unsigned 
 OS_API_C_FUNC(void) mbedtls_sha256(const unsigned char *input, size_t ilen, unsigned char output[32], int is224){ return; }
 
 OS_API_C_FUNC(int)	crypto_hash_sha512(unsigned char *out, const unsigned char *in, size_t inlen){ return 0; }
+
+#ifdef _WIN32
+C_EXPORT int _fltused = 0;
+C_EXPORT mod_name_decoration_t	 mod_name_deco_type = MOD_NAME_DECO;
+unsigned int C_API_FUNC _DllMainCRTStartup(unsigned int *prev, unsigned int *cur, unsigned int *xx)
+{
+
+	return 1;
+}
+#endif

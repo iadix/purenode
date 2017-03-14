@@ -87,7 +87,7 @@ OS_API_C_FUNC(int) init_pos(mem_zone_ref_ptr stake_conf)
 	
 	return 1;
 }
-OS_API_C_FUNC(int) get_stake_reward(uint64_t *reward)
+OS_API_C_FUNC(int) get_stake_reward(uint64_t height,uint64_t *reward)
 {
 	*reward = nStakeReward;
 	return 1;
@@ -614,7 +614,7 @@ OS_API_C_FUNC(int) compute_last_pos_diff(mem_zone_ref_ptr lastPOS, unsigned int 
 	return ret;
 }
 
-OS_API_C_FUNC(int) compute_blk_staking(mem_zone_ref_ptr prev, mem_zone_ref_ptr prevPOS, mem_zone_ref_ptr hdr, mem_zone_ref_ptr tx_list, uint64_t *staking_reward)
+OS_API_C_FUNC(int) compute_blk_staking(mem_zone_ref_ptr prev, mem_zone_ref_ptr hdr, mem_zone_ref_ptr tx_list, uint64_t *staking_reward)
 {
 	hash_t				StakeModKernel;
 	hash_t				lastStakeModifier;
@@ -707,11 +707,10 @@ OS_API_C_FUNC(int) compute_blk_staking(mem_zone_ref_ptr prev, mem_zone_ref_ptr p
 					}
 					free_string(&blksign);
 				}
-				
 			}
 			free_string(&vpubK);
-
 		}
+
 		if (ret)
 		{
 			compute_tx_pos(&tx2, lastStakeModifier, txTime, pos_hash, StakeModKernel, &prevOutIdx);
