@@ -125,7 +125,7 @@ OS_API_C_FUNC(int) cat_cstring_p(struct string *str, const char *src)
 	new_len = str->len + src_len+1;
 	str->size = new_len + 1;
 
-	if (str->str != NULL)
+	if ((str->str != NULL) && (str->str != PTR_INVALID))
 		str->str = realloc_c(str->str, str->size);
 	else
 	{
@@ -141,18 +141,29 @@ OS_API_C_FUNC(int) cat_cstring_p(struct string *str, const char *src)
 
 OS_API_C_FUNC(int) cat_ncstring(struct string *str, const char *src, size_t src_len)
 {
-	size_t		new_len;
+	size_t new_len,cpy_len,n;
 
-	new_len				=	str->len+src_len;
+	if (src_len == 0)return str->len;
+
+	cpy_len = 0;
+	n		= 0;
+	while (n<src_len)
+	{
+		if (src[n++] == 0)break;
+		cpy_len++;
+	}
+	if (cpy_len == 0)return 0;
+	
+	new_len				=	str->len+cpy_len;
 	str->size			=	new_len+1;
 	if(str->str!=NULL)
 		str->str=realloc_c(str->str,str->size);
 	else
 		str->str=malloc_c(str->size);
 
-	memcpy_c	(&str->str[str->len],src,src_len);
-	str->len = new_len;
-	str->str[str->len]=0;
+	memcpy_c	(&str->str[str->len],src,cpy_len);
+	str->len			= new_len;
+	str->str[str->len]	= 0;
 	return (int)str->len;
 }
 
@@ -177,11 +188,21 @@ OS_API_C_FUNC(int) cat_ncstring_p(struct string *str, const char *src, size_t sr
 
 OS_API_C_FUNC(size_t) cat_string(struct string *str, const struct string *src)
 {
-	size_t		new_len;
+	size_t new_len, cpy_len, n;
 
 	if(src->len==0)return str->len;
 
-	new_len				=	str->len+src->len;
+	cpy_len = 0;
+	n = 0;
+
+	while (n<src->len)
+	{
+		if (src->str[n++] == 0)break;
+		cpy_len++;
+	}
+	if (cpy_len == 0)return 0;
+
+	new_len				=	str->len+cpy_len;
 	str->size			=	new_len+1;
 
 	if(str->str!=NULL)
@@ -189,7 +210,7 @@ OS_API_C_FUNC(size_t) cat_string(struct string *str, const struct string *src)
 	else
 		str->str=malloc_c	(str->size);
 
-	memcpy_c	(&str->str[str->len],src->str,src->len);
+	memcpy_c	(&str->str[str->len],src->str,cpy_len);
 	str->len = new_len;
 	str->str[str->len]=0;
 	return (int)str->len;
@@ -220,7 +241,7 @@ OS_API_C_FUNC(int) strcat_uint(struct string *str, size_t i)
 	size_t		new_len,src_len;
 	char		buff[32];
 
-	uitoa_s				(i,buff,32,10);
+	uitoa_s				(i,buff,32,16);
 
 	src_len				=	strlen_c(buff);
 	new_len				=	str->len+src_len;

@@ -1,9 +1,7 @@
 #ifndef __STD_DEF__
-
 #define __STD_DEF__
 
 #include "std_base.h"
-
 	
 #if defined(_M_X64) || defined(__amd64__)
 	typedef int64_t			ptrdiff_t;
@@ -42,6 +40,7 @@
 	#ifndef MAX_PATH 
 		#define MAX_PATH 256
 	#endif
+	
 	#ifndef UINT_MAX		
 		#define LONG_MAX		0x7FFFFFFFL
 		#define LONG_MIN		((long) 0x80000000L)

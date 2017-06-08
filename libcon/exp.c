@@ -16,11 +16,15 @@
 #include "xmlparse.h"
 
 extern int init_zfuncs();
-extern struct string home_path;
-extern struct string log_file_name;
-extern struct string exe_path;
+
+extern tpo_mod_file			*modz[64];
+extern size_t				n_modz;
+
 void init_funcs()
 {
+	memset_c(modz,0,sizeof(modz));
+	n_modz=0;
+
 	#ifndef _DEBUG
 	sys_add_tpo_mod_func_name("libcon", "utf8_encode", (void_func_ptr)utf8_encode, 0);
 	sys_add_tpo_mod_func_name("libcon", "utf8_check_first", (void_func_ptr)utf8_check_first, 0);
@@ -65,8 +69,5 @@ void init_funcs()
 	init_zfuncs				();	
 #endif
 
-	init_string	(&exe_path);
-	init_string	(&home_path);
-	init_string	(&log_file_name);
 	
 }

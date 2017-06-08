@@ -2,8 +2,6 @@
 #define LIBC_API	C_IMPORT
 #endif
 
-
-
 typedef void			*mem_ptr;
 typedef const void		*const_mem_ptr;
 
@@ -36,7 +34,6 @@ LIBC_API mem_ptr		C_API_FUNC memcpy_c				(mem_ptr dst_ptr,const_mem_ptr src_ptr,
 LIBC_API mem_ptr		C_API_FUNC memmove_c			(mem_ptr dst_ptr,const_mem_ptr src_ptr,mem_size size);
 LIBC_API mem_ptr		C_API_FUNC memset_c				(mem_ptr ptr,unsigned char v,mem_size size);
 LIBC_API mem_ptr		C_API_FUNC memset_32_c			(mem_ptr ptr,unsigned int v,mem_size size);
-/*LIBC_API mem_ptr		C_API_FUNC memset				(mem_ptr ptr,unsigned char v,mem_size size);*/
 LIBC_API int			C_API_FUNC memcmp_c				(const_mem_ptr ptr1,const_mem_ptr ptr2,size_t size);
 LIBC_API const_mem_ptr	C_API_FUNC memchr_c				(const_mem_ptr ptr,int value,mem_size size);
 LIBC_API size_t			C_API_FUNC memchr_32_c			(const_mem_ptr ptr,unsigned int value,mem_size size);
@@ -54,7 +51,6 @@ LIBC_API uint64_t		C_API_FUNC shl64(uint64_t a, unsigned char n);
 LIBC_API uint64_t		C_API_FUNC shr64(uint64_t a, unsigned char n);
 LIBC_API double			C_API_FUNC exp_c(double a);
 LIBC_API void			C_API_FUNC big128_mul(unsigned int x, struct big64 y, struct big128 *out);
-/*LIBC_API unsigned int	C_API_FUNC rand_c();*/
 
 
 LIBC_API unsigned int	ASM_API_FUNC		compare_z_exchange_c(unsigned int *data, unsigned int new_value);

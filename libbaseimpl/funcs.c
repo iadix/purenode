@@ -116,7 +116,7 @@ OS_API_C_FUNC(  int		)		tree_mamanger_get_node_byte(mem_zone_ref_const_ptr node_
 OS_API_C_FUNC(  mem_ptr	)		tree_mamanger_get_node_data_ptr(mem_zone_ref_const_ptr node_ref, mem_size ofset){return 0;}
 OS_API_C_FUNC(  unsigned int)		tree_manager_compare_node_crc(mem_zone_ref_ptr node_ref, unsigned int crc){return 0;}
 OS_API_C_FUNC(  int		)		tree_mamanger_compare_node_dword(mem_zone_ref_ptr node_ref, mem_size ofset, unsigned int val){return 0;}
-OS_API_C_FUNC(int)				tree_node_keval_i64(mem_zone_ref_const_ptr p_node_ref, struct key_val *key){ return 0; }
+OS_API_C_FUNC(int)				tree_node_keval_i64(mem_zone_ref_const_ptr p_node_ref, const struct key_val *key){ return 0; }
 OS_API_C_FUNC(int)				tree_node_eval_i64(mem_zone_ref_const_ptr p_node_ref, const char *key, enum op_type op, int64_t ivalue){ return 0; }
 OS_API_C_FUNC(int)				tree_remove_child_by_member_value_lt_dword(mem_zone_ref_ptr p_node_ref, unsigned int child_type, const char *member_name, unsigned int value){ return 0; }
 
@@ -134,10 +134,10 @@ OS_API_C_FUNC(  int	)			tree_manager_get_child_value_ipv4(mem_zone_ref_const_ptr
 OS_API_C_FUNC(  int	)			tree_manager_get_child_value_vstr(mem_zone_ref_const_ptr	p_node_ref, unsigned int crc_name, mem_ptr vstr){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_get_child_value_hash(const mem_zone_ref	*p_node_ref, unsigned int crc_name, hash_t hash){return 0;}
 
-OS_API_C_FUNC(  int	)			tree_manager_allocate_child_data(mem_zone_ref_ptr parent_ref_ptr, char *name, unsigned int size){return 0;}
+OS_API_C_FUNC(int)			tree_manager_allocate_child_data(mem_zone_ref_ptr parent_ref_ptr, const char *name, unsigned int size){ return 0; }
 OS_API_C_FUNC(  int	)			tree_manager_set_child_value_i16(mem_zone_ref_ptr	p_node_ref, const char *name, unsigned short value){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_set_child_value_i32(mem_zone_ref_ptr	p_node_ref, const char *name, unsigned int value){return 0;}
-OS_API_C_FUNC(  int	)			tree_manager_set_child_value_i64(mem_zone_ref_ptr	p_node_ref, char *name, uint64_t value){return 0;}
+OS_API_C_FUNC(int)			tree_manager_set_child_value_i64(mem_zone_ref_ptr	p_node_ref, const char *name, uint64_t value){ return 0; }
 OS_API_C_FUNC(  int	)			tree_manager_set_child_value_float(mem_zone_ref_ptr	p_node_ref, const char *name, float value){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_set_child_value_double(mem_zone_ref_ptr	p_node_ref, const char *name, double value){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_set_child_value_4uc(mem_zone_ref_ptr	p_node_ref, const char *name, const vec_4uc_t value){return 0;}
@@ -146,8 +146,8 @@ OS_API_C_FUNC(  int	)			tree_manager_set_child_value_bool(mem_zone_ref_ptr	p_nod
 OS_API_C_FUNC(  int	)			tree_manager_set_child_value_si32(mem_zone_ref_ptr	p_node_ref, const char *name, int value){return 0;}
 OS_API_C_FUNC(  int	)	    	tree_manager_set_child_value_ptr(mem_zone_ref_ptr	p_node_ref, const char *name, mem_ptr value){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_set_child_value_str(mem_zone_ref_ptr	p_node_ref, const char *name, const char *str){return 0;}
-OS_API_C_FUNC(  int	)			tree_manager_set_child_value_si64(mem_zone_ref_ptr p_node_ref, char *name, int64_t value){return 0;}
-OS_API_C_FUNC(  int	)			tree_manager_set_child_value_ipv4(mem_zone_ref_ptr p_node_ref, char *name, ipv4_t value){return 0;}
+OS_API_C_FUNC(int)				tree_manager_set_child_value_si64(mem_zone_ref_ptr p_node_ref, const char *name, int64_t value){ return 0; }
+OS_API_C_FUNC(int)				tree_manager_set_child_value_ipv4(mem_zone_ref_ptr p_node_ref, const char *name, ipv4_t value){ return 0; }
 OS_API_C_FUNC(  int	)			tree_manager_set_child_value_hash(mem_zone_ref_ptr p_node_ref, const char *name, const hash_t str){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_set_child_value_btcaddr(mem_zone_ref_ptr p_node_ref, const char *name, const btc_addr_t str){return 0;}
 
@@ -183,6 +183,7 @@ OS_API_C_FUNC(void) mbedtls_sha256_finish(mbedtls_sha256_context *ctx, unsigned 
 OS_API_C_FUNC(void) mbedtls_sha256(const unsigned char *input, size_t ilen, unsigned char output[32], int is224){ return; }
 
 OS_API_C_FUNC(int)	crypto_hash_sha512(unsigned char *out, const unsigned char *in, size_t inlen){ return 0; }
+OS_API_C_FUNC(int) resolve_script_var(mem_zone_ref_ptr global_vars, mem_zone_ref_ptr script_proc, const char *var_path, unsigned int var_type, mem_zone_ref_ptr out_var){ return 0; }
 
 #ifdef _WIN32
 C_EXPORT int _fltused = 0;

@@ -1,4 +1,4 @@
-//copyright iadix 2016
+//copyright antoine bentue-ferrer 2016
 #include <base/std_def.h>
 #include <base/std_mem.h>
 #include <base/mem_base.h>
@@ -150,67 +150,75 @@ int compute_script_size(mem_zone_ref_ptr script_node)
 
 		switch (tree_mamanger_get_node_type(key))
 		{
-		case NODE_BITCORE_VSTR:
-			data = (unsigned char	*)tree_mamanger_get_node_data_ptr(key, 0);
-			if (*data == 0x00)
+			case NODE_BITCORE_SCRIPT_OPCODE:
 				length++;
-			else if (*data < 0xFD)
-				length += 1 + (*data);
-			else if (*data == 0xFD)
-				length += 3 + (*((unsigned short *)(data + 1)));
-			else if (*data == 0xFE)
-				length += 5 + (*((unsigned int *)(data + 1)));
-			else if (*data == 0xFF)
-				length += 9 + (*((uint64_t *)(data + 1)));
 			break;
-		case NODE_BITCORE_VINT:
-			data = (unsigned char	*)tree_mamanger_get_node_data_ptr(key, 0);
-			if (*data == 0x00)
-			{
-				length++;
-			}
-			else if (*data < 0xFD)
-			{
-				length += 2;
-			}
-			else if (*data == 0xFD)
-			{
-				length += 3;
-			}
-			else if (*data == 0xFE)
-			{
-				length += 5;
-			}
-			else if (*data == 0xFF)
-			{
-				length += 9;
-			}
+			case NODE_BITCORE_VSTR:
+				data = (unsigned char	*)tree_mamanger_get_node_data_ptr(key, 0);
+				if (*data == 0x00)
+					length++;
+				else if (*data < 0xFD)
+					length += 1 + (*data);
+				else if (*data == 0xFD)
+					length += 3 + (*((unsigned short *)(data + 1)));
+				else if (*data == 0xFE)
+					length += 5 + (*((unsigned int *)(data + 1)));
+				else if (*data == 0xFF)
+					length += 9 + (*((uint64_t *)(data + 1)));
 			break;
+			case NODE_BITCORE_VINT:
+				data = (unsigned char	*)tree_mamanger_get_node_data_ptr(key, 0);
+				if (*data == 0x00)
+				{
+					length++;
+				}
+				else if (*data < 0xFD)
+				{
+					length += 2;
+				}
+				else if (*data == 0xFD)
+				{
+					length += 3;
+				}
+				else if (*data == 0xFE)
+				{
+					length += 5;
+				}
+				else if (*data == 0xFF)
+				{
+					length += 9;
+				}
+				break;
 		}
 	}
 	return length;
 }
 
-int serialize_script(mem_zone_ref_ptr script_node, struct string *script)
+OS_API_C_FUNC(int) serialize_script(mem_zone_ref_ptr script_node, struct string *script)
 {
 	mem_zone_ref_ptr	key;
 	mem_zone_ref		my_list = { PTR_NULL };
 	size_t				length;
 	unsigned char		*script_data;
 
-	length = compute_script_size(script_node);
-	script->len = length;
-	script->size = length + 1;
-	script->str = (char	*)calloc_c(script->size, 1);
+	length			= compute_script_size(script_node);
+	script->len		= length;
+	script->size	= length + 1;
+	script->str		= (char	*)calloc_c(script->size, 1);
 
-	script_data = (unsigned char *)script->str;
+	script_data		= (unsigned char *)script->str;
 
 	for (tree_manager_get_first_child(script_node, &my_list, &key); ((key != NULL) && (key->zone != NULL)); tree_manager_get_next_child(&my_list, &key))
 	{
 		unsigned char	*data;
+		unsigned char	byte;
 
 		switch (tree_mamanger_get_node_type(key))
 		{
+		case NODE_BITCORE_SCRIPT_OPCODE:
+			tree_mamanger_get_node_byte(key, 0, &byte);
+			*(script_data++) = byte;
+		break;
 		case NODE_BITCORE_VSTR:
 			data = (unsigned char *)tree_mamanger_get_node_data_ptr(key, 0);
 			if (*data < 0xFD)
@@ -276,6 +284,8 @@ int serialize_script(mem_zone_ref_ptr script_node, struct string *script)
 			break;
 		}
 	}
+
+	*script_data = 0;
 	return 1;
 }
 void keyrh_to_addr(unsigned char *pkeyh, btc_addr_t addr)
@@ -304,6 +314,13 @@ void keyh_to_addr(unsigned char *pkeyh, btc_addr_t addr)
 	base58(hin, addr);
 }
 
+OS_API_C_FUNC(void) key_to_hash(unsigned char *pkey, unsigned char *keyHash)
+{
+	hash_t			tmp_hash;
+	mbedtls_sha256	(pkey, 33, tmp_hash, 0);
+	ripemd160		(tmp_hash, 32, keyHash);
+}
+
 OS_API_C_FUNC(void) key_to_addr(unsigned char *pkey,btc_addr_t addr)
 {
 	hash_t			tmp_hash;
@@ -330,6 +347,31 @@ struct string get_next_script_var(const struct string *script,size_t *offset)
 		(*offset)++;
 
 	return var;
+}
+
+
+int add_script_var(mem_zone_ref_ptr script_node, const struct string *val)
+{
+	
+	mem_zone_ref new_var = { PTR_NULL };
+	int ret;
+	if (!tree_manager_add_child_node(script_node, "var", NODE_BITCORE_VSTR, &new_var))return 0;
+	ret=tree_manager_write_node_vstr(&new_var, 0, val);
+	release_zone_ref(&new_var);
+	return ret;
+	
+	
+	
+}
+
+int add_script_opcode(mem_zone_ref_ptr script_node, unsigned char opcode)
+{
+	mem_zone_ref new_var = { PTR_NULL };
+	int ret;
+	if (!tree_manager_add_child_node(script_node, "op", NODE_BITCORE_SCRIPT_OPCODE, &new_var))return 0;
+	ret = tree_manager_write_node_byte(&new_var, 0, opcode);
+	release_zone_ref(&new_var);
+	return ret;
 }
 
 OS_API_C_FUNC(int) parse_sig_seq(const struct string *sign_seq, struct string *sign, unsigned char *hashtype, int rev)
@@ -514,6 +556,36 @@ OS_API_C_FUNC(int) get_out_script_address(struct string *script, struct string *
 	}
 	return 0;
 }
+
+OS_API_C_FUNC(int) create_payment_script(struct string *pubk, unsigned int type, mem_zone_ref_ptr script_node)
+{
+	if (type == 1)
+	{
+		char			keyHash[20];
+		struct string  strKey;
+
+		key_to_hash		 (pubk->str, keyHash);
+
+		strKey.str  = keyHash;
+		strKey.len  = 20;
+		strKey.size = 20;
+
+		add_script_opcode(script_node, 0x76);
+		add_script_opcode(script_node, 0xA9);
+		add_script_var	 (script_node, &strKey);
+		add_script_opcode(script_node, 0xAC);
+	}
+	else
+	{
+		add_script_var	 (script_node, pubk);
+		add_script_opcode(script_node, 0xAC);
+	}
+
+	
+	return 0;
+}
+
+
 int check_txout_key(mem_zone_ref_ptr output, unsigned char *pkey)
 {
 	btc_addr_t inaddr;

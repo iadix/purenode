@@ -349,6 +349,7 @@ OS_API_C_FUNC(mem_ptr)	get_zone_ptr(mem_zone_ref_const_ptr ref, mem_size ofset)
 {
 	if(ref==PTR_NULL) return PTR_INVALID;
 	if(ref->zone==PTR_NULL)return PTR_INVALID;
+	if (ref->zone == PTR_INVALID)return PTR_INVALID;
 	if((((mem_zone *)(ref->zone))->mem.size)==0)
 	{
 		return PTR_INVALID;
@@ -562,7 +563,11 @@ OS_API_C_FUNC(void) init_mem_system()
 	sys_add_tpo_mod_func_name("libcon", "strincmp_c",(void_func_ptr)strincmp_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "strlen_c",(void_func_ptr)strlen_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "strlpos_c",(void_func_ptr)strlpos_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "strrpos_c", (void_func_ptr)strrpos_c, 0);
+	
 	sys_add_tpo_mod_func_name("libcon", "strtol_c",(void_func_ptr)strtol_c, 0);
+
+
 	sys_add_tpo_mod_func_name("libcon", "strtoll_c",(void_func_ptr)strtoll_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "str_replace_char_c",(void_func_ptr)str_replace_char_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "parseDate",(void_func_ptr)parseDate, 0);
@@ -627,10 +632,27 @@ OS_API_C_FUNC(void) init_mem_system()
 
 	sys_add_tpo_mod_func_name("libcon", "tpo_mod_load_tpo",(void_func_ptr)tpo_mod_load_tpo, 0);
 	sys_add_tpo_mod_func_name("libcon", "tpo_mod_init",(void_func_ptr)tpo_mod_init, 0);
+	sys_add_tpo_mod_func_name("libcon", "tpo_mod_find", (void_func_ptr)tpo_mod_find, 0);
+
+	sys_add_tpo_mod_func_name("libcon", "execute_script_mod_call", (void_func_ptr)execute_script_mod_call, 0);
+	sys_add_tpo_mod_func_name("libcon", "execute_script_mod_rcall", (void_func_ptr)execute_script_mod_rcall, 0);
+	sys_add_tpo_mod_func_name("libcon", "execute_script_mod_rwcall", (void_func_ptr)execute_script_mod_rwcall, 0);
+
 	sys_add_tpo_mod_func_name("libcon", "load_module",(void_func_ptr)load_module, 0);
 	sys_add_tpo_mod_func_name("libcon", "register_tpo_exports",(void_func_ptr)register_tpo_exports, 0);
 	sys_add_tpo_mod_func_name("libcon", "get_tpo_mod_exp_addr_name",(void_func_ptr)get_tpo_mod_exp_addr_name, 0);
 	sys_add_tpo_mod_func_name("libcon", "isRunning",(void_func_ptr)isRunning, 0);
+
+	sys_add_tpo_mod_func_name("libcon", "snooze", (void_func_ptr)snooze, 0);
+	sys_add_tpo_mod_func_name("libcon", "find_mod_ptr", (void_func_ptr)find_mod_ptr, 0);
+
+	sys_add_tpo_mod_func_name("libcon", "get_exe_path", (void_func_ptr)get_exe_path, 0);
+
+	
+
+	
+
+	
 #endif
 
 	//init_exit();
@@ -763,18 +785,15 @@ OS_API_C_FUNC(unsigned int) free_mem_area(unsigned int area_id)
 
 }
 
-OS_API_C_FUNC(void) dump_mem_used_after	(unsigned int area_id,unsigned int time)
+OS_API_C_FUNC(size_t) dump_mem_used_after	(unsigned int area_id,unsigned int time,mem_zone_ref *outs,size_t nOuts)
 {
 	int						n;
 	size_t					mem_size;
-	int						n_zones;
+	size_t					n_zones;
 	mem_area				*area_ptr;
 
 	area_ptr			=	get_area(area_id);
-	if(area_ptr==PTR_NULL)
-	{
-		return ;
-	}
+	if(area_ptr==PTR_NULL)return 0;
 
 	mem_size		=  0;
 	n_zones			=  0;
@@ -785,11 +804,11 @@ OS_API_C_FUNC(void) dump_mem_used_after	(unsigned int area_id,unsigned int time)
 		{
 			if(area_ptr->zones_buffer[n].time>time)
 			{
-				n_zones++;
+				outs[n_zones++].zone = &area_ptr->zones_buffer[n];
+				if (n_zones >= nOuts)break;
 				/*
 				unsigned int	*data;
 				int _n;
-
 				if(area_ptr->zones_buffer[n].mem.size>0)
 				{
 					data=area_ptr->zones_buffer[n].mem.ptr;
@@ -805,6 +824,8 @@ OS_API_C_FUNC(void) dump_mem_used_after	(unsigned int area_id,unsigned int time)
 		}
 		n++;
 	}
+
+	return n_zones;
 
 }
 OS_API_C_FUNC(unsigned int) find_zones_used(unsigned int area_id)
@@ -831,28 +852,24 @@ OS_API_C_FUNC(unsigned int) find_zones_used(unsigned int area_id)
 
 	return (MAX_MEM_ZONES-nfree);
 }
-OS_API_C_FUNC(void) dump_mem_used	(unsigned int area_id)
+OS_API_C_FUNC(size_t) dump_mem_used	(unsigned int area_id)
 {
 	int						n;
 	size_t					mem_size;
 	int						n_zones;
 	mem_area				*area_ptr;
 
-	if(__global_mem_areas==PTR_NULL)return ;
-	if(__global_mem_zones==PTR_NULL)return ;
+	if(__global_mem_areas==PTR_NULL)return 0;
+	if(__global_mem_zones==PTR_NULL)return 0;
 
 	if(area_id==0xFFFFFFFF)
 	{
-		int n;
-
-		n=0;
+		int n = 0;
 		while(n<MAX_MEM_AREAS)
 		{
 			unsigned int _n;
-
-
+			
 			area_ptr		=	&__global_mem_areas[n];
-
 			if(area_ptr->area_start!=0x00000000)
 			{
 				mem_size		=  0;
@@ -871,15 +888,12 @@ OS_API_C_FUNC(void) dump_mem_used	(unsigned int area_id)
 			}
 			n++;
 		}
-		return;
+		return mem_size;
 	}
 
 	area_ptr			=	get_area(area_id);
-	if(area_ptr==PTR_NULL)
-	{
-		return ;
-	}
-
+	if(area_ptr==PTR_NULL)return 0;
+	
 	mem_size		=  0;
 	n_zones			=  0;
 	n				=  0;
@@ -892,6 +906,8 @@ OS_API_C_FUNC(void) dump_mem_used	(unsigned int area_id)
 		}
 		n++;
 	}
+
+	return mem_size;
 
 }
 
@@ -1013,8 +1029,7 @@ int allocate_zone(mem_area *area,const mem_zone_desc *desc)
 				area->zones_free[n].ptr		=PTR_NULL;
 				area->zones_free[n].size	=0;
 			}
-
-			
+		
 			return 1;
 		}
 		n++;
@@ -1199,6 +1214,7 @@ OS_API_C_FUNC(unsigned int) create_zone_ref(mem_zone_ref *dest_zone_ref,mem_ptr 
 	new_zone->n_refs	=1;
 	new_zone->mem.ptr	=ptr;
 	new_zone->mem.size	=size;
+	new_zone->time		= get_time_c();
 	new_zone->free_func =PTR_NULL;
 	dest_zone_ref->zone=new_zone;
 
@@ -1234,6 +1250,7 @@ OS_API_C_FUNC(unsigned int) allocate_new_empty_zone(unsigned int area_id,mem_zon
 			nzone->mem.size	=	0;
 			nzone->area_id	=	area_ptr->area_id;
 			nzone->n_refs	=	1;
+			nzone->time		=	get_time_c();
 			nzone->free_func=	PTR_NULL;
 			zone_ref->zone	=	nzone;
 			ret				=	1;
@@ -1290,6 +1307,7 @@ OS_API_C_FUNC(unsigned int) allocate_new_zone(unsigned int area_id,mem_size zone
 				{
 					nzone->area_id	=	area_ptr->area_id;
 					nzone->n_refs	=	1;
+					nzone->time		=	get_time_c();
 					nzone->free_func=	PTR_NULL;
 					memset_c			(nzone->mem.ptr,0x00,nzone->mem.size);
 					zone_ref->	zone	=	nzone;	
@@ -1471,6 +1489,7 @@ OS_API_C_FUNC(int) 	realloc_zone	(mem_zone_ref *zone_ref,mem_size new_size)
 				/*reset newly allocated memory*/
 				memset_c(end_zone,0,mem_sub(end_zone,new_end_zone));
 				((mem_zone *)(zone_ref->zone))->mem.size = new_size;
+				((mem_zone *)(zone_ref->zone))->time = get_time_c();
 
 				/*task_manager_release_semaphore(area_ptr->lock_sema,0);*/
 				return 1;
@@ -1507,6 +1526,7 @@ OS_API_C_FUNC(int) 	realloc_zone	(mem_zone_ref *zone_ref,mem_size new_size)
 	
 	free_zone_area			(src_zone->area_id,&src_zone->mem);
 
+	src_zone->time			=get_time_c();
 	src_zone->mem.ptr		=new_zone.ptr;
 	src_zone->mem.size		=new_zone.size;
 

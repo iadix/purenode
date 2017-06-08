@@ -45,6 +45,9 @@ LIBBASE_API int						C_API_FUNC http_make_request_header(struct http_req *req, s
 LIBBASE_API int						C_API_FUNC http_make_response_header(struct http_resp *resp, struct string *response);
 LIBBASE_API int						C_API_FUNC parse_http_req_line(const struct string *req_line, struct http_infos *infos);
 LIBBASE_API void					C_API_FUNC parse_http_query_vars(struct http_req *req, struct string *query);
+LIBBASE_API int						C_API_FUNC parse_query_line(const struct string *line, struct key_val *key);
+LIBBASE_API int						C_API_FUNC parse_http_url_params(const char *params, char sep, mem_zone_ref_ptr vars, unsigned int type);
+
 LIBBASE_API void					C_API_FUNC init_http_infos(struct http_infos *infos);
 LIBBASE_API void					C_API_FUNC free_http_infos(struct http_infos *infos);
 LIBBASE_API char *					C_API_FUNC http_add_header_line(const struct string *line, struct key_val *hdrs, char sep);
@@ -60,6 +63,6 @@ LIBBASE_API struct  http_req*		C_API_FUNC http_process_request(struct con *new_c
 LIBBASE_API int						C_API_FUNC fetch_http_url(const struct string *url, struct	string *data, const struct	string *cookie);
 LIBBASE_API struct http_req *		C_API_FUNC make_soap_request(const struct string *url, const char *soap_action, const char *soap_body, struct string *data);
 LIBBASE_API int						C_API_FUNC json_rpc(struct con *mycon, const char *method, mem_zone_ref_ptr params, unsigned int call_id, unsigned int mode);
-LIBBASE_API void					C_API_FUNC write_json(mem_zone_ref_ptr params, unsigned int mode, struct string *json_req);
+
 
 

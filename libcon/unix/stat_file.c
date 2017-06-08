@@ -243,7 +243,11 @@ OS_API_C_FUNC(int) set_exe_path()
 
 	return 1;
 }
-
+OS_API_C_FUNC(int) get_exe_path(struct string *outPath)
+{
+	clone_string(outPath, &exe_path);
+	return 1;
+}
 OS_API_C_FUNC(int) get_ftime(const char *path, ctime_t *time)
 {
 	struct stat statbuf;

@@ -1,4 +1,4 @@
-//copyright iadix 2016
+//copyright antoine bentue-ferrer 2016
 #include <stdio.h>
 #include <string.h>
 #include "coff.h"

@@ -13,7 +13,10 @@
 
 
 
-unsigned int			debug								=	0xFFFFFFFF;
+unsigned int			debug				=	0xFFFFFFFF;
+tpo_mod_file			*modz[64]			= { PTR_INVALID };
+size_t					n_modz				=	0xFFFFFFFF;
+
 extern unsigned int		kernel_log_id;
 
 
@@ -32,7 +35,7 @@ KERNEL_API struct kern_mod_sec_t	*KERN_API_FUNC 	tpo_get_mod_sec_idx_c(unsigned 
 
 KERNEL_API struct kern_mod_fn_t	*KERN_API_FUNC 	tpo_get_fn_entry_idx_c(unsigned int mod_hash, unsigned int idx_func);
 KERNEL_API struct kern_mod_fn_t *KERN_API_FUNC 	tpo_get_fn_entry_hash_c(unsigned int mod_hash, unsigned int crc_func);
-KERNEL_API struct kern_mod_fn_t *KERN_API_FUNC 	tpo_get_fn_entry_name_c(unsigned int mod_idx, unsigned int mod_hash, unsigned int str_idx, unsigned int deco_type);
+
 KERNEL_API unsigned int 		 KERN_API_FUNC	tpo_calc_exp_func_hash_c(unsigned int mod_idx, unsigned int string_id);
 KERNEL_API unsigned int 		 KERN_API_FUNC	tpo_calc_exp_func_hash_name_c(const char *func_name, unsigned int deco_type);
 KERNEL_API unsigned int 		 KERN_API_FUNC	tpo_calc_imp_func_hash_name_c(const char *func_name, unsigned int src_deco_type, unsigned int deco_type);
@@ -79,6 +82,13 @@ struct kern_mod_fn_t *find_sym(unsigned int mod_idx,size_t sym_ofset, unsigned i
 	}
 	return PTR_FF;
 }
+
+OS_API_C_FUNC(struct kern_mod_t *)tpo_mod_find(const char *name)
+{
+	return tpo_get_mod_entry_hash_c(MOD_HASH(name));
+}
+
+
 
 
 unsigned int tpo_mod_add_section		(tpo_mod_file *tpo_mod,mem_size img_ofset,mem_ptr ptr,mem_size section_size,unsigned int *crc_data)
@@ -1022,6 +1032,17 @@ OS_API_C_FUNC(void_func_ptr) tpo_mod_get_exp_addr(mem_stream *file_stream,const 
 	
 	return PTR_NULL;
 }
+OS_API_C_FUNC(tpo_mod_file *) find_mod_ptr(unsigned int name_hash)
+{
+	size_t n = n_modz;
+	while (n--)
+	{
+		if (modz[n]->name_hash == name_hash)return modz[n];
+	}
+
+	return PTR_NULL;
+}
+
 
 OS_API_C_FUNC(int) load_module(const char *file, const char *mod_name, tpo_mod_file *mod)
 {
@@ -1056,6 +1077,231 @@ OS_API_C_FUNC(int) load_module(const char *file, const char *mod_name, tpo_mod_f
 	release_zone_ref(&tpo_file_data);
 	free_c(data);
 
+	if (n_modz<32)
+		modz[n_modz++] = mod;
+
 	return 1;
 
+}
+
+#ifdef _DEBUG
+module_rproc_ptr  init_protocol;
+module_rproc_ptr  init_blocks;
+module_rproc_ptr  node_init_self;
+module_rproc_ptr  node_log_version_infos;
+
+module_rproc_ptr  init_pos, store_blk_staking, load_last_pos_blk, find_last_pos_block, store_blk_tx_staking;
+module_rwproc_ptr compute_last_pos_diff, stake_get_reward;
+
+module_rproc_ptr  set_block_hash, add_money_supply, sub_money_supply, remove_stored_block, node_store_last_pos_hash, node_set_last_block, node_truncate_chain_to, block_has_pow, set_next_check;
+module_rwproc_ptr accept_block, compute_pow_diff, store_block, node_init_service, get_pow_reward;
+
+module_rproc_ptr  queue_verack_message, queue_getaddr_message, queue_version_message, node_is_next_block, new_peer_node, node_get_script_modules, node_get_script_msg_handlers;
+module_rwproc_ptr make_genesis_block, node_add_block_header;
+module_proc_ptr	  node_load_block_indexes, node_load_last_blks, node_check_chain;
+
+module_rproc_ptr  queue_ping_message;
+module_rwproc_ptr queue_pong_message, queue_getdata_message, queue_inv_message;
+
+// set_block_hash add_money_supply node_truncate_chain_to sub_money_supply remove_stored_block store_block block_has_pow set_next_check 
+//node_add_block_header accept_block compute_last_pow_diff 
+
+//  
+OS_API_C_FUNC(int) set_dbg_ptr2(module_rwproc_ptr  a, module_rwproc_ptr b, module_rwproc_ptr  c, module_rwproc_ptr d, module_rwproc_ptr e, module_rproc_ptr f, module_rwproc_ptr g,module_rproc_ptr h)
+{
+	node_add_block_header = a;
+	accept_block = b;
+	compute_pow_diff = c;
+	store_block = d;
+	node_init_service = e;
+	node_get_script_modules = f;
+	get_pow_reward = g;
+	node_get_script_msg_handlers = h;
+	return 1;
+}
+
+OS_API_C_FUNC(int) set_dbg_ptr(module_rproc_ptr a, module_rproc_ptr b, module_rproc_ptr c, module_proc_ptr d, module_rwproc_ptr  e, module_proc_ptr f, module_rproc_ptr  g, module_rproc_ptr h, module_rproc_ptr  i, module_rproc_ptr  j, module_rproc_ptr  k, module_rproc_ptr  l, module_rwproc_ptr  m, module_rwproc_ptr  n, module_rwproc_ptr o, module_rproc_ptr p, module_rwproc_ptr q, module_rproc_ptr r, module_rproc_ptr s, module_rproc_ptr t, module_rproc_ptr u, module_rproc_ptr v, module_rproc_ptr w, module_rproc_ptr x, module_rproc_ptr y, module_rproc_ptr z)
+{
+	init_protocol=a;
+	init_blocks=b;
+	node_init_self=c;
+	node_load_block_indexes=d;
+	make_genesis_block = e;
+	node_load_last_blks = f;
+	new_peer_node = g;
+	node_log_version_infos = h;
+	queue_verack_message = i;
+	queue_getaddr_message = j;
+	queue_version_message = k;
+	queue_ping_message = l;
+	queue_pong_message = m; 
+	queue_inv_message = n;
+	queue_getdata_message = o;
+	node_is_next_block = p;
+	node_check_chain = q;
+	node_store_last_pos_hash = r;
+	node_set_last_block = s;
+	set_block_hash = t;
+	add_money_supply = u;
+	node_truncate_chain_to = v;
+	sub_money_supply = w;
+	remove_stored_block = x;
+	block_has_pow = y;
+	set_next_check = z;
+	return 1;
+}
+
+
+OS_API_C_FUNC(int) set_pos_dbg_ptr(module_rproc_ptr a, module_rproc_ptr b, module_rproc_ptr c, module_rproc_ptr d, module_rwproc_ptr e, module_rproc_ptr f, module_rwproc_ptr g)
+{
+	init_pos = a;
+	store_blk_staking = b;
+	load_last_pos_blk = c;
+	find_last_pos_block = d;
+	compute_last_pos_diff = e;
+	store_blk_tx_staking = f;
+	stake_get_reward = g;
+	return 1;
+}
+
+#endif
+
+
+
+OS_API_C_FUNC(int) execute_script_mod_rwcall(tpo_mod_file		*tpo_mod, const char *method, mem_zone_ref_ptr input, mem_zone_ref_ptr output)
+{
+	module_rwproc_ptr mod_func;
+	mod_func = (module_rwproc_ptr)get_tpo_mod_exp_addr_name(tpo_mod, method, 0);
+
+	if (mod_func == PTR_NULL)
+	{
+		log_output("method not found : ");
+		log_output(method);
+		log_output("\n");
+		return 0;
+	}
+
+#ifdef _DEBUG
+	if (!strcmp_c(method, "make_genesis_block"))
+		return make_genesis_block(input, output);
+	else if (!strcmp_c(method, "compute_last_pos_diff"))
+		return compute_last_pos_diff(input, output);
+	else if (!strcmp_c(method, "queue_pong_message"))
+		return queue_pong_message(input, output);
+	else if (!strcmp_c(method, "queue_getdata_message"))
+		return queue_getdata_message(input, output);
+	else if (!strcmp_c(method, "node_check_chain"))
+		return node_check_chain(input, output);
+	else if (!strcmp_c(method, "node_add_block_header"))
+		return node_add_block_header(input, output);
+	else if (!strcmp_c(method, "accept_block"))
+		return accept_block(input, output);
+	else if (!strcmp_c(method, "compute_pow_diff"))
+		return compute_pow_diff(input, output);
+	else if (!strcmp_c(method, "stake_get_reward"))
+		return stake_get_reward(input, output);
+	else if (!strcmp_c(method, "store_block"))
+		return store_block(input, output);
+	else if (!strcmp_c(method, "node_init_service"))
+		return node_init_service(input, output);
+	else if (!strcmp_c(method, "get_pow_reward"))
+		return get_pow_reward(input, output);
+
+	return 0;
+#endif
+
+	return mod_func(input, output);
+
+}
+
+OS_API_C_FUNC(int) execute_script_mod_rcall(tpo_mod_file		*tpo_mod, const char *method, mem_zone_ref_ptr input)
+{
+	module_rproc_ptr mod_func;
+	mod_func = (module_rproc_ptr)get_tpo_mod_exp_addr_name(tpo_mod, method, 0);
+
+	if (mod_func == PTR_NULL)
+		return 0;
+
+#ifdef _DEBUG
+	if (!strcmp_c(method, "init_protocol"))
+		return init_protocol(input);
+	else if (!strcmp_c(method, "init_blocks"))
+		return init_blocks(input);
+	else if (!strcmp_c(method, "node_init_self"))
+		return node_init_self(input);
+	else if (!strcmp_c(method, "init_pos"))
+		return init_pos(input);
+	else if (!strcmp_c(method, "node_set_last_block"))
+		return node_set_last_block(input);
+	else if (!strcmp_c(method, "store_blk_staking"))
+		return store_blk_staking(input);
+	else if (!strcmp_c(method, "load_last_pos_blk"))
+		return load_last_pos_blk(input);
+	else if (!strcmp_c(method, "find_last_pos_block"))
+		return find_last_pos_block(input);
+	else if (!strcmp_c(method, "store_last_pos_hash"))
+		return node_store_last_pos_hash(input);
+	else if (!strcmp_c(method, "node_log_version_infos"))
+		return node_log_version_infos(input);
+	else if (!strcmp_c(method, "queue_verack_message"))
+		return queue_verack_message(input);
+	else if (!strcmp_c(method, "queue_getaddr_message"))
+		return queue_getaddr_message(input);
+	else if (!strcmp_c(method, "queue_version_message"))
+		return queue_version_message(input);
+	else if (!strcmp_c(method, "queue_ping_message"))
+		return queue_ping_message(input);
+	else if (!strcmp_c(method, "set_block_hash"))
+		return set_block_hash(input);
+	else if (!strcmp_c(method, "add_money_supply"))
+		return add_money_supply(input);
+	else if (!strcmp_c(method, "node_truncate_chain_to"))
+		return node_truncate_chain_to(input);
+	else if (!strcmp_c(method, "sub_money_supply"))
+		return sub_money_supply(input);
+	else if (!strcmp_c(method, "remove_stored_block"))
+		return remove_stored_block(input);
+	else if (!strcmp_c(method, "block_has_pow"))
+		return block_has_pow(input); 
+	else if (!strcmp_c(method, "set_next_check"))
+		return set_next_check(input);
+	else if (!strcmp_c(method, "store_blk_tx_staking"))
+		return store_blk_tx_staking(input);
+	else if (!strcmp_c(method, "node_is_next_block"))
+		return node_is_next_block(input);
+	else if (!strcmp_c(method, "new_peer_node"))
+		return new_peer_node(input);
+	else if (!strcmp_c(method, "node_get_script_modules"))
+		return node_get_script_modules(input);
+	else if (!strcmp_c(method, "node_get_script_msg_handlers"))
+		return 	node_get_script_msg_handlers(input);
+		
+	return 0;
+
+#endif
+
+	return mod_func(input);
+
+}
+
+OS_API_C_FUNC(int) execute_script_mod_call(tpo_mod_file		*tpo_mod, const char *method)
+{
+	module_proc_ptr mod_func;
+
+	mod_func = (module_proc_ptr)get_tpo_mod_exp_addr_name(tpo_mod, method, 0);
+
+	if (mod_func == PTR_NULL)
+		return 0;
+#ifdef _DEBUG
+
+	if (!strcmp_c(method, "node_load_block_indexes"))
+		return node_load_block_indexes();
+
+
+	if (!strcmp_c(method, "node_load_last_blks"))
+		return node_load_last_blks();
+	return 0;
+#else
+	return mod_func();
+#endif
 }

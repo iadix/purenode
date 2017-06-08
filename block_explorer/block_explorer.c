@@ -1,4 +1,4 @@
-//copyright iadix 2016
+//copyright antoine bentue-ferrer 2016
 #include <base/std_def.h>
 #include <base/std_mem.h>
 #include <base/mem_base.h>
@@ -7,12 +7,15 @@
 
 #include <strs.h>
 #include <tree.h>
-
+#include <crypto.h>
 #include <http.h>
 #include <fsio.h>
 #include <mem_stream.h>
 #include <tpo_mod.h>
 
+#include "../block_adx/block_api.h"
+
+C_IMPORT size_t			C_API_FUNC	  get_node_size(mem_zone_ref_ptr key);
 
 
 typedef int  C_API_FUNC get_blk_staking_infos_func(mem_zone_ref_ptr blk, const char *blk_hash, mem_zone_ref_ptr infos);
@@ -20,65 +23,41 @@ typedef get_blk_staking_infos_func *get_blk_staking_infos_func_ptr;
 
 
 #ifdef _DEBUG
-C_IMPORT int					C_API_FUNC get_blk_staking_infos(mem_zone_ref_ptr blk, const char *blk_hash, mem_zone_ref_ptr infos);
-get_blk_staking_infos_func_ptr  _get_blk_staking_infos = PTR_INVALID;
+	C_IMPORT int					C_API_FUNC get_blk_staking_infos(mem_zone_ref_ptr blk, const char *blk_hash, mem_zone_ref_ptr infos);
+	get_blk_staking_infos_func_ptr  _get_blk_staking_infos = PTR_INVALID;
 #else
-get_blk_staking_infos_func_ptr  get_blk_staking_infos = PTR_INVALID;
+	get_blk_staking_infos_func_ptr  get_blk_staking_infos = PTR_INVALID;
 #endif
-
-//get_blk_staking_infos_func_ptr  get_blk_staking_infos = PTR_INVALID;
-
-C_IMPORT int			C_API_FUNC	is_pow_block(const char *blk_hash);
-C_IMPORT int			C_API_FUNC	 get_blk_height(const char *blk_hash, uint64_t *height);
-C_IMPORT int			C_API_FUNC	  get_blk_txs(const char* blk_hash, mem_zone_ref_ptr txs, size_t max);
-C_IMPORT int			C_API_FUNC load_blk_hdr(mem_zone_ref_ptr hdr, const char *blk_hash);
-C_IMPORT int			C_API_FUNC	get_block_size(const char *blk_hash, size_t *size);
-C_IMPORT int			C_API_FUNC	 get_pow_block(const char *blk_hash, hash_t pos);
-C_IMPORT int			C_API_FUNC	SetCompact(unsigned int bits, hash_t out);
-C_IMPORT int			C_API_FUNC get_last_block_height();
-C_IMPORT int			C_API_FUNC get_moneysupply(uint64_t *amount);
-C_IMPORT int			C_API_FUNC  load_tx_addresses(btc_addr_t addr, mem_zone_ref_ptr tx_hashes);
-C_IMPORT int			C_API_FUNC   load_tx(mem_zone_ref_ptr tx, hash_t blk_hash, const hash_t tx_hash);
-C_IMPORT int			C_API_FUNC get_tx_blk_height(const hash_t tx_hash, uint64_t *height, uint64_t *block_time, uint64_t *tx_time);
-C_IMPORT int			C_API_FUNC compute_block_hash(mem_zone_ref_ptr block, hash_t hash);
-C_IMPORT int			C_API_FUNC   get_out_script_address(struct string *script, struct string *pubk, btc_addr_t addr);
-C_IMPORT int			C_API_FUNC    load_tx_input(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr	vin, mem_zone_ref_ptr tx_out);
-C_IMPORT int			C_API_FUNC     get_tx_output(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr vout);
-C_IMPORT int			C_API_FUNC      get_tx_input(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr vout);
-C_IMPORT int			C_API_FUNC	  blk_load_tx_hash(const char *blk_hash, const char *tx_hash, mem_zone_ref_ptr tx);
-C_IMPORT int			C_API_FUNC is_tx_null(mem_zone_ref_const_ptr tx);
-C_IMPORT size_t			C_API_FUNC	  get_node_size(mem_zone_ref_ptr key);
-C_IMPORT unsigned int   C_API_FUNC	  get_blk_ntxs(const char* blk_hash);
+	
 
 unsigned int			WALLET_VERSION = 60000;
 mem_zone_ref			my_node = { PTR_INVALID };
 
 
-OS_API_C_FUNC(int) block_explorer_set_node(mem_zone_ref_ptr node, tpo_mod_file *pos_mod)
+OS_API_C_FUNC(int) set_node_block_explorer(mem_zone_ref_ptr node, tpo_mod_file *pos_mod)
 {
+	log_output("init block explorer module\n");
+	
 	my_node.zone = PTR_NULL;
-	copy_zone_ref(&my_node, node);
-
+	copy_zone_ref	(&my_node, node);
 
 #ifndef _DEBUG
 	get_blk_staking_infos = (get_blk_staking_infos_func_ptr)get_tpo_mod_exp_addr_name(pos_mod, "get_blk_staking_infos", 0);
 #endif
-	
-	//get_blk_staking_infos = get_tpo_mod_exp_addr_name(pos_mod, "get_blk_staking_infos", 0);
 	return 1;
 }
 
-OS_API_C_FUNC(int) node_get_hash_idx(uint64_t block_idx, hash_t hash)
+int node_get_hash_idx(uint64_t block_idx, hash_t hash)
 {
 	mem_zone_ref	block_index_node = { PTR_NULL};
 	uint64_t		nblks;
 
-	if (!tree_manager_get_child_value_i64(&my_node, NODE_HASH("block height"), &nblks))
+	if (!tree_manager_get_child_value_i64(&my_node, NODE_HASH("block_height"), &nblks))
 		nblks = 0;
 
 	if (block_idx > nblks)return 0;
 
-	if (tree_manager_find_child_node(&my_node, NODE_HASH("block index"), NODE_BITCORE_HASH, &block_index_node))
+	if (tree_manager_find_child_node(&my_node, NODE_HASH("block_index"), NODE_BITCORE_HASH, &block_index_node))
 	{
 		tree_manager_get_node_hash(&block_index_node, block_idx * 32, hash);
 		release_zone_ref(&block_index_node);
@@ -182,7 +161,7 @@ OS_API_C_FUNC(int) block(const char *params, const struct http_req *req, mem_zon
 
 	if (is_pow_block(chash))
 	{
-		if (!tree_manager_get_child_value_i64(&my_node, NODE_HASH("block reward"), &reward))
+		if (!tree_manager_get_child_value_i64(&my_node, NODE_HASH("block_reward"), &reward))
 			reward = 0;
 		else
 			tree_manager_set_child_value_i64(result, "reward", reward);
@@ -254,7 +233,7 @@ OS_API_C_FUNC(int) block(const char *params, const struct http_req *req, mem_zon
 	release_zone_ref(&block);
 
 	return 1;
-		/*
+	/*
 	{   
 		"chainwork" : "0000000000000000000000000000000000000000000998b7adec271cd0ea7258", 
 		"nextblockhash" : "000000000000000013677449d7375ed22f9c66a94940328081412179795a1ac5", 
@@ -264,6 +243,8 @@ OS_API_C_FUNC(int) block(const char *params, const struct http_req *req, mem_zon
 	}
 	*/
 }
+
+
 OS_API_C_FUNC(int) tx(const char *params, const struct http_req *req, mem_zone_ref_ptr result)
 {
 	char hexscript[2048];
@@ -591,8 +572,8 @@ OS_API_C_FUNC(int) txs(const char *params, const struct http_req *req, mem_zone_
 		unsigned int	 time;
 		unsigned int	 block_time;
 
-		tree_manager_get_child_value_i32(&my_node, NODE_HASH("block height"), &nblks);
-		tree_manager_find_child_node	(&my_node, NODE_HASH("block index"), NODE_BITCORE_HASH, &block_index_node);
+		tree_manager_get_child_value_i32(&my_node, NODE_HASH("block_height"), &nblks);
+		tree_manager_find_child_node	(&my_node, NODE_HASH("block_index"), NODE_BITCORE_HASH, &block_index_node);
 		tree_manager_find_child_node	(&my_node, NODE_HASH("block time"), NODE_GFX_INT, &time_index_node);
 		block_time = 0xFFFFFFFF;
 		idx = nblks-1;
@@ -727,7 +708,6 @@ OS_API_C_FUNC(int) txs(const char *params, const struct http_req *req, mem_zone_
 	release_zone_ref(&tx_list);
 
 	return 1;
-	//txs / ? block = 00000000fa6cf7367e50ad14eb0ca4737131f256fc4c5841fd3c3f140140e6b6
 }
 
 OS_API_C_FUNC(int) blocks(const char *params, const struct http_req *req, mem_zone_ref_ptr result)
@@ -742,9 +722,9 @@ OS_API_C_FUNC(int) blocks(const char *params, const struct http_req *req, mem_zo
 	unsigned int	 block_time, limit, num, idx,tidx,n,start_time,cur_time;
 	const struct key_val *blockdate, *pageNum, *sinceblock, *beforeblock, *txl;
 
-	tree_manager_find_child_node		(&my_node, NODE_HASH("block index"), NODE_BITCORE_HASH, &block_index_node);
+	tree_manager_find_child_node		(&my_node, NODE_HASH("block_index"), NODE_BITCORE_HASH, &block_index_node);
 	tree_manager_find_child_node		(&my_node, NODE_HASH("block time"), NODE_GFX_INT, &time_index_node);
-	tree_manager_get_child_value_i64	(&my_node, NODE_HASH("block height"), &nblks);
+	tree_manager_get_child_value_i64	(&my_node, NODE_HASH("block_height"), &nblks);
 	
 	memset_c(nullhash, 0, sizeof(hash_t));
 
@@ -971,6 +951,7 @@ OS_API_C_FUNC(int) blocks(const char *params, const struct http_req *req, mem_zo
 				ntx  = get_blk_ntxs	(chash);
 				switch (txl->op)
 				{
+					case CMPL_N:ok = (ntx != ival); break;
 					case CMPL_E:ok = (ntx == ival); break;
 					case CMPL_L:ok = (ntx < ival); break;
 					case CMPL_G:ok = (ntx > ival); break;
@@ -1015,5 +996,5 @@ OS_API_C_FUNC(int) blocks(const char *params, const struct http_req *req, mem_zo
 	release_zone_ref(&time_index_node);
 
 	return 1;
-	
 }
+

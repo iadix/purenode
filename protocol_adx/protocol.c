@@ -1,4 +1,4 @@
-//copyright iadix 2016
+//copyright antoine bentue-ferrer 2016
 #include <base/std_def.h>
 #include <base/std_mem.h>
 #include <base/mem_base.h>
@@ -21,20 +21,26 @@ unsigned char		null_vint			= 0xAB;
 unsigned int		ping_nonce			= 1;
 
 unsigned int NODE_HASH_txsout = 0xCDCDCDCD, NODE_HASH_script = 0xCDCDCDCD, NODE_HASH_txsin = 0xCDCDCDCD, NODE_HASH_version = 0xCDCDCDCD, NODE_HASH_prev = 0xCDCDCDCD, NODE_HASH_merkle_root = 0xCDCDCDCD, NODE_HASH_time = 0xCDCDCDCD, NODE_HASH_bits, NODE_HASH_nonce = 0xCDCDCDCD, NODE_HASH_services = 0xCDCDCDCD, NODE_HASH_addr = 0xCDCDCDCD, NODE_HASH_port = 0xCDCDCDCD, NODE_HASH_p2p_addr = 0xCDCDCDCD, NODE_HASH_locktime = 0xCDCDCDCD, NODE_HASH_tx_hash = 0xCDCDCDCD, NODE_HASH_value = 0xCDCDCDCD, NODE_HASH_sequence = 0xCDCDCDCD, NODE_HASH_idx = 0xCDCDCDCD, NODE_HASH_size = 0xCDCDCDCD, NODE_HASH_cmd = 0xCDCDCDCD, NODE_HASH_payload = 0xCDCDCDCD;
-OS_API_C_FUNC(void) set_version(unsigned int inmagic, unsigned int version)
+
+OS_API_C_FUNC(int) init_protocol(mem_zone_ref_ptr params)
 {
+	if (!tree_manager_get_child_value_i32(params, NODE_HASH("magic"), &magic))return 0;
+	if (!tree_manager_get_child_value_i32(params, NODE_HASH("version"), &PROTOCOL_VERSION))return 0;
+	
 	memset_c(null_hash, 0, sizeof(hash_t));
+
 	def_vstr.str = malloc_c(33);
 	def_vstr.len = 32;
 	def_vstr.size = 33;
+
 	null_vint = 0;
+
 	def_vint[0] = 0xFE;
 	def_vint[1] = 0;
 	def_vint[2] = 0;
 	def_vint[3] = 0;
 	def_vint[4] = 0;
 
-	
 	NODE_HASH_script = NODE_HASH("script");
 	NODE_HASH_txsin = NODE_HASH("txsin");
 	NODE_HASH_txsout = NODE_HASH("txsout");
@@ -53,23 +59,33 @@ OS_API_C_FUNC(void) set_version(unsigned int inmagic, unsigned int version)
 	NODE_HASH_value = NODE_HASH("value");
 	NODE_HASH_sequence = NODE_HASH("sequence");
 	NODE_HASH_idx = NODE_HASH("idx");
-	NODE_HASH_size	= NODE_HASH("size");
-	NODE_HASH_cmd	= NODE_HASH("cmd");
+	NODE_HASH_size = NODE_HASH("size");
+	NODE_HASH_cmd = NODE_HASH("cmd");
 	NODE_HASH_payload = NODE_HASH("payload");
-	magic			 = inmagic;
-	PROTOCOL_VERSION = version;
+
+
+	mem_zone_ref log = { PTR_NULL };
+	tree_manager_create_node("log", NODE_LOG_PARAMS, &log);
+	tree_manager_set_child_value_i32(&log, "version", PROTOCOL_VERSION);
+	tree_manager_set_child_value_i32(&log, "magic", magic);
+	log_message					("p2p protocol ok version : %version%  magic : %magic% ", &log);
+	release_zone_ref(&log);
+
+	return 1;
 }
+
+
 OS_API_C_FUNC(void) get_version(unsigned int *inmagic, unsigned int *version)
 {
 	*inmagic=magic ;
 	*version=PROTOCOL_VERSION;
 }
-OS_API_C_FUNC(int) add_bitcore_addr(mem_zone_ref_ptr node, ipv4_t ip, unsigned short port)
-{
-	uint64_t		services;
-	mem_zone_ref	addr_node = { PTR_NULL };
-	tree_manager_get_child_value_i64(node, NODE_HASH_services, &services);
 
+
+OS_API_C_FUNC(int) add_bitcore_addr(mem_zone_ref_ptr node, ipv4_t ip, unsigned short port,unsigned int services)
+{
+	mem_zone_ref	addr_node = { PTR_NULL };
+	
 	if (!tree_manager_find_child_node(node, NODE_HASH_p2p_addr, NODE_BITCORE_ADDR, &addr_node))
 		tree_manager_add_child_node(node, "p2p_addr", NODE_BITCORE_ADDR, &addr_node);
 
@@ -92,7 +108,7 @@ OS_API_C_FUNC(size_t) init_node(mem_zone_ref_ptr key)
 	case NODE_GFX_INT:
 		tree_manager_write_node_dword(key, 0, 0);
 		break;
-	case NODE_GFX_INT64:
+	case NODE_GFX_BINT:
 		tree_manager_write_node_qword(key, 0, 0);
 		break;
 	case NODE_BITCORE_BLOCK_HASH:
@@ -193,7 +209,7 @@ OS_API_C_FUNC(size_t)	get_node_size(mem_zone_ref_ptr key)
 	case NODE_GFX_INT:
 		szData += 4;
 		break;
-	case NODE_GFX_INT64:
+	case NODE_GFX_BINT:
 		szData += 8;
 		break;
 	case NODE_BITCORE_BLOCK_HASH:
@@ -357,6 +373,7 @@ OS_API_C_FUNC(size_t)	get_node_size(mem_zone_ref_ptr key)
 
 	return szData;
 }
+
 OS_API_C_FUNC(size_t) compute_payload_size(mem_zone_ref_ptr payload_node)
 {
 	size_t				szData;
@@ -386,7 +403,7 @@ OS_API_C_FUNC(char *) write_node(mem_zone_ref_const_ptr key, unsigned char *payl
 		tree_mamanger_get_node_dword(key, 0, (unsigned int *)payload);
 		payload += 4;
 		break;
-	case NODE_GFX_INT64:
+	case NODE_GFX_BINT:
 		tree_mamanger_get_node_qword(key, 0, (uint64_t *)payload);
 		payload += 8;
 		break;
@@ -650,7 +667,7 @@ OS_API_C_FUNC(const unsigned char *)read_node(mem_zone_ref_ptr key, const unsign
 		tree_manager_write_node_dword(key, 0, *((unsigned int *)(payload)));
 		payload = mem_add(payload, 4);
 		break;
-	case NODE_GFX_INT64:
+	case NODE_GFX_BINT:
 		tree_manager_write_node_qword(key, 0, *((uint64_t *)(payload)));
 		payload = mem_add(payload, 8);
 		break;
@@ -794,10 +811,7 @@ OS_API_C_FUNC(const unsigned char *)read_node(mem_zone_ref_ptr key, const unsign
 		payload = mem_add(payload, 4);
 		tree_manager_set_child_value_i32(key, "nonce"		, *((unsigned int *)(payload)));
 		payload = mem_add(payload, 4);
-//		*((unsigned char *)(payload++)) = 0;
-		//tree_manager_set_child_value_vint(key, "txcnt"		, payload);//1	txn_count	var_int	Number of transaction entries, this value is always 0
-		//payload = mem_add(payload, 1);	
-		break;
+	break;
 	case NODE_BITCORE_ADDR:
 		tree_manager_set_child_value_i64(key, "services", *((uint64_t *)(payload)));
 		payload = mem_add(payload, 8);
@@ -813,7 +827,7 @@ OS_API_C_FUNC(const unsigned char *)read_node(mem_zone_ref_ptr key, const unsign
 		tree_manager_set_child_value_ipv4(key, "addr", ip);
 		tree_manager_set_child_value_i16(key, "port", port);
 
-		break;
+	break;
 	case NODE_BITCORE_ADDRT:
 		tree_manager_set_child_value_i32(key, "time"	, *((unsigned int *)(payload)));
 		payload = mem_add(payload, 4);
@@ -870,7 +884,7 @@ OS_API_C_FUNC(const unsigned char *)read_node(mem_zone_ref_ptr key, const unsign
 		
 		tree_manager_set_child_value_i32(key, "sequence", *((unsigned int *)payload));
 		payload += 4;
-		break;
+	break;
 	case NODE_BITCORE_TXOUT:
 		tree_manager_set_child_value_i64(key, "value", *((uint64_t *)payload));
 		payload += 8;
@@ -910,7 +924,7 @@ OS_API_C_FUNC(const unsigned char *)read_node(mem_zone_ref_ptr key, const unsign
 			tree_manager_set_child_value_vstr(key, "script", &null_str);
 		}
 		payload = mem_add(payload, str.len + sz);
-		break;
+	break;
 	case NODE_BITCORE_VINLIST:
 		if (*payload < 0xFD)
 			nc = *(payload++);
@@ -1131,9 +1145,6 @@ OS_API_C_FUNC(int) create_verack_message(mem_zone_ref_ptr node, mem_zone_ref_ptr
 	tree_manager_set_child_value_str(ver_pack, "cmd", "verack");
 	tree_manager_set_child_value_i32(ver_pack, "size", 0);
 	tree_manager_set_child_value_i32(ver_pack, "sent", 0);
-
-
-
 	return 1;
 }
 
@@ -1308,25 +1319,30 @@ OS_API_C_FUNC(int) create_pong_message(mem_zone_ref_ptr node, uint64_t nonce, me
 	tree_manager_set_child_value_i32(ver_pack, "size", pl_size);
 	return 1;
 }
-OS_API_C_FUNC(int) create_version_message(mem_zone_ref_ptr node, struct string *user_agent, mem_zone_ref_ptr ver_pack)
+OS_API_C_FUNC(int) create_version_message(mem_zone_ref_ptr node, mem_zone_ref_ptr target_node_addr, mem_zone_ref_ptr ver_pack)
 {
-	unsigned int		ver;
-	size_t				pl_size;
+	struct string		user_agent = { PTR_NULL };
+	mem_zone_ref		payload = { PTR_NULL };
+	mem_zone_ref		self_addr = { PTR_NULL };
 	uint64_t			nblks;
 	uint64_t			services;
-	mem_zone_ref		payload = { PTR_NULL };
-	mem_zone_ref		self_addr = { PTR_NULL }, node_addr = { PTR_NULL };
+	size_t				pl_size;
+	unsigned int		ver;
+	int					ret;
 
-	if (!tree_manager_get_child_value_i32	(node, NODE_HASH_version, &ver))return 0;
-	if (!tree_manager_get_child_value_i64	(node, NODE_HASH_services, &services))return 0;
-	if (!tree_manager_find_child_node		(node, NODE_HASH_p2p_addr, NODE_BITCORE_ADDR, &self_addr))return 0;
-	if (!tree_manager_find_child_node		(node, NODE_HASH_p2p_addr, NODE_BITCORE_ADDR, &node_addr)){ release_zone_ref(&self_addr); return 0; }
 
+	ret = tree_manager_get_child_value_istr			(node, NODE_HASH("user_agent"), &user_agent, 0);
+	if (ret)ret = tree_manager_get_child_value_i32	(node, NODE_HASH_version, &ver);
+	if (ret)ret = tree_manager_find_child_node		(node, NODE_HASH_p2p_addr, NODE_BITCORE_ADDR, &self_addr);
+	if (ret)ret = tree_manager_get_child_value_i64(&self_addr, NODE_HASH_services, &services);
+	if (ret)ret = tree_manager_get_child_value_i64	(node, NODE_HASH("block_height"), &nblks);
+	if (!ret)
+	{
+		free_string(&user_agent);
+		release_zone_ref(&self_addr);
+		return 0;
+	}
 	
-	if (!tree_manager_get_child_value_i64(node, NODE_HASH("block height"), &nblks))
-		nblks = 1;
-
-
 	/*
 	4	magic	uint32_t	Magic value indicating message origin network, and used to seek to next message when stream state is unknown
 	12	command	char[12]	ASCII string identifying the packet content, NULL padded(non - NULL padding results in packet rejected)
@@ -1334,8 +1350,8 @@ OS_API_C_FUNC(int) create_version_message(mem_zone_ref_ptr node, struct string *
 	4	checksum	uint32_t	First 4 bytes of sha256(sha256(payload))
 	?   payload	uchar[]	The actual data
 	*/
-	tree_manager_create_node("message", NODE_BITCORE_MSG, ver_pack);
-	tree_manager_set_child_value_str(ver_pack, "cmd", "version");
+	tree_manager_create_node			("message", NODE_BITCORE_MSG, ver_pack);
+	tree_manager_set_child_value_str	(ver_pack, "cmd", "version");
 
 	/*
 	4	version	int32_t	Identifies protocol version being used by the node
@@ -1348,19 +1364,20 @@ OS_API_C_FUNC(int) create_version_message(mem_zone_ref_ptr node, struct string *
 	?    user_agent	var_str	User Agent(0x00 if string is 0 bytes long)
 	4	start_height	int32_t	The last block received by the emitting node
 	*/
-	tree_manager_add_child_node(ver_pack, "payload", NODE_BITCORE_PAYLOAD, &payload);
-	tree_manager_set_child_value_i32(&payload, "proto_ver", ver);
-	tree_manager_set_child_value_i64(&payload, "services", services);
-	tree_manager_set_child_value_i64(&payload, "timestamp", get_time_c());
-	tree_manager_node_add_child(&payload, &node_addr);
-	tree_manager_node_add_child(&payload, &self_addr);
-	tree_manager_set_child_value_i64(&payload, "nonce", ping_nonce++);
-	tree_manager_set_child_value_vstr(&payload, "user_agent", user_agent);
-	tree_manager_set_child_value_i32(&payload, "last_blk", nblks-1);
-	pl_size = compute_payload_size(&payload);
-	release_zone_ref(&payload);
+	if (tree_manager_add_child_node(ver_pack, "payload", NODE_BITCORE_PAYLOAD, &payload))
+	{
+		tree_manager_set_child_value_i32(&payload, "proto_ver", ver);
+		tree_manager_set_child_value_i64(&payload, "services", services);
+		tree_manager_set_child_value_i64(&payload, "timestamp", get_time_c());
+		tree_manager_node_add_child(&payload, target_node_addr);
+		tree_manager_node_add_child(&payload, &self_addr);
+		tree_manager_set_child_value_i64(&payload, "nonce", ping_nonce++);
+		tree_manager_set_child_value_vstr(&payload, "user_agent", &user_agent);
+		tree_manager_set_child_value_i32(&payload, "last_blk", nblks - 1);
+		pl_size = compute_payload_size(&payload);
+		release_zone_ref(&payload);
+	}
 	release_zone_ref(&self_addr);
-	release_zone_ref(&node_addr);
 
 	tree_manager_set_child_value_i32(ver_pack, "size", pl_size);
 

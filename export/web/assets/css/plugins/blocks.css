@@ -1,0 +1,109 @@
+.tx_infos
+{
+  display:none;
+  height:auto;
+  overflow: hidden;
+}
+
+.tx_lnk
+{
+    margin-right:2px;
+}
+
+.tx_address
+{
+   font-size: 0.8em;
+   font-family: compact;
+   font-weight: bold;
+}   
+  
+.block_date
+{
+  font-size:0.9em;
+  font-weight:lighter;
+  margin-right:2px;
+}
+.block_time
+{
+  font-size:0.8em;
+  font-weight:lighter;
+  margin-right:2px;
+}
+
+.block_info
+{
+  text-align:center;
+}
+.tx_row:hover
+{
+    background-color:#DDD;
+}
+
+.block_height
+{
+   text-decoration:underline;
+   font-weight:bold;
+   cursor:pointer;
+}
+#blockhash
+{
+  font-size:0.6em;
+}
+
+#blocklistprev,#blocklistdate,#blocklistnext
+{
+    cursor:pointer;
+}
+#blocklistprev:hover,#blocklistdate:hover,#blocklistnext:hover
+{
+  background-color:#DDD;
+}
+#tblblock
+{
+  font-size:0.8em;
+  font-familly:'Compact';
+}
+
+#list_table th
+{
+  text-align:center;
+  vertical-align:top;
+}
+
+ #list_table th input,select
+{
+  max-width:48px;
+  display:block;
+  text-align:center;
+}
+
+@media (max-width: 800px) {
+  #tblblock
+  {
+    font-size:0.4em;
+  }
+  #blockhash
+  {
+    font-size: 0.34em;
+  }
+  .tx_address
+  {
+    font-size: 0.7em;
+    font-family: compact;
+    font-weight: bold;
+  }
+  .tx_amnt
+  {
+    font-size: 0.9em;
+    font-family: compact;
+    font-weight: light;
+  }
+  .block_idate
+  {
+    display:none;
+  }
+  #time_hdr
+  {
+      display:none;
+  }
+}

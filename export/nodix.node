@@ -1,0 +1,277 @@
+
+let NODE_GFX_OBJECT configuration = `
+{
+		"name":"nodix",
+		"seed_node" : 
+		{
+			"host":"iadix.com",
+			"port" : 16714
+		},
+		"magic":0xD9BEFECA, 
+		"version":60018,
+		"sign_mod":"ecdsa",
+		"pubKeyVersion":0x19,
+		"staking":
+		 {
+			"targetspacing":64,
+			"maxtargetspacing" : 640,
+			"targettimespan":960,
+			"limit":0x1B00FFFF,
+			"reward" : 150000000,
+			(NODE_MODULE_DEF) "pos_kernel" : {"file":"modz/stake_pos3.tpo"}
+		 },
+		 "mining":
+		 {
+			"targetspacing":64,
+			"maxtargetspacing" : 640,
+			"targettimespan":960,
+			"limit":0x1E0FFFFF,
+			"reward":10000000000000,
+			"last_pow_block":200,
+			"paytxfee":10000
+		},
+		"genesis":
+		{
+			"version"		:1,
+			"time"			:1466419085,
+			"bits"			:0x1e0fffff,
+			"nonce"			:579883,
+			"InitialStakeModifier":0,
+			"InitialStakeModifier2":0
+		}
+}`
+
+let NODE_BITCORE_NODE SelfNode = `
+{
+	"user_agent" : "nodix",
+	"paytxfee" : 0,
+	"block_height" : 0,
+	(NODE_GFX_INT)"version"  : 0,
+	(NODE_GFX_INT)"current_pos_diff" : 0,
+	(NODE_GFX_INT)"current_pow_diff" : 0,
+	(NODE_BITCORE_BLK_HDR) "last_block" : {},
+	(NODE_BITCORE_BLK_HDR) "lastPOSBlk" : {},
+	(NODE_BITCORE_BLK_HDR) "lastPOWBlk" : {},
+	(NODE_BITCORE_ADDR)"p2p_addr" :
+	{
+		"services": 0,
+		(NODE_NET_IPV)"addr" : "127.0.0.1",
+		(NODE_GFX_SHORT)"port" : 16819
+	},
+	(NODE_SERVICE)"http_service":
+	{
+		"port"		: 16820,
+		(NODE_NET_IPV)"addr" : "127.0.0.1",
+		"docroot"   : "web",
+		"name"		: "Nodix webservice",
+		"indexpage" : "/nodix.site",
+		"mimes" : {"js":"text/javascript", "css" : "text/css", "png" : "image/png", "gif" : "image/gif", "svg" : "image/svg+xml", "html" : "text/html" },
+		"defaultmime" : "text/plain",
+		"maxpost"	: 1024,
+		"modules"	: 
+		[
+			{"base" : "/jsonrpc"  , "type" : "rpc", (NODE_MODULE_DEF) "rpc_wallet"     : {"file":"modz/rpc_wallet.tpo"}},
+			{"base" : "/api/"     , "type" : "cgi", (NODE_MODULE_DEF) "block_explorer" : {"file":"modz/block_explorer.tpo"}}
+		]
+	},
+	(NODE_BITCORE_NODE_LIST) "peer_nodes" : [],
+	(NODE_BITCORE_WALLET_ADDR_LIST) "addr scan list" : null,
+	(NODE_BITCORE_MSG_LIST) "send queue" : [],
+	(NODE_BITCORE_MSG_LIST) "emitted_queue" : [],
+	(NODE_BITCORE_TX_LIST) "tx mem pool" : [],
+	(NODE_BITCORE_BLK_HDR_LIST) "submitted blocks" : []
+}`
+
+
+let NODE_MODULE_DEF	node_adx = `{"order":2, "file" : "modz/node_adx.tpo"}`
+let NODE_MODULE_DEF	protocol_adx = `{"order":0, "file" : "modz/protocol_adx.tpo"}`
+let NODE_MODULE_DEF	nodix = `{"order":3, "file" : "modz/nodix.tpo"}`
+let NODE_MODULE_DEF	block_adx = `{"order":1, "file" : "modz/block_adx.tpo"}`
+
+let NODE_BITCORE_BLK_HDR	genesis_blk = `{}`
+let NODE_GFX_INT			ping_nonce  = 1
+let NODE_GFX_BINT			block_reward = 0
+let NODE_GFX_BINT			lost_reward = 0
+let NODE_GFX_BINT			cur_len = 0
+
+
+accumulator add_reward = `
+		block_adx.block_has_pow(SelfNode.block_index[accum_idx]) :
+		configuration.staking.pos_kernel.stake_get_reward(accum_idx, block_reward) : error endor
+		accum block_reward;
+		success
+	endor
+
+	accum configuration.mining.reward;
+	success
+`
+
+handler on_verack(node,payload) = ` node_adx.queue_ping_message(node) `
+
+handler on_ping(node,payload) = ` node_adx.queue_pong_message(node,payload.nonce) `
+
+handler on_pong(node, payload) = ` set node.synching = 1; `
+
+handler on_version(node,payload) = `
+
+	set node.p2p_addr = payload.their_addr;
+	set node.p2p_addr.services = payload.services;
+
+	set node.my_addr = payload.my_addr;
+
+	set node.user_agent = payload.user_agent;
+	set node.version = payload.proto_ver;
+	set node.block_height = payload.last_blk;
+
+	node_adx.node_log_version_infos(node)
+
+	node_adx.queue_verack_message(node)
+
+
+`
+
+handler on_inv(node, payload) = `
+
+	node_adx.queue_getdata_message(node, payload.hashes)
+
+`
+
+handler on_addr(node, payload) = `
+
+	foreach payload.addrs node_adx.node_log_addr_infos
+
+`
+
+
+handler on_block(node, payload) = `
+
+	block_adx.set_block_hash(payload.header) : set payload.header.keep_block = 0; success endor
+
+	if (node.testing_chain>0)
+		
+		if (payload.header.prev ! node.last_header_hash)
+			set payload.header.keep_block = 1;
+			success
+		endif
+
+   	    node_adx.node_add_block_header(node, payload.header)
+
+		set cur_len = SelfNode.block_height;
+		sub cur_len, node.testing_chain;
+
+		if (node.block_headers* > cur_len)
+			
+			set lost_reward  =  0;
+
+			accumulate add_reward(lost_reward) node.testing_chain,SelfNode.block_height;
+
+			node_adx.node_truncate_chain_to							(node.testing_chain) : success endor
+			node_adx.sub_moneysupply								(lost_reward)
+			configuration.staking.pos_kernel.compute_last_pos_diff	(SelfNode.last_pos_block, SelfNode.current_pos_diff) : set SelfNode.current_pos_diff = configuration.staking.limit; endor
+
+			set node.testing_chain = 0 ;
+		endif
+	endif
+
+	node_adx.node_is_next_block(payload.header) :
+		node_adx.node_check_chain(node, payload.header) : success endor
+	endor
+
+	block_adx.remove_stored_block(payload.header)
+
+	set payload.header.signature = payload.signature;
+
+	nodix.accept_block(payload.header, payload.txs): log "rejected block" success endor
+
+	log "store block"
+	block_adx.store_block(payload.header, payload.txs) : log "error storing block" success endor
+	log "store staking"
+	configuration.staking.pos_kernel.store_blk_staking		(payload.header)
+	configuration.staking.pos_kernel.store_blk_tx_staking	(payload.txs)
+	log "new block added"
+	
+	block_adx.block_has_pow(payload.header.blkHash) ?
+		nodix.compute_pow_diff						(payload.header, SelfNode.current_pow_diff)
+		block_adx.get_pow_reward						(SelfNode.block_height, block_reward)
+		set SelfNode.pow_reward = block_reward;
+	endor
+
+	block_adx.block_has_pow(payload.header.blkHash) :
+		configuration.staking.pos_kernel.compute_last_pos_diff	(payload.header, SelfNode.current_pos_diff)
+		configuration.staking.pos_kernel.stake_get_reward		(SelfNode.block_height, block_reward)
+		set SelfNode.pos_reward = block_reward;
+	endor
+
+	node_adx.add_money_supply		(block_reward)
+	node_adx.node_set_last_block	(payload.header)
+	node_adx.set_next_check			(30)
+
+	success
+	
+`
+
+proc init_node = `
+
+	protocol_adx.init_protocol	(configuration)
+	block_adx.init_blocks		(configuration)
+	node_adx.node_init_self		(SelfNode)
+	
+	loadmod(configuration.staking.pos_kernel)
+	configuration.staking.pos_kernel.init_pos(configuration.staking)
+	node_adx.node_init_service(SelfNode.http_service, configuration.staking.pos_kernel)
+
+	set SelfNode.version = configuration.version;
+	set SelfNode.block_reward = configuration.mining.reward;
+		
+	node_adx.node_load_block_indexes			()
+	
+	block_adx.make_genesis_block(configuration.genesis, genesis_blk)
+	
+	if (SelfNode.block_height = 0)
+		node_adx.node_set_last_block						(genesis_blk)
+		nodix.compute_pow_diff							(genesis_blk, SelfNode.current_pow_diff)
+		configuration.staking.pos_kernel.store_blk_staking  (genesis_blk)
+	endif
+	
+	if (SelfNode.block_height > 1)
+		node_adx.node_load_last_blks()
+
+		block_adx.get_pow_reward(SelfNode.lastPOWBlk.height, block_reward)
+		set SelfNode.pow_reward = block_reward;
+		
+		configuration.staking.pos_kernel.load_last_pos_blk(SelfNode.lastPOSBlk)	:
+					
+			set SelfNode.lastPOSBlk = SelfNode.last_block;
+					
+			configuration.staking.pos_kernel.find_last_pos_block(SelfNode.lastPOSBlk)
+			node_adx.node_store_last_pos_hash					(SelfNode.lastPOSBlk)
+
+		endor
+
+		configuration.staking.pos_kernel.compute_last_pos_diff	(SelfNode.lastPOSBlk, SelfNode.current_pos_diff) : set SelfNode.current_pos_diff = configuration.staking.limit; endor
+
+		configuration.staking.pos_kernel.stake_get_reward		(SelfNode.lastPOSBlk.height, block_reward)
+		set SelfNode.pos_reward = block_reward;
+
+	endif
+
+	
+
+	sethandler SelfNode.emitted_queue{ "cmd=verack" } = on_verack;
+	sethandler SelfNode.emitted_queue{ "cmd=version" } = on_version;
+	sethandler SelfNode.emitted_queue{ "cmd=ping" } = on_ping;
+	sethandler SelfNode.emitted_queue{ "cmd=pong" } = on_pong;
+	sethandler SelfNode.emitted_queue{ "cmd=inv" } = on_inv;
+	sethandler SelfNode.emitted_queue{ "cmd=addr" } = on_addr;
+	sethandler SelfNode.emitted_queue{ "cmd=block" } = on_block;
+	
+	
+	node_adx.new_peer_node(configuration.seed_node)
+	node_adx.queue_version_message(SelfNode.peer_nodes[0])
+	node_adx.queue_getaddr_message(SelfNode.peer_nodes[0])
+
+`
+
+
+
+

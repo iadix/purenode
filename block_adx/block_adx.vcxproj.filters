@@ -27,5 +27,13 @@
     <ClCompile Include="script.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="store.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="block_api.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

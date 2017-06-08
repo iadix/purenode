@@ -1,4 +1,4 @@
-//copyright iadix 2016
+//copyright antoine bentue-ferrer 2016
 #include <base/std_def.h>
 #include <base/std_mem.h>
 #include <base/mem_base.h>
@@ -35,7 +35,7 @@ OS_API_C_FUNC(int) init_pos(mem_zone_ref_ptr stake_conf)
 	memset_c(nullhash, 0, 32);
 	tree_manager_get_child_value_i32(stake_conf, NODE_HASH("ModifierInterval"), &nModifierInterval);
 	tree_manager_get_child_value_si32(stake_conf, NODE_HASH("IntervalRatio"), &MODIFIER_INTERVAL_RATIO);
-	if (!tree_manager_get_child_value_i32(stake_conf, NODE_HASH("target spacing"), &TargetSpacing))
+	if (!tree_manager_get_child_value_i32(stake_conf, NODE_HASH("targetspacing"), &TargetSpacing))
 		TargetSpacing = 60;
 
 
@@ -83,7 +83,7 @@ int GetStakeEntropyBit(mem_zone_ref_ptr blk, unsigned int *nEntropyBit)
 {
 	hash_t	blk_hash;
 	// Take last bit of block hash as entropy bit
-	if (!tree_manager_get_child_value_hash(blk, NODE_HASH("blk hash"), blk_hash))
+	if (!tree_manager_get_child_value_hash(blk, NODE_HASH("blkHash"), blk_hash))
 		return 0;
 
 	*nEntropyBit = (blk_hash[0] & 0x01);
@@ -105,7 +105,7 @@ OS_API_C_FUNC(int) get_last_stake_modifier(mem_zone_ref_ptr pindex, uint64_t *nS
 
     if (pindex==PTR_NULL)return 0;
 	if (pindex->zone==PTR_NULL)return 0;
-	if (!tree_manager_get_child_value_str(pindex, NODE_HASH("blk hash"), chash, 65, 16))return 0;
+	if (!tree_manager_get_child_value_str(pindex, NODE_HASH("blkHash"), chash, 65, 16))return 0;
 
 	while (!generated_stake_modifier(chash, nStakeModifier))
 	{
@@ -164,7 +164,7 @@ static int SelectBlockFromCandidates(mem_zone_ref_ptr vSortedByTimestamp,ctime_t
 		hash_t blk_hash, hashSelection, blk_pow,tmp;
 		
 		tree_manager_get_child_value_i64(block , NODE_HASH("time")		, &block_time);
-		tree_manager_get_child_value_hash(block, NODE_HASH("blk hash")	, blk_hash);
+		tree_manager_get_child_value_hash(block, NODE_HASH("blkHash")	, blk_hash);
 
 		if (fSelected && block_time > nSelectionIntervalStop)
 		{
@@ -268,10 +268,10 @@ int compute_tx_pos(mem_zone_ref_ptr tx, unsigned int TimeBlockFrom,uint64_t Stak
 	uint64_t	txPrevTime, txTime;
 	tree_manager_get_child_value_i64(tx, NODE_HASH("time"), &txTime);
 
-	load_tx_input(tx, 0, &vin, &prev_tx);
-	tree_manager_get_child_value_i64(&prev_tx, NODE_HASH("time"), &txPrevTime);
-	tree_manager_get_child_value_hash(&vin, NODE_HASH("tx hash"), prevOutHash);
-	tree_manager_get_child_value_i32(&vin, NODE_HASH("idx"), &prevOutIdx);
+	load_tx_input						(tx, 0, &vin, &prev_tx);
+	tree_manager_get_child_value_i64	(&prev_tx, NODE_HASH("time"), &txPrevTime);
+	tree_manager_get_child_value_hash	(&vin, NODE_HASH("tx hash"), prevOutHash);
+	tree_manager_get_child_value_i32	(&vin, NODE_HASH("idx"), &prevOutIdx);
 
 	release_zone_ref(&vin);
 	release_zone_ref(&prev_tx);
@@ -452,7 +452,7 @@ OS_API_C_FUNC(int) store_blk_staking(mem_zone_ref_ptr header)
 	int stat;
 	unsigned int EntropyBit;
 
-	if (!tree_manager_get_child_value_str(header, NODE_HASH("blk hash"), blk_hash,65,16))return 0;
+	if (!tree_manager_get_child_value_str(header, NODE_HASH("blkHash"), blk_hash,65,16))return 0;
 
 	make_string	(&blk_path, "./blks/");
 	cat_ncstring(&blk_path, blk_hash + 62, 2);
@@ -506,7 +506,7 @@ OS_API_C_FUNC(int)	store_stakemodifier(mem_zone_ref_ptr genesis, uint64_t StakeM
 	struct string		blk_path = { 0 };
 	int					n;
 
-	tree_manager_get_child_value_hash(genesis, NODE_HASH("blk hash"), blk_hash);
+	tree_manager_get_child_value_hash(genesis, NODE_HASH("blkHash"), blk_hash);
 
 	itoa_s(blk_hash[0], dir[0], 3, 16);
 	itoa_s(blk_hash[1], dir[1], 3, 16);

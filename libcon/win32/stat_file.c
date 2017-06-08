@@ -1,4 +1,4 @@
-//copyright iadix 2016
+//copyright antoine bentue-ferrer 2016
 #define LIBC_API C_EXPORT
 
 
@@ -22,9 +22,9 @@
 #include "shlobj.h"
 
 char path_sep='\\';
-struct string log_file_name = { (char*)PTR_INVALID,0,0 };
-struct string home_path = { (char*)PTR_INVALID,0,0 };
-struct string exe_path = { (char*)PTR_INVALID,0,0 };
+struct string log_file_name = { PTR_INVALID,0,0};
+struct string home_path = { PTR_INVALID,0,0};
+struct string exe_path = { PTR_INVALID,0,0};
 unsigned int running = 1;
 struct tm tmtime = { 0xCD };
 struct thread
@@ -451,6 +451,12 @@ OS_API_C_FUNC(int) set_exe_path()
 	return 1;
 }
 
+OS_API_C_FUNC(int) get_exe_path(struct string *outPath)
+{
+	clone_string(outPath, &exe_path);
+	return 1;
+}
+
 
 OS_API_C_FUNC(int) set_home_path(const char *name)
 {
@@ -642,7 +648,7 @@ OS_API_C_FUNC(ctime_t) get_system_time_c()
  OS_API_C_FUNC(int) log_output(const char *data)
  {
 	console_print(data);
-	if (log_file_name.str != PTR_NULL)
+	if ((log_file_name.str != PTR_NULL) && (log_file_name.str!=PTR_INVALID))
 		append_file(log_file_name.str, data, strlen_c(data));
 	 return 1;
  }
@@ -682,7 +688,6 @@ OS_API_C_FUNC(ctime_t) get_system_time_c()
 	 unsigned int	y, m, d;
 	 SYSTEMTIME st;
 	 FILETIME ft;
-	 struct tm t;
 
 	 y = strtoul_c(s, PTR_NULL, 10);
 	 m = strtoul_c(&s[5], PTR_NULL, 10);
@@ -736,4 +741,10 @@ OS_API_C_FUNC(int) default_RNG(unsigned char *dest, size_t size)
 	  CryptGenRandom(prov, size, (BYTE *)dest);
 	  CryptReleaseContext(prov, 0);
 	  return 1;
+}
+
+
+OS_API_C_FUNC(void) snooze(size_t n)
+{
+	SleepEx(n, 1);
 }
