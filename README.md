@@ -12,7 +12,7 @@ For building on 64 bits linux, you need gcc multilib to build and link 32 bit el
 Building instruction :
 
 
-git clone https://github.com/iadix/nodix
+git clone https://github.com/NodixBlockchain/nodix
 
 
 cd nodix
