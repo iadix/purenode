@@ -28,14 +28,18 @@ let NODE_JSON_ARRAY metas = `[
 	{"author":""}
 ]`
 
+
+
 let NODE_MODULE_DEF	node_adx = `{"file" : "modz/node_adx.tpo"}`
 
 let NODE_JSON_ARRAY node_modules = `[]`
+
 
 page index = `
 	push scripts,"/assets/js/blocks.js"
 
 	node_adx.node_get_script_modules(node_modules);
+	node_adx.node_get_mem_pool		(SelfNode.mempool);
 	
 	html_head "PURENODE INFOS" 
 	html_block "templates/menu.html"
@@ -43,11 +47,10 @@ page index = `
 	html_scripts
 	html_var SelfNode;
 	html_var node_modules;
+	html_var SelfNode.mempool;
 	html_js
 		$(document).ready(function () 
 		{
-			//App.init();
-			//App.initScrollBar();
 			site_base_url = '/nodix.site';
 			api_base_url ='';
 			lang		= 'en';
@@ -88,11 +91,15 @@ page index = `
 			}
 
 			make_modules_html("node_modules",node_modules);
+
+			update_mempool_txs(mempool,'mempool');
+			get_node_lag(SelfNode)
 			
 		});
 	end_js
 
 	html_block "templates/footer.html"
+	success
 
 `
 
@@ -106,8 +113,6 @@ page services = `
 	html_js
 		$(document).ready(function () 
 		{
-			//App.init();
-			//App.initScrollBar();
 			site_base_url = '/nodix.site';
 			api_base_url ='';
 			lang		= 'en';
@@ -149,8 +154,8 @@ page blocks = `
 	html_js
 	 jQuery(document).ready(function () 
 	 {
-        //App.init();
-        //App.initScrollBar();
+        
+        
         Datepicker.initDatepicker(function (selectedDate) { blk_page_idx = 0; tx_page_idx = 0; txs = null; blocks = null; list_blocks(selectedDate, blk_page_idx, 0); list_txs(selectedDate, tx_page_idx); });
 
         lang = 'en';
@@ -184,8 +189,6 @@ page address(addr,page_idx) = `
 	html_js
 		$(document).ready(function () 
 		{
-			//App.init();
-			//App.initScrollBar();
 			site_base_url = '/nodix.site';
 			api_base_url ='';
 			currentAddr = '%addr%';
@@ -213,8 +216,8 @@ page tx(txid) = `
 	html_js
 		$(document).ready(function () 
 		{
-			//App.init();
-			//App.initScrollBar();
+			
+			
 
 			lang			= 'en';
 			site_base_url = '/nodix.site';
@@ -276,7 +279,7 @@ page wallet(account_name) = `
 	html_scripts
 	html_js
     jQuery(document).ready(function() {
-		//App.init		();
+		
 	
 		lang			='en';
 		api_base_url	='';
@@ -286,6 +289,7 @@ page wallet(account_name) = `
 		
 		$('#addrlabel').val('new address');
 		get_accounts	('my_address_list_table',1);
+		get_addrs		(accountName,'my_address_list_table')
 
     });
 	end_js
@@ -310,19 +314,53 @@ page staking(account_name) = `
 	html_scripts
 	html_js
     jQuery(document).ready(function() {
-		//App.init		();
+		
 	
 		lang			='en';
 		api_base_url	='';
 		site_base_url	='/nodix.site';
 		ec				= new EC('secp256k1');
 		accountName		= '%account_name%';
-		get_accounts			('address_list_table',0);
-		get_staking_addrs		(accountName);
+		get_accounts		('address_list_table',0);
+		get_staking_addrs	(accountName);
     });
 	end_js
 
 	html_block "templates/footer.html"
 `
 
+
+page transaction(account_name) = `
+
+	push stylesheets,"/assets/css/plugins/blocks.css"
+	push scripts,"/assets/js/blocks.js"
+	push scripts,"/assets/js/ecdsa_bundle.js"
+    push scripts,"/assets/js/jsSHA-2.2.0/src/sha_dev.js"
+    push scripts,"/assets/js/keys.js"
+    push scripts,"/assets/js/md5.min.js"
+
+	
+	html_head "PURENODE WALLET transaction" 
+	html_block "templates/menu.html"
+	html_block "templates/transaction.html"
+	html_scripts
+	html_js
+    jQuery(document).ready(function() {
+		lang			='en';
+		api_base_url	='';
+		site_base_url	='/nodix.site';
+		ec				= new EC('secp256k1');
+
+		paytxfee		=  %SelfNode.paytxfee%;
+		accountName		= '%account_name%';
+
+		$('#paytxfee').val(paytxfee);
+
+		get_accounts		('address_list_table',0);
+		get_source_addrs	(accountName);
+    });
+	end_js
+
+	html_block "templates/footer.html"
+`
 

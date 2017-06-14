@@ -466,6 +466,17 @@ function make_node_html(name,node)
 
 function get_tx_html(tx, n) {
     var new_html = '';
+    var vin, vout;
+
+    if (typeof tx.vin != 'undefined')
+        vin = tx.vin;
+    else if(typeof tx.txsin != 'undefined')
+        vin = tx.txsin;
+
+    if (typeof tx.vout != 'undefined')
+        vout = tx.vout;
+    else if (typeof tx.txsout != 'undefined')
+        vout = tx.txsout;
 
     new_html = '<div class="row justify-content-md-center tx_row fade in" style="border-bottom:1px solid #000;margin-bottom:2px;" onclick="show_tx(\'' + tx.txid + '\');" >';
     new_html += '<div class="col-md-5  align-self-start" >';
@@ -477,56 +488,54 @@ function get_tx_html(tx, n) {
         new_html += '0&nbsp;out';
     }
     else {
-        new_html += tx.vin.length + '&nbsp;in&nbsp;';
-        new_html += tx.vout.length + '&nbsp;out';
+        new_html += vin.length + '&nbsp;in&nbsp;';
+        new_html += vout.length + '&nbsp;out';
     }
     new_html += '</div>';
-    new_html += '<div class="col-md-6 align-self-end" >';
-    new_html += 'block #' + tx.blockheight;
-
-
-    new_html += '<span class="block_idate" >' + timeConverter(tx.blocktime) + '</span>';
-    new_html += '</div>';
+    if (tx.blockheight) {
+        new_html += '<div class="col-md-6 align-self-end" >';
+        new_html += 'block #' + tx.blockheight;
+        new_html += '<span class="block_idate" >' + timeConverter(tx.blocktime) + '</span>';
+        new_html += '</div>';
+    }
     new_html += '</div>';
 
     new_html += '<div class="row tx_infos"  style="border-bottom:1px dashed #000;margin-bottom:2px;" id="tx_infos_' + tx.txid + '" >';
     new_html += '<span style="  width: 100%;  display: inline-block;text-align:center" >transaction id :' + tx.txid + '</span><br/>';
     if (tx.isNull == true) {
-        new_html += '<div class="col-md-6" >' + '<h2>inputs</h2>' + '#0 null' + '</div>';
-        new_html += '<div class="col-md-6" >' + '<h2>outputs</h2>' + '#0 null' + '</div>';
+        new_html += '<div class="col-md-6" >' + '<h2>inputs</h2>' + '#0 null&nbsp;' + '</div>';
+        new_html += '<div class="col-md-6" >' + '<h2>outputs</h2>' + '#0 null&nbsp;' + '</div>';
     }
     else {
         new_html += '<div class="col-md-6" >';
         new_html += '<h2>inputs</h2>';
-        if (tx.isCoinBase == false) {
+        if ((tx.isCoinBase == true)) {
+
+            if ((vin) && (vin.length > 0))
+                new_html += vin[0].coinbase;
+        }
+        else{
             var nins, nouts;
-            nins = tx.vin.length;
+            nins = vin.length;
             for (nn = 0; nn < nins; nn++) {
                 new_html += '<div class="row">';
-
                 new_html += '<div class="col-md-8" >';
-                new_html += '#' + tx.vin[nn].n + '&nbsp;';
+                new_html += '#' + nn + '&nbsp;';
 
-                /*
-                if (tbl_name == 'tx_list')
-                    new_html += '<a href= "../address/' + lang + '/' + tx.vin[nn].addresses[0] + '" class="tx_address">' + tx.vin[nn].addresses[0] + '</a>';
-                else 
-                */
-                if (tx.vin[nn].addresses) {
+                if (vin[nn].addresses) {
 
-                    if (tx.vin[nn].addresses.indexOf(currentAddr) >= 0)
-                        sent += tx.vin[nn].value;
+                    if (vin[nn].addresses.indexOf(currentAddr) >= 0)sent += vin[nn].value;
 
-                    new_html += '<a href= "' + site_base_url + '/address/' + tx.vin[nn].addresses[0] + '" class="tx_address">' + tx.vin[nn].addresses[0] + '</a>';
+                    new_html += '<a href= "' + site_base_url + '/address/' + vin[nn].addresses[0] + '" class="tx_address">' + vin[nn].addresses[0] + '</a>';
                 }
-
-                new_html += '<span class="tx_amnt" >' + tx.vin[nn].value / unit + '</span>';
+                else if (vin[nn].srcaddr) {
+                    if (vin[nn].srcaddr==currentAddr)sent += vin[nn].value;
+                    new_html += '<a href= "' + site_base_url + '/address/' + vin[nn].srcaddr + '" class="tx_address">' + vin[nn].srcaddr + '</a>';
+                }
+                new_html += '<span class="tx_amnt" >' + vin[nn].value / unit + '</span>';
                 new_html += '</div>';
                 new_html += '</div>';
             }
-        }
-        else if ((tx.vin) && (tx.vin.length > 0)) {
-            new_html += tx.vin[0].coinbase;
         }
         new_html += '</div>';
 
@@ -534,31 +543,26 @@ function get_tx_html(tx, n) {
 
         new_html += '<div class="col-md-6" >';
         new_html += '<h2>outputs</h2>';
-        if (tx.vout) {
-            nouts = tx.vout.length;
+        if (vout) {
+            nouts = vout.length;
             for (nn = 0; nn < nouts; nn++) {
 
                 new_html += '<div class="row">';
                 new_html += '<div class="col-md-8" >';
 
-                if (tx.vout[nn].isNull == true)
-                    new_html += '#0 null';
+                if (vout[nn].isNull == true)
+                    new_html += '#0 null &nbsp;';
                 else {
-                    new_html += '#' + tx.vout[nn].n + '&nbsp;';
+                    new_html += '#' + nn + '&nbsp;';
 
-                    /*
-                    if (tbl_name == 'tx_list')
-                        new_html += '<a href="../address/' + lang + '/' + tx.vout[nn].addresses[0] + '" class="tx_address" >' + tx.vout[nn].addresses[0] + '</a>';
-                    else 
-                    */
-                    if (tx.vout[nn].addresses) {
-                        if (tx.vout[nn].addresses.indexOf(currentAddr) >= 0)
-                            recv += txs[n].vout[nn].value;
-
-                        //new_html += tx.vout[nn].addresses[0]+'&nbsp;';
-                        new_html += '<a href="' + site_base_url + '/address/' + tx.vout[nn].addresses[0] + '" class="tx_address" >' + tx.vout[nn].addresses[0] + '</a>';
+                    if (vout[nn].addresses) {
+                        if (vout[nn].addresses.indexOf(currentAddr) >= 0) recv += vout[nn].value;
+                        new_html += '<a href="' + site_base_url + '/address/' + vout[nn].addresses[0] + '" class="tx_address" >' + vout[nn].addresses[0] + '</a>';
+                    } else if (vout[nn].dstaddr) {
+                        if (vout[nn].dstaddr==currentAddr)recv += vout[nn].value;
+                        new_html += '<a href="' + site_base_url + '/address/' + vout[nn].dstaddr + '" class="tx_address" >' + vout[nn].dstaddr + '</a>';
                     }
-                    new_html += '<span class="tx_amnt" >' + tx.vout[nn].value / unit + '</span>';
+                    new_html += '<span class="tx_amnt" >' + vout[nn].value / unit + '</span>';
                 }
                 new_html += '</div>';
                 new_html += '</div>';
@@ -571,17 +575,81 @@ function get_tx_html(tx, n) {
     return new_html;
 }
 
+function get_tmp_tx_html(tx) {
+    var new_html = '';
+    var vin, vout;
+    var nins, nouts;
+    if (typeof tx.vin != 'undefined')
+        vin = tx.vin;
+    else if (typeof tx.txsin != 'undefined')
+        vin = tx.txsin;
+
+    if (typeof tx.vout != 'undefined')
+        vout = tx.vout;
+    else if (typeof tx.txsout != 'undefined')
+        vout = tx.txsout;
+
+    if (tx.isNull == true) {
+        new_html += '0&nbsp;in&nbsp;';
+        new_html += '0&nbsp;out';
+    }
+    else {
+        new_html += vin.length + '&nbsp;in&nbsp;';
+        new_html += vout.length + '&nbsp;out';
+    }
+    
+    new_html += '<div class="row"  style="border-bottom:1px dashed #000;margin-bottom:2px;" >';
+    
+    new_html += '<div class="col-md-6" >';
+    new_html += '<h2>inputs</h2>';
+
+    if (vin) {
+        nins = vin.length;
+        for (nn = 0; nn < nins; nn++) {
+            new_html += '<div class="row">';
+
+            new_html += '<div class="col-md-8" >';
+            new_html += '#' + vin[nn].index + '&nbsp;';
+            new_html += '<a href= "' + site_base_url + '/address/' + vin[nn].srcaddr + '" class="tx_address">' + vin[nn].srcaddr + '</a>';
+            new_html += '<span class="tx_amnt" >' + vin[nn].value / unit + '</span>';
+            new_html += '</div>';
+            new_html += '</div>';
+        }
+    }
+    new_html += '</div>';
+    
+    new_html += '<div class="col-md-6" >';
+    new_html += '<h2>outputs</h2>';
+    if (vout) {
+        nouts = vout.length;
+        for (nn = 0; nn < nouts; nn++) {
+            new_html += '<div class="row">';
+            new_html += '<div class="col-md-8" >';
+            new_html += '#' + nn + '&nbsp;';
+            new_html += '<a href="' + site_base_url + '/address/' + vout[nn].addr + '" class="tx_address" >' + vout[nn].addr + '</a>&nbsp;';
+            new_html += '<span class="tx_amnt" >' + vout[nn].value / unit + '</span>';
+            new_html += '</div>';
+            new_html += '</div>';
+        }
+    }
+    new_html += '</div>';
+    new_html += '</div>';
+
+    return new_html;
+}
+
 function update_txs(txs, tbl_name) {
     var num_txs = txs.length;
     txs.sort(function (a, b) { return (b.blocktime - a.blocktime); });
 
 
     if (document.getElementById(tbl_name).tBodies) {
-        old_tbody = document.getElementById(tbl_name).tBodies[0];
-        new_tbody = document.createElement('tbody');
+        var old_tbody = document.getElementById(tbl_name).tBodies[0];
+        var new_tbody = document.createElement('tbody');
 
         for (n = 0; n < num_txs; n++) {
             var row = new_tbody.insertRow(n * 2);
+            var cell;
             row.className = "txhdr";
 
             cell = row.insertCell(0);
@@ -666,6 +734,69 @@ function update_txs(txs, tbl_name) {
     }
 }
 
+function update_mempool_txs(txs, tbl_name) {
+    var num_txs = txs.length;
+    txs.sort(function (a, b) { return (b.time - a.time); });
+
+
+    if (document.getElementById(tbl_name).tBodies) {
+        var old_tbody = document.getElementById(tbl_name).tBodies[0];
+        var new_tbody = document.createElement('tbody');
+
+        for (n = 0; n < num_txs; n++) {
+            var row = new_tbody.insertRow(n * 2);
+            var cell;
+            row.className = "txhdr";
+
+            cell = row.insertCell(0);
+            cell.className = "tx_hash";
+            cell.innerHTML = '<span class="tx_expand" onclick="show_tx(\'' + txs[n].txid + '\'); if(this.innerHTML==\'+\'){ this.innerHTML=\'-\'; }else{ this.innerHTML=\'+\'; } ">+</span><a class="tx_lnk" onclick="SelectTx(\'' + txs[n].txid + '\'); return false;" href="' + site_base_url + '/tx/' + txs[n].txid + '">' + '#' + n + '</a>&nbsp;' + timeConverter(txs[n].time);
+
+            row = new_tbody.insertRow(n * 2 + 1);
+
+            row.id = "tx_infos_" + txs[n].txid;
+            row.className = "tx_infos";
+      
+           cell = row.insertCell(0);
+           cell.className = "txins";
+           
+            var nins, nouts;
+            var html = '';
+
+            nins = txs[n].vin.length;
+            for (nn = 0; nn < nins; nn++) {
+
+                var hh = ' <a href= "' + site_base_url + '/address/' + txs[n].vin[nn].dstaddr + '" class="tx_address">' + txs[n].vin[nn].dstaddr + '</a>';
+
+                html += '#' + nn + '&nbsp' + hh + '&nbsp' + txs[n].vin[nn].value / unit + '  <br/>';
+            }
+            cell.innerHTML = html;
+           
+           cell = row.insertCell(1);
+           cell.className = "txouts";
+
+           html = '';
+           if (txs[n].vout) {
+               nouts = txs[n].vout.length;
+               for (nn = 0; nn < nouts; nn++) {
+
+                   var hh = ' <a href="' + site_base_url + '/address/' + txs[n].vout[nn].dstaddr + '" class="tx_address">' + txs[n].vout[nn].dstaddr + '</span> ';
+                    html += '#' + nn + '&nbsp' + hh + '&nbsp' + txs[n].vout[nn].value / unit + ' <br/>';
+               }
+           }
+           cell.innerHTML = html;
+        }
+        old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
+    }
+    else {
+        var new_html = '';
+        $('#' + tbl_name).empty();
+        for (n = 0; n < num_txs; n++) {
+            new_html += get_tx_html(txs[n], n);
+        }
+        $('#' + tbl_name).html(new_html);
+    }
+}
 
 
 
@@ -680,13 +811,13 @@ function update_blocks() {
 
     if (document.getElementById("list_table") == null) return;
 
-    thead = document.getElementById("list_table").tHead;
-    old_tbody = document.getElementById("list_table").tBodies[0];
-    new_tbody = document.createElement('tbody');
+    var thead = document.getElementById("list_table").tHead;
+    var old_tbody = document.getElementById("list_table").tBodies[0];
+    var new_tbody = document.createElement('tbody');
 
     if (num_blocks == 0) {
         var row = new_tbody.insertRow(nrow);
-
+        var cell;
         cell = row.insertCell(0);
         cell.className = "block_info";
         cell.innerHTML = '#none';
@@ -785,10 +916,10 @@ function update_tx(tbl_name) {
 
     if (document.getElementById(tbl_name).tBodies) {
 
-        old_tbody = document.getElementById(tbl_name).tBodies[0];
-        new_tbody = document.createElement('tbody');
-
+        var old_tbody = document.getElementById(tbl_name).tBodies[0];
+        var new_tbody = document.createElement('tbody');
         var row = new_tbody.insertRow(0);
+        var cell;
         if (tx.isNull == true) {
             cell = row.insertCell(0);
             cell.className = "txins";
@@ -955,11 +1086,12 @@ function update_addr_txs(tbl_name) {
 function update_addr_list() {
     if (addrs == null) return;
     var num_addrs = addrs.length;
-    old_tbody = document.getElementById("address_list_table").tBodies[0];
-    new_tbody = document.createElement('tbody');
+    var old_tbody = document.getElementById("address_list_table").tBodies[0];
+    var new_tbody = document.createElement('tbody');
 
     for (n = 0; n < num_addrs; n++) {
         var row = new_tbody.insertRow(n);
+        var cell;
 
         cell = row.insertCell(0);
         cell.className = "address";
@@ -1081,8 +1213,8 @@ function show_tx(txid) {
 
 
 function update_my_addrs(table_name) {
-    old_tbody = document.getElementById(table_name).tBodies[0];
-    new_tbody = document.createElement('tbody');
+    var old_tbody = document.getElementById(table_name).tBodies[0];
+    var new_tbody = document.createElement('tbody');
     if ((my_addrs == null) || (my_addrs.length == 0)) {
         document.getElementById(table_name).style.display = 'none';
         $('#myaddrhdr').html('no addresses');
@@ -1091,6 +1223,7 @@ function update_my_addrs(table_name) {
         var num_addrs = my_addrs.length;
         for (n = 0; n < num_addrs; n++) {
             var row = new_tbody.insertRow(n);
+            var cell;
             row.className = "my_wallet_addr";
             row.setAttribute("addr", my_addrs[n].address)
 
@@ -1140,49 +1273,50 @@ function update_staking() {
 }
 
 function update_staking_addrs(table_name) {
-    old_tbody = document.getElementById(table_name).tBodies[0];
-    new_tbody = document.createElement('tbody');
+
+    var old_tbody = document.getElementById(table_name).tBodies[0];
+    var new_tbody = document.createElement('tbody');
+
     if ((my_addrs == null) || (my_addrs.length == 0)) {
         document.getElementById(table_name).style.display = 'none';
         $('#myaddrhdr').html('no addresses');
     }
     else {
         var num_addrs = my_addrs.length;
-        for (n = 0; n < num_addrs; n++) {
-            var row = new_tbody.insertRow(n);
-            row.className = "my_wallet_addr";
-        
-
-            cell = row.insertCell(0);
-            cell.className = "addr_label";
-            cell.setAttribute("title", my_addrs[n].address)
-            cell.setAttribute ("addr", my_addrs[n].address)
-            cell.innerHTML = my_addrs[n].label;
-
-            cell = row.insertCell(1);
-            cell.className = "balance_confirmed";
-            cell.innerHTML = '<span>' + my_addrs[n].amount / unit + '</span>';
-
-            cell = row.insertCell(2);
-            cell.className = "balance_unconfirmed";
-            cell.innerHTML = '<span>' + my_addrs[n].unconf_amount / unit + '</span>';
-
-            cell = row.insertCell(3);
-            cell.className = "secret";
-            cell.innerHTML = '<input type="password" onchange=" $(\'#dostake_' + my_addrs[n].address + '\').prop(\'checked\',false); "  name="secret_' + my_addrs[n].address + '" id="secret_' + my_addrs[n].address + '" />';
-
-            cell = row.insertCell(4);
-            cell.className = "dostake";
-            cell.setAttribute("addr", my_addrs[n].address);
-            cell.innerHTML = '<input type="checkbox" name="dostake_' + my_addrs[n].address + '" id="dostake_' + my_addrs[n].address + '" />';
-
-            cell = row.insertCell(5);
-            cell.className = "scan";
-            cell.innerHTML = '<input addr="'+my_addrs[n].address+'" type="button" value="rescan" onclick="scan_addr($(this).attr(\'addr\'))"; />';
-
-        }
-        document.getElementById(table_name).style.display = 'block';
         $('#myaddrhdr').html(num_addrs + ' addresses');
+
+        for (var n = 0; n < num_addrs; n++) {
+            var row = new_tbody.insertRow(-1);
+            var cell1, cell2, cell3, cell4, cell5,cell6;
+
+            cell1 = row.insertCell(-1);
+            cell2 = row.insertCell(-1);
+            cell3 = row.insertCell(-1);
+            cell4 = row.insertCell(-1);
+            cell5 = row.insertCell(-1);
+            cell6 = row.insertCell(-1);
+
+            cell1.className = "addr_label";
+            cell1.setAttribute("title", my_addrs[n].address)
+            cell1.setAttribute("addr", my_addrs[n].address)
+            cell1.innerHTML = my_addrs[n].label;
+
+            
+            cell2.className = "balance_confirmed";
+            cell2.innerHTML = '<span>' + my_addrs[n].amount / unit + '</span>';
+
+            cell3.className = "balance_unconfirmed";
+            cell3.innerHTML = '<span>' + my_addrs[n].unconf_amount / unit + '</span>';
+
+            cell4.innerHTML = '<div><input type="password" onchange=" $(\'#dostake_' + my_addrs[n].address + '\').prop(\'checked\',false); " id="secret_' + my_addrs[n].address + '" value="" /></div>';
+
+            cell5.className = "dostake";
+            cell5.setAttribute("addr", my_addrs[n].address);
+            cell5.innerHTML = '<div><input type="checkbox" id="dostake_' + my_addrs[n].address + '" value="" /></div>';
+
+            cell6.className = "scan";
+            cell6.innerHTML = '<div><input addr="' + my_addrs[n].address + '" type="button" value="rescan" onclick="scan_addr($(this).attr(\'addr\'))"; value=""  /></div>';
+        }
     }
     old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
 
@@ -1389,4 +1523,28 @@ function update_recvs() {
     old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
 }
 
+function get_node_lag(node)
+{
+    var height = 0;
+    for (n = 0; n < node.peer_nodes.length; n++)
+    {
+        height = Math.max(height, node.peer_nodes[n].block_height+1);
+    }
+    var now = Math.floor(new Date().getTime() / 1000);
+    var diff =  now - node.last_block_time;
+    var msec = diff;
+    var dd = Math.floor(msec / (60 * 60 * 24));
+    msec -= dd * 60 * 60 * 24;
+    var hh = Math.floor(msec  / (60 * 60));
+
+    $('#node_time_lag').html(dd+' days, '+hh + 'hours');
+
+    if (node.block_height <= height)
+        $('#node_block_lag').html(height-node.block_height + '&nbsp; blocks behind');
+    else
+        $('#node_block_lag').html(node.block_height - height + '&nbsp; blocks ahead');
+
+
+
+}
 

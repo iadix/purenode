@@ -14,6 +14,7 @@
 
 #include "../block_adx/block_api.h"
 #include "../wallet/wallet_api.h"
+#include "../node_adx/node_api.h"
 
 #ifdef _DEBUG
 C_IMPORT int			C_API_FUNC		get_last_stake_modifier(mem_zone_ref_ptr pindex, hash_t nStakeModifier, unsigned int *nModifierTime);
@@ -42,7 +43,7 @@ check_tx_pos_func_ptr				 check_tx_pos = PTR_INVALID;
 get_min_stake_depth_func_ptr		 get_min_stake_depth = PTR_INVALID;
 #endif
 
-C_IMPORT int			C_API_FUNC		node_fill_block_from_mempool(mem_zone_ref_ptr block);
+
 
 struct key_entry
 {
@@ -70,7 +71,7 @@ OS_API_C_FUNC(int) set_node_rpc_wallet(mem_zone_ref_ptr node,tpo_mod_file *pos_m
 	get_stake_reward			= (get_stake_reward_func_ptr)			get_tpo_mod_exp_addr_name(pos_mod, "get_stake_reward", 0);
 	get_last_stake_modifier		= (get_last_stake_modifier_func_ptr)	get_tpo_mod_exp_addr_name(pos_mod, "get_last_stake_modifier", 0);
 	get_current_pos_difficulty  = (get_current_pos_difficulty_func_ptr)	get_tpo_mod_exp_addr_name(pos_mod, "get_current_pos_difficulty", 0);
-	compute_tx_pos				= (get_current_pos_difficulty_func_ptr)	get_tpo_mod_exp_addr_name(pos_mod, "compute_tx_pos", 0);
+	compute_tx_pos				= (compute_tx_pos_func_ptr)	get_tpo_mod_exp_addr_name(pos_mod, "compute_tx_pos", 0);
 	check_tx_pos				= (check_tx_pos_func_ptr)				get_tpo_mod_exp_addr_name(pos_mod, "check_tx_pos", 0);
 	create_pos_block			= (create_pos_block_func_ptr)			get_tpo_mod_exp_addr_name(pos_mod, "create_pos_block", 0);
 	get_min_stake_depth			= (get_min_stake_depth_func_ptr)		get_tpo_mod_exp_addr_name(pos_mod, "get_min_stake_depth", 0);
@@ -81,10 +82,6 @@ OS_API_C_FUNC(int) set_node_rpc_wallet(mem_zone_ref_ptr node,tpo_mod_file *pos_m
 	create_dir("acpw");
 	return 1;
 }
-
-
-
-
 
 
 OS_API_C_FUNC(int) getaddressscanstatus(mem_zone_ref_const_ptr params, unsigned int rpc_mode, mem_zone_ref_ptr result)

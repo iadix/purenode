@@ -1,5 +1,8 @@
 var private_prefix = '55';
 var key = null;
+var my_tx = null;
+var paytxfee = 10000;
+var nSignedInput = 0;
 
 function select_menu(id) {
     if (id == "tab_unspent")
@@ -416,8 +419,17 @@ function update_addr_txs() {
 function list_unspent(address,tbl_name) {
     var old_tbody = document.getElementById(tbl_name).tBodies[0];
     var new_tbody = document.createElement('tbody');
+    var addrs;
+
+    if ((typeof address == 'array') || (typeof address == 'object'))
+        addrs = address;
+    else
+        addrs = [address];
+
     old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
-    rpc_call('listunspent', [0, 9999999, [address]], function (data) {
+
+
+    rpc_call('listunspent', [0, 9999999, addrs], function (data) {
         unspents = data.result.unspents;
         unspents.sort(function (a, b) { return (b.time - a.time); });
         update_unspent(tbl_name);
@@ -431,6 +443,51 @@ function list_unspent(address,tbl_name) {
     
     });
 }
+
+function txinputsigned(txsign)
+{
+    nSignedInput++;
+    if (nSignedInput >= my_tx.txsin.length)
+    {
+        var txid = txsign.result.txid;
+        rpc_call('submittx', [txid], function (){});
+        $('#newtxid').html(txid);
+        nSignedInput = -1;
+    }
+
+}
+
+function signtxinputs(txh,inputs)
+{
+    nSignedInput = 0;
+    for (var n = 0; n < inputs.length; n++) {
+        var DecHexkey = $('#dostake_' + inputs[n].srcaddr).attr('privkey');
+        var pubKey    = $('#dostake_' + inputs[n].srcaddr).attr('pubkey');
+        var mykey     = ec.keyPair({ priv: DecHexkey, privEnc: 'hex' });
+        var signature = mykey.sign(inputs[n].signHash, 'hex');
+        // Export DER encoded signature in Array
+        //var derSign = signature.toDER('hex');
+        var derSign   = signature.toLowS();
+        rpc_call('signtxinput', [txh, inputs[n].index, derSign, pubKey], txinputsigned);
+    }
+}
+
+function maketxfrom(address,amount,dstAddr, tbl_name) {
+    var addrs;
+
+    if ((typeof address == 'array') || (typeof address == 'object'))
+        addrs = address;
+    else
+        addrs = [address];
+
+   rpc_call('maketxfrom', [addrs, amount, dstAddr], function (data) {
+        my_tx = data.result.transaction;
+        $('#total_tx').html(data.result.total);
+        $('#newtx').html(get_tmp_tx_html(my_tx));
+    });
+}
+
+
 function list_spent(address) {
     var old_tbody = document.getElementById("addr_list").tBodies[0];
     var new_tbody = document.createElement('tbody');
@@ -527,18 +584,15 @@ function scan_addr(address)
     
 }
 
-/*
-function list_addr_txs(address) {
-    var old_tbody = document.getElementById("addr_list").tBodies[0];
-    var new_tbody = document.createElement('tbody');
-    old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
 
-    rpc_call('listtransactions', [[address]], function (data) {
-        addr_txs = data.result.txs;
-        addr_txs.sort(function (a, b) { return (b.time - a.time); });
-        $('#unspentaddr').html(address);
-        update_addr_txs();
-        select_menu("tab_txs");
-    });
+function getMyAddrs()
+{
+    var AddrAr = [];
+    for (n = 0; n < my_addrs.length; n++)
+    {
+        if ($('#dostake_' + my_addrs[n].address).is(':checked'))
+            AddrAr.push(my_addrs[n].address);
+    }
+
+    return AddrAr;
 }
-*/

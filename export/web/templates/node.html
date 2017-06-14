@@ -6,7 +6,13 @@
             <div class="row">
                 <div class="col-md-2"><label>last block</label></div><div class="col-md-2"><a onclick="selectBlock(SelfNode.last_block); return false;" id="lastblock"></a></div>
             </div>
-
+            <div class="row">
+                <div class="col-md-2"><span id="node_block_lag"></span></div>
+            </div>
+            <div class="row">
+                <div class="col-md-2"><span id="node_time_lag"></span>&nbsp;behind</div>
+            </div>
+            
         </div>
         <div class="row">
             <section>
@@ -35,6 +41,14 @@
                     <div class="col-md-2"><label>current POS reward</label></div><div class="col-md-2"><span id="posreward"></span></div>
                 </div>
             </section>
+        </div>
+        <div class="row">
+            <div class="col-md-8">
+                <section>
+                    <h1>memory pool</h1>
+                    <div id="mempool"></div>
+                </section>
+            </div>
         </div>
         <div class="row">
             <section>

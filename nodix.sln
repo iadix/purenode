@@ -46,6 +46,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ed25519", "ed25519\ed25519.
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "wallet", "wallet\wallet.vcxproj", "{6D3CE127-38C3-4744-A679-64F3FE071D5F}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "node_adx", "node\node.vcxproj", "{FF6EF6FC-92B6-4ACB-8ED3-4820D5AEEA86}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -108,6 +110,10 @@ Global
 		{6D3CE127-38C3-4744-A679-64F3FE071D5F}.Debug|Win32.Build.0 = Debug|Win32
 		{6D3CE127-38C3-4744-A679-64F3FE071D5F}.Release|Win32.ActiveCfg = Release|Win32
 		{6D3CE127-38C3-4744-A679-64F3FE071D5F}.Release|Win32.Build.0 = Release|Win32
+		{FF6EF6FC-92B6-4ACB-8ED3-4820D5AEEA86}.Debug|Win32.ActiveCfg = Debug|Win32
+		{FF6EF6FC-92B6-4ACB-8ED3-4820D5AEEA86}.Debug|Win32.Build.0 = Debug|Win32
+		{FF6EF6FC-92B6-4ACB-8ED3-4820D5AEEA86}.Release|Win32.ActiveCfg = Release|Win32
+		{FF6EF6FC-92B6-4ACB-8ED3-4820D5AEEA86}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

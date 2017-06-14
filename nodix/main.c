@@ -21,6 +21,7 @@
 
 #include "../block_adx/block_api.h"
 #include "../wallet/wallet_api.h"
+#include "../node_adx/node_api.h"
 
 mem_zone_ref		self_node  = { PTR_INVALID };
 hash_t				null_hash = { 0xCD };
@@ -100,52 +101,6 @@ C_IMPORT int			C_API_FUNC create_getheaders_message(mem_zone_ref_ptr node, mem_z
 C_IMPORT int			C_API_FUNC node_process_event_handler(const char *msg_list_name, mem_zone_ref_ptr node, mem_zone_ref_ptr msg);
 
 
-//node module
-C_IMPORT int			C_API_FUNC		node_init_self(mem_zone_ref_ptr self_node);
-C_IMPORT int			C_API_FUNC		node_set_last_block(mem_zone_ref_ptr header);
-C_IMPORT int			C_API_FUNC		node_find_last_pow_block(mem_zone_ref_ptr pindex, unsigned int *block_time);
-C_IMPORT int			C_API_FUNC		node_load_last_blks();
-C_IMPORT int			C_API_FUNC		node_log_addr_infos(mem_zone_ref_ptr addr);
-C_IMPORT int			C_API_FUNC		update_peernodes();
-C_IMPORT int			C_API_FUNC		node_add_block_index(hash_t hash, unsigned int time);
-C_IMPORT int			C_API_FUNC		node_add_tx_to_mempool(mem_zone_ref_ptr tx);
-C_IMPORT int			C_API_FUNC		node_del_txs_from_mempool(mem_zone_ref_ptr tx_list);
-C_IMPORT int			C_API_FUNC		node_get_hash_idx(uint64_t block_idx, hash_t hash);
-C_IMPORT int			C_API_FUNC		node_get_last_block_time(ctime_t *otime);
-C_IMPORT int			C_API_FUNC		node_truncate_chain(uint64_t height);
-C_IMPORT int			C_API_FUNC		node_remove_last_block();
-C_IMPORT int			C_API_FUNC		node_rewrite_txs(uint64_t nums);
-C_IMPORT int			C_API_FUNC		node_check_chain(mem_zone_ref_ptr node, mem_zone_ref_ptr hdr);
-C_IMPORT int			C_API_FUNC		node_zip_self(struct string *out_data,mem_zone_ref_ptr opts);
-C_IMPORT int			C_API_FUNC	    node_get_script_modules(mem_zone_ref_ptr modules);
-C_IMPORT int			C_API_FUNC	    node_get_script_msg_handlers(mem_zone_ref_ptr handlers);
-C_IMPORT int			C_API_FUNC		node_set_script(mem_zone_ref_ptr script);
-C_IMPORT int			C_API_FUNC		remove_block(hash_t blk_hash);
-
-
-C_IMPORT int			C_API_FUNC		node_is_next_block(mem_zone_ref_const_ptr header);
-C_IMPORT int			C_API_FUNC		new_peer_node(mem_zone_ref_ptr node_def);
-C_IMPORT int			C_API_FUNC		read_node_msg(mem_zone_ref_ptr node);
-C_IMPORT int			C_API_FUNC		send_node_messages(mem_zone_ref_ptr node);
-C_IMPORT int			C_API_FUNC		node_add_block_header(mem_zone_ref_ptr node, mem_zone_ref_ptr hdr);
-C_IMPORT int			C_API_FUNC		queue_version_message(mem_zone_ref_ptr node);
-C_IMPORT int			C_API_FUNC		queue_verack_message(mem_zone_ref_ptr node);
-C_IMPORT int			C_API_FUNC		queue_ping_message(mem_zone_ref_ptr node);
-C_IMPORT int			C_API_FUNC		queue_pong_message(mem_zone_ref_ptr node, mem_zone_ref_ptr nonce);
-C_IMPORT int			C_API_FUNC		queue_getaddr_message(mem_zone_ref_ptr node);
-C_IMPORT int			C_API_FUNC		queue_getdata_message(mem_zone_ref_ptr node, mem_zone_ref_ptr hash_list);
-C_IMPORT int			C_API_FUNC		queue_block_message(mem_zone_ref_ptr node, mem_zone_ref_ptr header, mem_zone_ref_ptr tx_list, struct string *signature);
-C_IMPORT int			C_API_FUNC		queue_tx_message(mem_zone_ref_ptr node, mem_zone_ref_ptr tx);
-C_IMPORT int			C_API_FUNC		queue_getblocks_message(mem_zone_ref_ptr node);
-C_IMPORT int			C_API_FUNC		queue_getblock_hdrs_message(mem_zone_ref_ptr node);
-C_IMPORT int			C_API_FUNC		queue_send_message(mem_zone_ref_ptr node, mem_zone_ref_ptr msg);
-C_IMPORT int			C_API_FUNC		queue_emitted_element(mem_zone_ref_ptr node, mem_zone_ref_ptr element);
-C_IMPORT int			C_API_FUNC		queue_emitted_message(mem_zone_ref_ptr node, mem_zone_ref_ptr msg);
-C_IMPORT int			C_API_FUNC		queue_inv_message(mem_zone_ref_ptr node, mem_zone_ref_ptr hash_list);
-C_IMPORT int			C_API_FUNC		node_check_services();
-C_IMPORT int			C_API_FUNC		reset_moneysupply();
-C_IMPORT int			C_API_FUNC		add_moneysupply(uint64_t amount);
-C_IMPORT int			C_API_FUNC		sub_moneysupply(uint64_t amount);
 
 
 OS_API_C_FUNC(int) compute_pow_diff(mem_zone_ref_ptr newPOWBlock, mem_zone_ref_ptr nBits)
@@ -1201,8 +1156,7 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 
 	//node_truncate_chain(109995);
 	//node_rewrite_txs(100);
-	
-	node_remove_last_block();
+	//node_remove_last_block();
 
 	if (rebuild_tx)
 		node_rewrite_txs(1000);

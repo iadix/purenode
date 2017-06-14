@@ -132,8 +132,17 @@
             var n;
             var arAddr = [];
 
+            if (data.error != 0) return;
+
             my_addrs = data.result.addrs;
+
+            for (n = 0; n < my_addrs.length; n++) {
+                arAddr[n] = my_addrs[n].address;
+            }
+            list_staking_unspent(arAddr);
             update_staking_addrs('address_list_table');
+
+
 
             $('.dostake').change(function () {
                 var addr = $(this).attr('addr');
@@ -165,10 +174,7 @@
                 });
             });
 
-            for (n = 0; n < my_addrs.length; n++) {
-                arAddr[n] = my_addrs[n].address;
-            }
-            list_staking_unspent(arAddr);
+     
         });
     }
 
@@ -214,10 +220,14 @@
     </div>
 
     <p>Enter the secret key for the addresses you want to stake on below, and check the box to enable staking on this address.</p>
+    
+<form>
     <table id="address_list_table" txdiv="list_table" class="table">
-        <thead><tr><th>address</th><th>confirmed</th><th>unconfirmed</th><th>secret</th><th>enable staking</th></tr></thead>
+        <thead><tr><th>address</th><th>confirmed</th><th>unconfirmed</th><th>secret</th><th>enable staking</th><th>rescan</th></tr></thead>
         <tbody></tbody>
     </table>
+</form>
+
     <div class="row">
         <div class="col-md-2"><label>total available on this account</label></div>
         <div class="col-md-2"><span id="txtotal"></span></div>
