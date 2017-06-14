@@ -88,8 +88,12 @@
 #define		NODE_BITCORE_HASH				0x0B001000
 #define		NODE_BITCORE_HASH_LIST			0x0B003000
 #define		NODE_BITCORE_BLOCK_HASH			0x0B005000
+#define		NODE_BITCORE_TX_HASH			0x0B007000
 #define		NODE_BITCORE_WALLET_ADDR_LIST	0x0B008000
 #define		NODE_BITCORE_WALLET_ADDR		0x0B009000
+
+
+
 
 #define		NODE_BITCORE_BLOCK				0x0B002000
 #define		NODE_BITCORE_TX_LIST			0x0B004000
@@ -104,7 +108,7 @@
 #define		NODE_BITCORE_ECDSA_SIG			0x0B800000
 
 
-#define		NODE_NET_IPV4					0x0C000000
+#define		NODE_NET_IP						0x0C000000
 
 #define		NODE_RT_SCENE					0x0D000001
 #define		NODE_RT_VEC3					0x0D000002
@@ -203,6 +207,7 @@ LIBBASE_API  int			C_API_FUNC	tree_remove_child_by_id					(mem_zone_ref_ptr p_no
 
 LIBBASE_API  int			C_API_FUNC	tree_remove_child_by_value_dword		(mem_zone_ref_ptr p_node_ref,unsigned int value);
 LIBBASE_API  int			C_API_FUNC	tree_remove_child_by_member_value_dword	(mem_zone_ref_ptr p_node_ref,unsigned int child_type,const char *member_name,unsigned int value);
+LIBBASE_API  int			C_API_FUNC	tree_remove_child_by_member_value_hash	(mem_zone_ref_ptr p_node_ref, unsigned int child_type, const char *member_name, hash_t hash);
 LIBBASE_API  int			C_API_FUNC	tree_remove_child_by_member_value_lt_dword(mem_zone_ref_ptr p_node_ref, unsigned int child_type, const char *member_name, unsigned int value);
 
 
@@ -301,6 +306,7 @@ LIBBASE_API  int			C_API_FUNC	tree_manager_set_child_value_hash		(mem_zone_ref_p
 LIBBASE_API  int			C_API_FUNC	tree_manager_set_child_value_btcaddr	(mem_zone_ref_ptr p_node_ref, const char *name, const btc_addr_t str);
 LIBBASE_API  int			C_API_FUNC	tree_manager_set_child_value_rhash		(mem_zone_ref_ptr p_node_ref, const char *name, const hash_t str);
 LIBBASE_API  int			C_API_FUNC	tree_manager_set_child_value_bhash		(mem_zone_ref_ptr p_node_ref, const char *name, const hash_t str);
+LIBBASE_API  int			C_API_FUNC	tree_manager_set_child_value_thash		(mem_zone_ref_ptr p_node_ref, const char *name, const hash_t str);
 LIBBASE_API  int			C_API_FUNC	tree_manager_set_child_value_vstr		(mem_zone_ref_ptr p_node_ref, const char *name, const struct string *str);
 LIBBASE_API  int			C_API_FUNC	tree_manager_set_child_value_vint		(mem_zone_ref_ptr p_node_ref, const char *name, const_mem_ptr vint);
 LIBBASE_API  int			C_API_FUNC	tree_manager_set_child_value_vint32		(mem_zone_ref_ptr p_node_ref, const char *name, unsigned int value);

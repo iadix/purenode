@@ -15,15 +15,23 @@
 zlib_filefunc_def	my_def = { 0xFF };
 ourmemory_t			mem = { 0xFF };
 
-OS_API_C_FUNC(int) do_zip(const char *fileName, const char **files, size_t nFiles,struct string *zipData)
+OS_API_C_FUNC(int) do_zip(const char *fileName, struct string *initial_data,const char **files, size_t nFiles,struct string *zipData)
 {
 	zipFile		myzip;
 	zip_fileinfo infos;
-
 	mem.grow = 1;
 
+	if (initial_data != PTR_NULL)
+	{
+		mem.base = initial_data->str;
+		mem.cur_offset = 0;
+		mem.size = initial_data->size;
+		mem.limit = 0;
+	}
+
 	fill_memory_filefunc (&my_def, &mem);
-	myzip		=	zipOpen2(fileName, 0, PTR_NULL, &my_def);
+	myzip		=	zipOpen2(fileName, APPEND_STATUS_ADDINZIP, PTR_NULL, &my_def);
+	if (myzip == PTR_NULL)return 0;
 
 	while (nFiles--)
 	{
@@ -31,7 +39,7 @@ OS_API_C_FUNC(int) do_zip(const char *fileName, const char **files, size_t nFile
 		size_t	size;
 		if (get_file(files[nFiles], &data, &size)>0)
 		{
-			zipOpenNewFileInZip(myzip, files[nFiles], PTR_NULL, PTR_NULL, 0, PTR_NULL, 0, "", Z_DEFLATED, 1);
+			zipOpenNewFileInZip (myzip, files[nFiles], PTR_NULL, PTR_NULL, 0, PTR_NULL, 0, "", Z_DEFLATED, 1);
 			zipWriteInFileInZip	(myzip, data, size);
 			zipCloseFileInZip	(myzip);
 			free_c				(data);

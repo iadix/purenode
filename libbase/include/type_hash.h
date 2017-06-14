@@ -78,7 +78,7 @@
 #define NODE_BITCORE_SCRIPT_crc 0x4c106bc1
 #define NODE_BITCORE_LOCATOR_crc 0x29f092a6
 #define NODE_BITCORE_ECDSA_SIG_crc 0x342754e7
-#define NODE_NET_IPV4_crc 0x7ec82800
+#define NODE_NET_IP_crc 0x37f072db
 #define NODE_RT_SCENE_crc 0x13e802ad
 #define NODE_RT_VEC3_crc 0xfa9e55b0
 #define NODE_RT_VEC3_ARRAY_crc 0xbef9fd51

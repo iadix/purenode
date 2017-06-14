@@ -22,6 +22,9 @@
     <Filter Include="Fichiers Sources\site\webapp">
       <UniqueIdentifier>{ab5fe161-af9d-4c86-8c8b-594034058847}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Fichiers Sources\js">
+      <UniqueIdentifier>{74af90fe-7638-4758-9f21-060e2aae7e95}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.c">
@@ -58,6 +61,9 @@
     </None>
     <None Include="..\export\web\templates\wallet.html">
       <Filter>Fichiers Sources\html</Filter>
+    </None>
+    <None Include="..\export\web\index.site">
+      <Filter>Fichiers Sources\pages</Filter>
     </None>
     <None Include="..\export\web\nodix.site">
       <Filter>Fichiers Sources\pages</Filter>
@@ -97,6 +103,18 @@
     </None>
     <None Include="..\export\nodix.node">
       <Filter>Fichiers Sources</Filter>
+    </None>
+    <None Include="..\export\web\templates\transaction.html">
+      <Filter>Fichiers Sources\html</Filter>
+    </None>
+    <None Include="..\export\web\assets\js\blocks.js">
+      <Filter>Fichiers Sources\js</Filter>
+    </None>
+    <None Include="..\export\web\assets\js\keys.js">
+      <Filter>Fichiers Sources\js</Filter>
+    </None>
+    <None Include="..\export\web\assets\js\custom.js">
+      <Filter>Fichiers Sources\js</Filter>
     </None>
   </ItemGroup>
 </Project>

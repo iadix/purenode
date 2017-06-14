@@ -7,12 +7,13 @@
 
 #include <strs.h>
 #include <tree.h>
-#include <crypto.h>
+
 #include <http.h>
 #include <fsio.h>
 #include <mem_stream.h>
 #include <tpo_mod.h>
 
+#include <crypto.h>
 #include "../block_adx/block_api.h"
 
 C_IMPORT size_t			C_API_FUNC	  get_node_size(mem_zone_ref_ptr key);
@@ -316,7 +317,7 @@ OS_API_C_FUNC(int) tx(const char *params, const struct http_req *req, mem_zone_r
 				struct string script = { PTR_NULL };
 				unsigned int seq,idx;
 
-				tree_manager_get_child_value_hash(in, NODE_HASH("tx hash")	, phash);
+				tree_manager_get_child_value_hash(in, NODE_HASH("txid")	, phash);
 				tree_manager_get_child_value_i32 (in, NODE_HASH("idx")		, &idx);
 				tree_manager_get_child_value_i32 (in, NODE_HASH("sequence")	, &seq);
 				

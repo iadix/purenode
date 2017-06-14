@@ -85,4 +85,4 @@ LIBC_API		void				C_API_FUNC free_host_def		(struct host_def *host);
 LIBC_API		void				C_API_FUNC cat_tag				(struct string *str, const char *tag, const char *val);
 
 /* create zip file */
-LIBC_API		int					C_API_FUNC do_zip				(const char *fileName, const char **files, size_t nFiles, struct string *zipData);
+LIBC_API		int					C_API_FUNC do_zip				(const char *fileName, struct string *initial_data, const char **files, size_t nFiles, struct string *zipData);

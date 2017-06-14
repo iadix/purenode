@@ -437,6 +437,10 @@ OS_API_C_FUNC(int)  strncat_c(char *string,const char *src_string,size_t max)
 	unsigned int		n;
 	char	c1 = '0', c2 = '0';
 
+	if (string1 == PTR_NULL)return -1;
+	if (string2 == PTR_NULL)return 1;
+	
+
 	n=0;
 	while((c1!=0)&&(c2!=0))
 	{

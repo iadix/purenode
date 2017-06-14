@@ -55,18 +55,27 @@ C_IMPORT int C_API_FUNC	make_genesis_block(mem_zone_ref_ptr in, mem_zone_ref_ptr
 			 
 C_IMPORT int C_API_FUNC	node_log_version_infos(mem_zone_ref_ptr in);
 C_IMPORT int C_API_FUNC	queue_verack_message(mem_zone_ref_ptr in);
+C_IMPORT int C_API_FUNC	queue_verack_message(mem_zone_ref_ptr in);
+C_IMPORT int C_API_FUNC	queue_mempool_message(mem_zone_ref_ptr node);
 C_IMPORT int C_API_FUNC	queue_getaddr_message(mem_zone_ref_ptr in);
 C_IMPORT int C_API_FUNC	queue_version_message(mem_zone_ref_ptr in);
 C_IMPORT int C_API_FUNC	queue_ping_message(mem_zone_ref_ptr in);
 C_IMPORT int C_API_FUNC	queue_pong_message(mem_zone_ref_ptr in, mem_zone_ref_ptr nonce);
 C_IMPORT int C_API_FUNC	queue_getdata_message(mem_zone_ref_ptr in, mem_zone_ref_ptr nonce);
 C_IMPORT int C_API_FUNC	queue_inv_message(mem_zone_ref_ptr in, mem_zone_ref_ptr hash_list);
-			 
+C_IMPORT int C_API_FUNC	node_get_mem_pool(mem_zone_ref_ptr tx_list);
 C_IMPORT int C_API_FUNC	node_init_self(mem_zone_ref_ptr params);
 C_IMPORT int C_API_FUNC	node_store_last_pos_hash(mem_zone_ref_ptr blk);
-			 
+C_IMPORT int C_API_FUNC	node_add_tx_to_mempool(mem_zone_ref_ptr tx);
+
 C_IMPORT int C_API_FUNC	node_load_block_indexes(void);
 C_IMPORT int C_API_FUNC	node_load_last_blks(void);
+
+
+C_IMPORT int C_API_FUNC	store_wallet_tx(mem_zone_ref_ptr params);
+C_IMPORT int C_API_FUNC	store_wallet_txs(mem_zone_ref_ptr params);
+
+
 			 
 C_IMPORT int C_API_FUNC app_init(mem_zone_ref_ptr params);
 C_IMPORT int C_API_FUNC app_start(mem_zone_ref_ptr params);
@@ -74,6 +83,8 @@ C_IMPORT int C_API_FUNC app_loop(mem_zone_ref_ptr params);
 C_IMPORT int C_API_FUNC app_stop(mem_zone_ref_ptr params);
 
 C_IMPORT void C_API_FUNC tree_manager_init(size_t size);
+
+C_IMPORT void C_API_FUNC node_del_txs_from_mempool(mem_zone_ref_ptr tx_list);
 
 typedef int C_API_FUNC init_func();
 typedef init_func *init_func_ptr;
@@ -110,11 +121,150 @@ app_func_ptr						app_init = PTR_INVALID, app_start = PTR_INVALID, app_loop = PT
 tpo_mod_file libbase_mod = { 0xDEF00FED };
 
 
+void create_def()
+{
+#if 0
+	#define HANDLE_TYPE(type) cat_cstring(&def,"#define "#type"_crc 0x"); strcat_uint(&def,NODE_HASH(#type)); cat_cstring(&def,"\n");
+
+	struct string def = { PTR_NULL };
+
+	HANDLE_TYPE(NODE_GFX_STR)
+		HANDLE_TYPE(NODE_GFX_INT)
+		HANDLE_TYPE(NODE_GFX_BOOL)
+		HANDLE_TYPE(NODE_GFX_SIGNED_INT)
+		HANDLE_TYPE(NODE_GFX_RECT)
+		HANDLE_TYPE(NODE_GFX_DATA)
+		HANDLE_TYPE(NODE_GFX_PTR)
+		HANDLE_TYPE(NODE_GFX_4UC)
+		HANDLE_TYPE(NODE_GFX_BINT)
+		HANDLE_TYPE(NODE_GFX_NULL)
+		HANDLE_TYPE(NODE_GFX_OBJECT)
+		HANDLE_TYPE(NODE_GFX_SIGNED_BINT)
+		HANDLE_TYPE(NODE_GFX_FLOAT)
+		HANDLE_TYPE(NODE_GFX_SHORT)
+
+		HANDLE_TYPE(NODE_GFX_SCENE)
+		HANDLE_TYPE(NODE_GFX_TEXT)
+		HANDLE_TYPE(NODE_GFX_IMAGE_OBJ)
+		HANDLE_TYPE(NODE_GFX_CTRL_DATA_COLUMN)
+		HANDLE_TYPE(NODE_GFX_CTRL_DATA_COLUMN_LIST)
+		HANDLE_TYPE(NODE_GFX_STYLE)
+		HANDLE_TYPE(NODE_GFX_CTRL)
+		HANDLE_TYPE(NODE_GFX_CTRL_ITEM)
+		HANDLE_TYPE(NODE_GFX_TEXT_LIST)
+		HANDLE_TYPE(NODE_GFX_TEXT_LIST_ENTRY)
+		HANDLE_TYPE(NODE_GFX_CTRL_ITEM_DATA)
+		HANDLE_TYPE(NODE_GFX_CTRL_ITEM_LIST)
+		HANDLE_TYPE(NODE_GFX_EVENT_LIST)
+		HANDLE_TYPE(NODE_GFX_EVENT)
+		HANDLE_TYPE(NODE_GFX_RECT_OBJ)
+		HANDLE_TYPE(NODE_GFX_IMAGE)
+		HANDLE_TYPE(NODE_GFX_IMAGE_LIST)
+
+		HANDLE_TYPE(NODE_REQUEST)
+		HANDLE_TYPE(NODE_MEM_AREA_LIST)
+		HANDLE_TYPE(NODE_MEM_AREA)
+		HANDLE_TYPE(NODE_MEM_AREA_DESC)
+		HANDLE_TYPE(NODE_TREE_AREA_DESC)
+		HANDLE_TYPE(NODE_TREE_NODE_DESC)
+
+		HANDLE_TYPE(NODE_TASK_LIST)
+		HANDLE_TYPE(NODE_TASK)
+		HANDLE_TYPE(NODE_TASK_DATA)
+		HANDLE_TYPE(NODE_SEMAPHORE)
+		HANDLE_TYPE(NODE_MODULE_DEF)
+		HANDLE_TYPE(NODE_MODULE_PROC)
+		HANDLE_TYPE(NODE_MODULE_RPROC)
+		HANDLE_TYPE(NODE_MODULE_RWPROC)
+		HANDLE_TYPE(NODE_HTTP_REQUEST)
+		HANDLE_TYPE(NODE_SERVICE)
+
+		HANDLE_TYPE(NODE_SCRIPT_HANDLER_PROC)
+		HANDLE_TYPE(NODE_SCRIPT_PROC)
+		HANDLE_TYPE(NODE_SCRIPT_ACUM_PROC)
+		HANDLE_TYPE(NODE_SCRIPT)
+		HANDLE_TYPE(NODE_MSG_HANDLER)
+		HANDLE_TYPE(NODE_MSG_HANDLER_LIST)
+		HANDLE_TYPE(NODE_SCRIPT_PAGE_PROC)
+		HANDLE_TYPE(NODE_SCRIPT_PAGE_PARAM)
+
+		HANDLE_TYPE(NODE_JSON_ARRAY)
+
+		HANDLE_TYPE(NODE_TYPE_POOL_LIST)
+		HANDLE_TYPE(NODE_TYPE_POOL)
+		HANDLE_TYPE(NODE_TYPE_POOL_TUPPLE_LIST)
+		HANDLE_TYPE(NODE_POOL_JOB_LIST)
+		HANDLE_TYPE(NODE_POOL_JOB)
+		HANDLE_TYPE(NODE_CON_LIST)
+		HANDLE_TYPE(NODE_CON)
+		HANDLE_TYPE(NODE_LOG_PARAMS)
+		HANDLE_TYPE(NODE_MD5_HASH)
+
+		HANDLE_TYPE(NODE_BITCORE_NODE)
+		HANDLE_TYPE(NODE_BITCORE_NODE_LIST)
+
+		HANDLE_TYPE(NODE_BITCORE_MSG)
+		HANDLE_TYPE(NODE_BITCORE_MSG_LIST)
+
+		HANDLE_TYPE(NODE_BITCORE_ADDR)
+		HANDLE_TYPE(NODE_BITCORE_ADDR_LIST)
+
+		HANDLE_TYPE(NODE_BITCORE_PAYLOAD)
+
+		HANDLE_TYPE(NODE_BITCORE_ADDRT)
+		HANDLE_TYPE(NODE_BITCORE_VSTR)
+		HANDLE_TYPE(NODE_BITCORE_VINT)
+
+		HANDLE_TYPE(NODE_BITCORE_BLK_HDR)
+		HANDLE_TYPE(NODE_BITCORE_BLK_HDR_LIST)
+
+		HANDLE_TYPE(NODE_BITCORE_HASH)
+		HANDLE_TYPE(NODE_BITCORE_BLOCK_HASH)
+		HANDLE_TYPE(NODE_BITCORE_TX_HASH)
+		HANDLE_TYPE(NODE_BITCORE_HASH_LIST)
+
+		HANDLE_TYPE(NODE_BITCORE_WALLET_ADDR)
+		HANDLE_TYPE(NODE_BITCORE_WALLET_ADDR_LIST)
+
+		HANDLE_TYPE(NODE_BITCORE_TX)
+		HANDLE_TYPE(NODE_BITCORE_TX_LIST)
+
+		HANDLE_TYPE(NODE_BITCORE_TXIN)
+		HANDLE_TYPE(NODE_BITCORE_VINLIST)
+
+		HANDLE_TYPE(NODE_BITCORE_TXOUT)
+		HANDLE_TYPE(NODE_BITCORE_VOUTLIST)
+
+		HANDLE_TYPE(NODE_BITCORE_SCRIPT_OPCODE)
+		HANDLE_TYPE(NODE_BITCORE_SCRIPT)
+		HANDLE_TYPE(NODE_BITCORE_LOCATOR)
+		HANDLE_TYPE(NODE_BITCORE_ECDSA_SIG)
+		HANDLE_TYPE(NODE_NET_IP)
+
+		HANDLE_TYPE(NODE_RT_SCENE)
+		HANDLE_TYPE(NODE_RT_VEC3)
+		HANDLE_TYPE(NODE_RT_VEC3_ARRAY)
+		HANDLE_TYPE(NODE_RT_MAT3x3)
+		HANDLE_TYPE(NODE_RT_CUBEMAP)
+		HANDLE_TYPE(NODE_RT_SHADER_UNIFORM_LIST)
+		HANDLE_TYPE(NODE_RT_MATERIAL)
+		HANDLE_TYPE(NODE_RT_MATERIAL_LIST)
+		HANDLE_TYPE(NODE_RT_BBOX)
+		HANDLE_TYPE(NODE_RT_SPHERE)
+		HANDLE_TYPE(NODE_RT_CUBE)
+		HANDLE_TYPE(NODE_RT_PLANE)
+		HANDLE_TYPE(NODE_RT_CYLINDER)
+
+		put_file("type_hash.h", def.str, def.size);
+#endif
+}
+
+
 int main(int argc, const char **argv)
 {
 	struct string			node_name = { PTR_NULL };
 	mem_zone_ref			 params = { PTR_NULL }, script_vars = { PTR_NULL }, init_node_proc = { PTR_NULL };
-	mem_ptr					*params_ptr;
+	const_mem_ptr			*params_ptr;
 	tpo_mod_file			*nodix_mod;
 	int done = 0,n;
 
@@ -122,6 +272,8 @@ int main(int argc, const char **argv)
 	init_default_mem_area	(24 * 1024 * 1024);
 	set_exe_path			();
 	network_init			();
+
+	create_def();
 
 	tpo_mod_init			(&libbase_mod);
 	load_module				("modz/libbase.tpo", "libbase", &libbase_mod);
@@ -137,7 +289,7 @@ int main(int argc, const char **argv)
 
 #ifdef _DEBUG
 	set_dbg_ptr		(init_protocol, init_blocks, node_init_self, node_load_block_indexes, make_genesis_block, node_load_last_blks, new_peer_node, node_log_version_infos, queue_verack_message, queue_getaddr_message, queue_version_message,queue_ping_message, queue_pong_message, queue_inv_message, queue_getdata_message, node_is_next_block, node_check_chain, node_store_last_pos_hash, node_set_last_block, set_block_hash, add_money_supply, node_truncate_chain_to, sub_money_supply, remove_stored_block, block_has_pow, set_next_check);
-	set_dbg_ptr2	(node_add_block_header, accept_block, compute_pow_diff, store_block,node_init_service,node_get_script_modules,get_pow_reward,node_get_script_msg_handlers);
+	set_dbg_ptr2(node_add_block_header, accept_block, compute_pow_diff, store_block, node_init_service, node_get_script_modules, get_pow_reward, node_get_script_msg_handlers, node_get_mem_pool, node_del_txs_from_mempool, node_add_tx_to_mempool, store_wallet_tx, store_wallet_txs, queue_mempool_message);
 	set_pos_dbg_ptr	(init_pos, store_blk_staking, load_last_pos_blk, find_last_pos_block, compute_last_pos_diff, store_blk_tx_staking,stake_get_reward);
 #endif
 

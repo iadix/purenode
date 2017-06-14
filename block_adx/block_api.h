@@ -1,5 +1,5 @@
 #ifndef BLOCK_API
-	#define BLOCK_API C_IMPORT
+#define BLOCK_API C_IMPORT
 #endif
 
 /*
@@ -18,40 +18,40 @@ BLOCK_API  void	C_API_FUNC mul_compact(unsigned int nBits, uint64_t op, hash_t h
 BLOCK_API  int	C_API_FUNC cmp_hashle(hash_t hash1, hash_t hash2);
 
 /* compute difficulty retargeting */
-BLOCK_API  int	C_API_FUNC calc_new_target(unsigned int nActualSpacing, unsigned int TargetSpacing, unsigned int nTargetTimespan, unsigned int pBits);
+BLOCK_API unsigned int	C_API_FUNC calc_new_target(unsigned int nActualSpacing, unsigned int TargetSpacing, unsigned int nTargetTimespan, unsigned int pBits);
 
 /* get block index size */
 BLOCK_API  int	C_API_FUNC get_block_height();
 
 /* get block reward at given block height */
-BLOCK_API  int	C_API_FUNC get_blockreward		(uint64_t block, uint64_t *block_reward);
+BLOCK_API  int	C_API_FUNC get_blockreward(uint64_t block, uint64_t *block_reward);
 
 /* get hash list from block header list */
-BLOCK_API  int	C_API_FUNC get_hash_list		(mem_zone_ref_ptr hdr_list, mem_zone_ref_ptr hash_list);
+BLOCK_API  int	C_API_FUNC get_hash_list(mem_zone_ref_ptr hdr_list, mem_zone_ref_ptr hash_list);
 
 /* build merklee root */
-BLOCK_API  int	C_API_FUNC build_merkel_tree	(mem_zone_ref_ptr txs, hash_t merkleRoot);
+BLOCK_API  int	C_API_FUNC build_merkel_tree(mem_zone_ref_ptr txs, hash_t merkleRoot);
 
 /* build genesis block */
-BLOCK_API  int	C_API_FUNC make_genesis_block	(mem_zone_ref_ptr genesis_conf,mem_zone_ref_ptr genesis_blk);
+BLOCK_API  int	C_API_FUNC make_genesis_block(mem_zone_ref_ptr genesis_conf, mem_zone_ref_ptr genesis_blk);
 
 /* get output from tx at specified index */
-BLOCK_API int	C_API_FUNC   get_tx_output		(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr vout);
+BLOCK_API int	C_API_FUNC   get_tx_output(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr vout);
 
 /* parse infos from signature script */
-BLOCK_API  int	C_API_FUNC   get_insig_info		(const struct string *script, struct string *sign, struct string *pubk, unsigned char *hash_type);
+BLOCK_API  int	C_API_FUNC   get_insig_info(const struct string *script, struct string *sign, struct string *pubk, unsigned char *hash_type);
 
 /* parse signature */
-BLOCK_API  int	C_API_FUNC   parse_sig_seq		(const struct string *sign_seq, struct string *sign, unsigned char *hashtype, int rev);
+BLOCK_API  int	C_API_FUNC   parse_sig_seq(const struct string *sign_seq, struct string *sign, unsigned char *hashtype, int rev);
 
 /* serialize script */
-BLOCK_API  int	C_API_FUNC	serialize_script	(mem_zone_ref_ptr script_node, struct string *script);
+BLOCK_API  int	C_API_FUNC	serialize_script(mem_zone_ref_ptr script_node, struct string *script);
 
 /* create null tx */
-BLOCK_API  int	C_API_FUNC create_null_tx		(mem_zone_ref_ptr tx, unsigned int time, unsigned int block_height);
+BLOCK_API  int	C_API_FUNC create_null_tx(mem_zone_ref_ptr tx, unsigned int time, unsigned int block_height);
 
 /* check is tx is null */
-BLOCK_API  int	C_API_FUNC is_tx_null			(mem_zone_ref_const_ptr tx);
+BLOCK_API  int	C_API_FUNC is_tx_null(mem_zone_ref_const_ptr tx);
 
 /* check is tx vout is null */
 BLOCK_API  int	C_API_FUNC is_vout_null(mem_zone_ref_const_ptr tx, unsigned int idx);
@@ -66,11 +66,21 @@ BLOCK_API  int	C_API_FUNC tx_add_input(mem_zone_ref_ptr tx, const hash_t tx_hash
 /* create paiment script */
 BLOCK_API  int	C_API_FUNC create_payment_script(struct string *pubk, unsigned int type, mem_zone_ref_ptr script_node);
 
+/* create paiment script */
+BLOCK_API  int	C_API_FUNC create_p2sh_script(btc_addr_t addr, mem_zone_ref_ptr script_node);
+
 /* compute transaction signature hash */
 BLOCK_API  int	C_API_FUNC compute_tx_sign_hash(mem_zone_ref_const_ptr tx, unsigned int nIn, const struct string *script, unsigned int hash_type, hash_t txh);
 
 /* check tx input signature */
 BLOCK_API  int	C_API_FUNC check_tx_input_sig(mem_zone_ref_ptr tx, unsigned int nIn, struct string *vpubK);
+
+/* check tx inputs */
+BLOCK_API  int	C_API_FUNC check_tx_outputs(mem_zone_ref_ptr tx, uint64_t *total, unsigned int *is_staking);
+
+/* check tx outputs */
+BLOCK_API  int	C_API_FUNC check_tx_inputs(mem_zone_ref_ptr tx, uint64_t *total_in, unsigned int *is_coinbase);
+
 
 /*check block pow */
 BLOCK_API  int	C_API_FUNC check_block_pow(mem_zone_ref_ptr hdr, hash_t diff_hash);
@@ -89,7 +99,7 @@ BLOCK_API  int	C_API_FUNC get_tx_output_addr(const hash_t tx_hash, unsigned int 
 /* sign transaction input */
 BLOCK_API  int	C_API_FUNC tx_sign(mem_zone_ref_const_ptr tx, unsigned int nIn, unsigned int hashType, const struct string *sign, const struct string *inPubKey);
 /* compute sha256d hash from block header */
-BLOCK_API int	C_API_FUNC	compute_block_hash	(mem_zone_ref_ptr block, hash_t hash);
+BLOCK_API int	C_API_FUNC	compute_block_hash(mem_zone_ref_ptr block, hash_t hash);
 
 /* compute pow hash from block header */
 BLOCK_API int	C_API_FUNC	compute_block_pow(mem_zone_ref_ptr block, hash_t hash);
@@ -107,29 +117,33 @@ BLOCK_API int	C_API_FUNC	get_block_version(unsigned int *v);
 BLOCK_API int	C_API_FUNC	blk_check_sign(const struct string *sign, const struct string *pubk, const hash_t hash);
 
 /* check validity of input transactions */
-BLOCK_API  int	C_API_FUNC check_tx_list(mem_zone_ref_ptr tx_list, uint64_t staking_reward);
+BLOCK_API  int	C_API_FUNC check_tx_list(mem_zone_ref_ptr tx_list, uint64_t block_reward,hash_t merkle);
 
 /* get tx input idx */
-BLOCK_API int	C_API_FUNC	get_tx_input		(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr vin);
+BLOCK_API int	C_API_FUNC	get_tx_input(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr vin);
 
 
 /* set hash from compact from */
-BLOCK_API unsigned int	C_API_FUNC SetCompact	(unsigned int bits, hash_t out);
+BLOCK_API unsigned int	C_API_FUNC SetCompact(unsigned int bits, hash_t out);
 
-/* 
+
+/* enable tx signature checking */
+BLOCK_API void	C_API_FUNC set_tx_sign_chk(unsigned int v);
+
+/*
 *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=
-script.c 
+script.c
 *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=
 */
 
 /* get public key / address from output script */
-BLOCK_API int C_API_FUNC   get_out_script_address(struct string *script, struct string *pubk, btc_addr_t addr);
+BLOCK_API int C_API_FUNC   get_out_script_address(const struct string *script, struct string *pubk, btc_addr_t addr);
 
 /* get tx ouput script */
-BLOCK_API int C_API_FUNC   get_tx_output_script(const hash_t tx_hash, unsigned int idx, struct string *script);
+BLOCK_API int C_API_FUNC   get_tx_output_script(const hash_t tx_hash, unsigned int idx, struct string *script, uint64_t *amount);
 
 /* public key get to hash */
-BLOCK_API int C_API_FUNC   key_to_hash(unsigned char *pkey, unsigned char *keyHash);
+BLOCK_API void C_API_FUNC   key_to_hash(unsigned char *pkey, unsigned char *keyHash);
 
 /* public key  to addr */
 BLOCK_API void C_API_FUNC  key_to_addr(unsigned char *pkey, btc_addr_t addr);
@@ -137,11 +151,6 @@ BLOCK_API void C_API_FUNC  key_to_addr(unsigned char *pkey, btc_addr_t addr);
 /* private address to private key */
 BLOCK_API void C_API_FUNC   paddr_to_key(btc_paddr_t addr, dh_key_t key);
 
-/* compute serialized size of script */
-BLOCK_API  int	C_API_FUNC	compute_script_size(mem_zone_ref_ptr script_node);
-
-/* get next var in the script */
-BLOCK_API  struct string    get_next_script_var(struct string *script, size_t *offset);
 
 /*
 *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=
@@ -223,11 +232,12 @@ BLOCK_API int C_API_FUNC  get_block_time(const char *blkHash, ctime_t *time);
 /* get block pow from local store */
 BLOCK_API int C_API_FUNC  get_pow_block(const char *blk_hash, hash_t pow);
 
-/*store tx outputs */
-BLOCK_API int C_API_FUNC  store_tx_outputs(const char * blk_hash, mem_zone_ref_ptr tx, hash_t thash, unsigned int wallet);
 
 /*store tx inputs */
-BLOCK_API int C_API_FUNC  store_tx_inputs(mem_zone_ref_ptr tx, const char *tx_hash, unsigned int wallet);
+BLOCK_API int C_API_FUNC  store_tx_inputs(mem_zone_ref_ptr tx);
+
+/*store tx outputs */
+BLOCK_API int C_API_FUNC  store_tx_outputs(mem_zone_ref_ptr tx, const char *blk_hash);
 
 /*store tx hash into index */
 BLOCK_API int C_API_FUNC  store_tx_index(const char * blk_hash, mem_zone_ref_ptr tx, hash_t thash);
@@ -235,23 +245,11 @@ BLOCK_API int C_API_FUNC  store_tx_index(const char * blk_hash, mem_zone_ref_ptr
 /*store tx hash into address index */
 BLOCK_API int C_API_FUNC  store_tx_addresses(btc_addr_t addr, hash_t tx_hash);
 
-/* add unspent in the wallet */
-BLOCK_API int C_API_FUNC  add_unspent(btc_addr_t	addr, const char *tx_hash, unsigned int oidx, uint64_t amount, btc_addr_t *src_addrs, unsigned int n_addrs);
-
-/* spend unspent in the wallet */
-BLOCK_API int C_API_FUNC  spend_tx_addr(btc_addr_t addr, const char *tx_hash, unsigned int vin, const char *ptx_hash, unsigned int oidx, btc_addr_t *addrs_to, unsigned int n_addrs_to);
-
 /* remove tx from address index */
-BLOCK_API int C_API_FUNC  remove_tx_addresses(btc_addr_t addr, hash_t tx_hash);
-
-/* remove tx from wallet staking index */
-BLOCK_API int C_API_FUNC  remove_tx_staking(btc_addr_t stake_addr, hash_t tx_hash);
+BLOCK_API int C_API_FUNC  remove_tx_addresses(const btc_addr_t addr, const hash_t tx_hash);
 
 /* remove tx from storage*/
 BLOCK_API int C_API_FUNC  remove_tx(hash_t tx_hash);
-
-/* remove block from local storage */
-BLOCK_API int C_API_FUNC  remove_block(hash_t blk_hash);
 
 /* load block index from storage */
 BLOCK_API  int	C_API_FUNC load_block_indexes(mem_zone_ref_ptr hdr_list);
@@ -265,3 +263,40 @@ BLOCK_API  int	C_API_FUNC store_tx_blk_index(const hash_t tx_hash, const hash_t 
 /* clear all transaction indexes */
 BLOCK_API  int	C_API_FUNC clear_tx_index();
 
+
+
+/* staking API definition */
+
+typedef int  C_API_FUNC				get_blk_staking_infos_func(mem_zone_ref_ptr blk, const char *blk_hash, mem_zone_ref_ptr infos);
+typedef get_blk_staking_infos_func *get_blk_staking_infos_func_ptr;
+
+typedef int	C_API_FUNC	store_tx_staking_func(mem_zone_ref_ptr tx, hash_t tx_hash, btc_addr_t stake_addr, uint64_t	stake_in);
+typedef store_tx_staking_func		*store_tx_staking_func_ptr;
+
+typedef int	C_API_FUNC	get_tx_pos_hash_data_func(mem_zone_ref_ptr hdr, const hash_t txHash, unsigned int OutIdx, struct string *hash_data, uint64_t *amount, hash_t out_diff);
+typedef  get_tx_pos_hash_data_func *get_tx_pos_hash_data_func_ptr;
+
+typedef int	C_API_FUNC get_target_spacing_func(unsigned int *target);
+typedef  get_target_spacing_func   *get_target_spacing_func_ptr;
+
+typedef int	C_API_FUNC get_stake_reward_func(uint64_t height, uint64_t *reward);
+typedef get_stake_reward_func   *get_stake_reward_func_ptr;
+
+typedef int	C_API_FUNC  get_last_stake_modifier_func(mem_zone_ref_ptr pindex, hash_t nStakeModifier, unsigned int *nModifierTime);
+typedef get_last_stake_modifier_func   *get_last_stake_modifier_func_ptr;
+
+typedef int	C_API_FUNC compute_tx_pos_func(mem_zone_ref_ptr tx, hash_t StakeModifier, unsigned int txTime, hash_t pos_hash, uint64_t *weight);
+typedef compute_tx_pos_func   *compute_tx_pos_func_ptr;
+
+typedef unsigned int	C_API_FUNC	get_current_pos_difficulty_func();
+typedef get_current_pos_difficulty_func		*get_current_pos_difficulty_func_ptr;
+
+typedef int	 C_API_FUNC	create_pos_block_func(hash_t pHash, mem_zone_ref_ptr tx, mem_zone_ref_ptr newBlock);
+typedef create_pos_block_func *create_pos_block_func_ptr;
+
+typedef int				C_API_FUNC	check_tx_pos_func(mem_zone_ref_ptr blk, mem_zone_ref_ptr tx);
+typedef check_tx_pos_func					*check_tx_pos_func_ptr;
+
+
+typedef int				C_API_FUNC	get_min_stake_depth_func(unsigned int *depth);
+typedef get_min_stake_depth_func	*get_min_stake_depth_func_ptr;

@@ -184,7 +184,7 @@ OS_API_C_FUNC(void) mbedtls_sha256(const unsigned char *input, size_t ilen, unsi
 
 OS_API_C_FUNC(int)	crypto_hash_sha512(unsigned char *out, const unsigned char *in, size_t inlen){ return 0; }
 OS_API_C_FUNC(int) resolve_script_var(mem_zone_ref_ptr global_vars, mem_zone_ref_ptr script_proc, const char *var_path, unsigned int var_type, mem_zone_ref_ptr out_var){ return 0; }
-
+OS_API_C_FUNC(int)	tree_remove_child_by_member_value_hash(mem_zone_ref_ptr p_node_ref, unsigned int child_type, const char *member_name, hash_t hash){ return 0; }
 #ifdef _WIN32
 C_EXPORT int _fltused = 0;
 C_EXPORT mod_name_decoration_t	 mod_name_deco_type = MOD_NAME_DECO;

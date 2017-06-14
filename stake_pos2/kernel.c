@@ -270,7 +270,7 @@ int compute_tx_pos(mem_zone_ref_ptr tx, unsigned int TimeBlockFrom,uint64_t Stak
 
 	load_tx_input						(tx, 0, &vin, &prev_tx);
 	tree_manager_get_child_value_i64	(&prev_tx, NODE_HASH("time"), &txPrevTime);
-	tree_manager_get_child_value_hash	(&vin, NODE_HASH("tx hash"), prevOutHash);
+	tree_manager_get_child_value_hash	(&vin, NODE_HASH("txid"), prevOutHash);
 	tree_manager_get_child_value_i32	(&vin, NODE_HASH("idx"), &prevOutIdx);
 
 	release_zone_ref(&vin);

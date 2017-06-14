@@ -1093,10 +1093,10 @@ module_rproc_ptr  node_log_version_infos;
 module_rproc_ptr  init_pos, store_blk_staking, load_last_pos_blk, find_last_pos_block, store_blk_tx_staking;
 module_rwproc_ptr compute_last_pos_diff, stake_get_reward;
 
-module_rproc_ptr  set_block_hash, add_money_supply, sub_money_supply, remove_stored_block, node_store_last_pos_hash, node_set_last_block, node_truncate_chain_to, block_has_pow, set_next_check;
+module_rproc_ptr  set_block_hash, add_money_supply, sub_money_supply, remove_stored_block, node_store_last_pos_hash, node_set_last_block, node_truncate_chain_to, block_has_pow, set_next_check, store_wallet_tx, store_wallet_txs;
 module_rwproc_ptr accept_block, compute_pow_diff, store_block, node_init_service, get_pow_reward;
 
-module_rproc_ptr  queue_verack_message, queue_getaddr_message, queue_version_message, node_is_next_block, new_peer_node, node_get_script_modules, node_get_script_msg_handlers;
+module_rproc_ptr  queue_verack_message, queue_getaddr_message, queue_version_message, node_is_next_block, new_peer_node, node_get_script_modules, node_get_script_msg_handlers, node_get_mem_pool, node_del_txs_from_mempool, node_add_tx_to_mempool, queue_mempool_message;
 module_rwproc_ptr make_genesis_block, node_add_block_header;
 module_proc_ptr	  node_load_block_indexes, node_load_last_blks, node_check_chain;
 
@@ -1107,7 +1107,7 @@ module_rwproc_ptr queue_pong_message, queue_getdata_message, queue_inv_message;
 //node_add_block_header accept_block compute_last_pow_diff 
 
 //  
-OS_API_C_FUNC(int) set_dbg_ptr2(module_rwproc_ptr  a, module_rwproc_ptr b, module_rwproc_ptr  c, module_rwproc_ptr d, module_rwproc_ptr e, module_rproc_ptr f, module_rwproc_ptr g,module_rproc_ptr h)
+OS_API_C_FUNC(int) set_dbg_ptr2(module_rwproc_ptr  a, module_rwproc_ptr b, module_rwproc_ptr  c, module_rwproc_ptr d, module_rwproc_ptr e, module_rproc_ptr f, module_rwproc_ptr g, module_rproc_ptr h, module_rproc_ptr i, module_rproc_ptr j, module_rproc_ptr k, module_rproc_ptr l, module_rproc_ptr m, module_rproc_ptr n)
 {
 	node_add_block_header = a;
 	accept_block = b;
@@ -1117,6 +1117,12 @@ OS_API_C_FUNC(int) set_dbg_ptr2(module_rwproc_ptr  a, module_rwproc_ptr b, modul
 	node_get_script_modules = f;
 	get_pow_reward = g;
 	node_get_script_msg_handlers = h;
+	node_get_mem_pool = i;
+	node_del_txs_from_mempool = j;
+	node_add_tx_to_mempool = k;
+	store_wallet_tx = l;
+	store_wallet_txs = m;
+	queue_mempool_message = n;
 	return 1;
 }
 
@@ -1178,7 +1184,7 @@ OS_API_C_FUNC(int) execute_script_mod_rwcall(tpo_mod_file		*tpo_mod, const char 
 		log_output("method not found : ");
 		log_output(method);
 		log_output("\n");
-		return 0;
+		return -1;
 	}
 
 #ifdef _DEBUG
@@ -1207,7 +1213,7 @@ OS_API_C_FUNC(int) execute_script_mod_rwcall(tpo_mod_file		*tpo_mod, const char 
 	else if (!strcmp_c(method, "get_pow_reward"))
 		return get_pow_reward(input, output);
 
-	return 0;
+	return -1;
 #endif
 
 	return mod_func(input, output);
@@ -1220,7 +1226,12 @@ OS_API_C_FUNC(int) execute_script_mod_rcall(tpo_mod_file		*tpo_mod, const char *
 	mod_func = (module_rproc_ptr)get_tpo_mod_exp_addr_name(tpo_mod, method, 0);
 
 	if (mod_func == PTR_NULL)
-		return 0;
+	{
+		log_output("method not found : ");
+		log_output(method);
+		log_output("\n");
+		return -1;
+	}
 
 #ifdef _DEBUG
 	if (!strcmp_c(method, "init_protocol"))
@@ -1275,8 +1286,20 @@ OS_API_C_FUNC(int) execute_script_mod_rcall(tpo_mod_file		*tpo_mod, const char *
 		return node_get_script_modules(input);
 	else if (!strcmp_c(method, "node_get_script_msg_handlers"))
 		return 	node_get_script_msg_handlers(input);
+	else if (!strcmp_c(method, "node_get_mem_pool"))
+		return 	node_get_mem_pool(input);
+	else if (!strcmp_c(method, "node_add_tx_to_mempool"))
+		return 	node_add_tx_to_mempool(input);
+	else if (!strcmp_c(method, "node_del_txs_from_mempool"))
+		return 	node_del_txs_from_mempool(input);
+	else if (!strcmp_c(method, "store_wallet_tx"))
+		return 	store_wallet_tx(input);
+	else if (!strcmp_c(method, "store_wallet_txs"))
+		return 	store_wallet_txs(input);
+	else if (!strcmp_c(method, "queue_mempool_message"))
+		return 	queue_mempool_message(input);
 		
-	return 0;
+	return -1;
 
 #endif
 
@@ -1291,7 +1314,12 @@ OS_API_C_FUNC(int) execute_script_mod_call(tpo_mod_file		*tpo_mod, const char *m
 	mod_func = (module_proc_ptr)get_tpo_mod_exp_addr_name(tpo_mod, method, 0);
 
 	if (mod_func == PTR_NULL)
-		return 0;
+	{
+		log_output("method not found : ");
+		log_output(method);
+		log_output("\n");
+		return -1;
+	}
 #ifdef _DEBUG
 
 	if (!strcmp_c(method, "node_load_block_indexes"))
@@ -1300,7 +1328,8 @@ OS_API_C_FUNC(int) execute_script_mod_call(tpo_mod_file		*tpo_mod, const char *m
 
 	if (!strcmp_c(method, "node_load_last_blks"))
 		return node_load_last_blks();
-	return 0;
+
+	return -1;
 #else
 	return mod_func();
 #endif

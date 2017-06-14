@@ -13,45 +13,15 @@
 
 #include "../block_adx/block_api.h"
 
-hash_t			nullhash = { 0xCD };
-hash_t			Difflimit = { 0xCD };
-unsigned int	Di = PTR_INVALID, last_diff = PTR_INVALID;
-static int64_t	TargetSpacing = 0xABCDABCD;
-static int64_t	nTargetTimespan = 0xABCDABCD;
-static int64_t	nStakeReward = 0xABCDABCD;
+hash_t				nullhash = { 0xCD };
+hash_t				Difflimit = { 0xCD };
+unsigned int		Di = PTR_INVALID, last_diff = PTR_INVALID;
+static int64_t		TargetSpacing = 0xABCDABCD;
+static int64_t		nTargetTimespan = 0xABCDABCD;
+static int64_t		nStakeReward = 0xABCDABCD;
+static unsigned int	minStakeDepth = 10;
 
-C_IMPORT int			C_API_FUNC  load_blk_tx_input	(const char *blk_hash, unsigned int tx_idx, unsigned int vin_idx, mem_zone_ref_ptr vout);
-C_IMPORT int			C_API_FUNC load_blk_hdr			(mem_zone_ref_ptr hdr, const char *blk_hash);
-C_IMPORT int			C_API_FUNC get_tx_output		(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr vout);
-C_IMPORT int			C_API_FUNC get_tx_input			(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr vin);
-C_IMPORT int			C_API_FUNC is_tx_null			(mem_zone_ref_const_ptr tx);
-C_IMPORT int			C_API_FUNC is_vout_null			(mem_zone_ref_const_ptr tx, unsigned int idx);
-C_IMPORT int			C_API_FUNC load_tx_input		(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr	vin, mem_zone_ref_ptr tx_out);
 
-C_IMPORT int			C_API_FUNC load_tx_output_amount(const hash_t tx_hash, unsigned int idx, uint64_t *amount);
-C_IMPORT int			C_API_FUNC get_tx_input_hash	(mem_zone_ref_ptr tx, unsigned int idx, hash_t hash);
-C_IMPORT int			C_API_FUNC get_tx_output_amount	(mem_zone_ref_ptr tx, unsigned int idx, uint64_t *amount);
-C_IMPORT int			C_API_FUNC compute_block_hash	(mem_zone_ref_ptr hdr, hash_t blk_hash);
-C_IMPORT int			C_API_FUNC compute_block_pow	(mem_zone_ref_ptr block, hash_t hash);
-C_IMPORT int			C_API_FUNC SetCompact			(unsigned int bits, hash_t out);
-C_IMPORT void			C_API_FUNC mul_compact			(unsigned int nBits, uint64_t op, hash_t hash);
-C_IMPORT int			C_API_FUNC cmp_hashle			(hash_t hash1, hash_t hash2);
-C_IMPORT unsigned int	C_API_FUNC calc_new_target		(unsigned int nActualSpacing, unsigned int TargetSpacing, unsigned int nTargetTimespan, unsigned int pBits);
-C_IMPORT int			C_API_FUNC get_tx_blk_height	(const hash_t tx_hash, uint64_t *height, uint64_t *block_time, uint64_t *tx_time);
-C_IMPORT int			C_API_FUNC get_block_version	(unsigned int *v);
-
-C_IMPORT int			C_API_FUNC new_transaction		(mem_zone_ref_ptr tx, ctime_t time);
-C_IMPORT int			C_API_FUNC load_tx_input_vout	(mem_zone_ref_const_ptr tx, unsigned int vin_idx, mem_zone_ref_ptr vout);
-C_IMPORT int			C_API_FUNC blk_check_sign		(const struct string *sign, const struct string *pubk, const hash_t hash);
-C_IMPORT int			C_API_FUNC compute_tx_sign_hash	(mem_zone_ref_const_ptr tx, unsigned int nIn, const struct string *script, unsigned int hash_type, hash_t txh);
-C_IMPORT int			C_API_FUNC get_insig_info		(const struct string *script, struct string *sign, struct string *pubk, unsigned char *hash_type);
-C_IMPORT int			C_API_FUNC get_out_script_address(struct string *script, struct string *pubk, btc_addr_t addr);
-C_IMPORT int			C_API_FUNC check_tx_input_sig(mem_zone_ref_ptr tx, unsigned int nIn, struct string *vpubK);
-C_IMPORT int			C_API_FUNC get_blk_height	(const char *blk_hash, uint64_t *height);
-
-C_IMPORT int			C_API_FUNC get_block_height		();
-C_IMPORT int			C_API_FUNC parse_sig_seq		(const struct string *sign_seq, struct string *sign, unsigned char *hashtype, int rev);
-C_IMPORT int			C_API_FUNC build_merkel_tree	(mem_zone_ref_ptr txs, hash_t merkleRoot);
 #define ONE_COIN		100000000ULL
 #define ONE_CENT		1000000ULL
 
@@ -74,6 +44,11 @@ OS_API_C_FUNC(int) init_pos(mem_zone_ref_ptr stake_conf)
 
 	if (!tree_manager_get_child_value_i32(stake_conf, NODE_HASH("limit"), &Di))
 		Di = 0x1B00FFFF;
+
+	if (!tree_manager_get_child_value_i32(stake_conf, NODE_HASH("minStakeDepth"), &minStakeDepth))
+		minStakeDepth = 10;
+
+	
 
 	SetCompact(Di, Difflimit);
 
@@ -110,6 +85,12 @@ OS_API_C_FUNC(int) stake_get_reward(mem_zone_ref_ptr nHeight, mem_zone_ref_ptr n
 	return 1;
 }
 
+OS_API_C_FUNC(int) get_min_stake_depth(unsigned int *depth)
+{
+	*depth = minStakeDepth;
+	return 1;
+}
+
 OS_API_C_FUNC(int) get_target_spacing(unsigned int *target)
 {
 	*target = TargetSpacing;
@@ -138,12 +119,6 @@ OS_API_C_FUNC(int) generated_stake_modifier(const char *blk_hash, hash_t StakeMo
 			}
 			free_c(data);
 		}
-	}
-	else
-	{
-		log_output("stake mod file not found ");
-		log_output(blk_path.str);
-		log_output("\n");
 	}
 	free_string(&blk_path);
 	return ret;
@@ -316,12 +291,12 @@ OS_API_C_FUNC(int) store_blk_tx_staking(mem_zone_ref_ptr tx_list)
 				uint64_t	stake_in;
 				if (get_tx_input(&tx, 0, &vin))
 				{
-					if (tree_manager_get_child_value_btcaddr(&vin, NODE_HASH("src addr"), stake_addr))
+					if (tree_manager_get_child_value_btcaddr(&vin, NODE_HASH("srcaddr"), stake_addr))
 					{
 						hash_t			tx_hash;
 
 						tree_manager_get_child_value_i64(&vin, NODE_HASH("amount"), &stake_in);
-						tree_manager_get_child_value_hash(&tx, NODE_HASH("tx hash"), tx_hash);
+						tree_manager_get_child_value_hash(&tx, NODE_HASH("txid"), tx_hash);
 
 						store_tx_staking(&tx, tx_hash, stake_addr, stake_in);
 					}
@@ -524,7 +499,7 @@ OS_API_C_FUNC(int) compute_tx_pos(mem_zone_ref_ptr tx, hash_t StakeModifier, uns
 	if (!load_tx_input(tx, 0, &vin, &prev_tx))return 0;
 
 	
-	tree_manager_get_child_value_hash	(&vin, NODE_HASH("tx hash"), prevOutHash);
+	tree_manager_get_child_value_hash	(&vin, NODE_HASH("txid"), prevOutHash);
 	tree_manager_get_child_value_i32	(&vin, NODE_HASH("idx"), &prevOutIdx);
 	release_zone_ref					(&vin);
 	
@@ -810,9 +785,12 @@ OS_API_C_FUNC(int) create_pos_block(hash_t pHash, mem_zone_ref_ptr tx, mem_zone_
 			mem_zone_ref mtx = { PTR_NULL };
 			if (tree_manager_add_child_node(&txs, "tx", NODE_BITCORE_TX, &mtx))
 			{
-				create_null_tx	(&mtx, time,height-1);
+				create_null_tx	(&mtx, time,height);
 				release_zone_ref(&mtx);
 			}
+
+
+
 			tree_manager_node_dup	(&txs, tx, &mtx);
 			release_zone_ref		(&mtx);
 			

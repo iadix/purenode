@@ -10,9 +10,9 @@
 
 C_IMPORT ctime_t C_API_FUNC  get_time_c();
 
+unsigned int		GETDATA_TX			= 1;
 unsigned int		GETDATA_BLOCK		= 2;
 unsigned int		magic				= 0xCDCDCDCD;
-unsigned int		PROTOCOL_VERSION	= 0xCDCDCDCD;
 
 hash_t				null_hash			= { 0xFF };
 struct string		def_vstr			= { "empty" };
@@ -25,8 +25,7 @@ unsigned int NODE_HASH_txsout = 0xCDCDCDCD, NODE_HASH_script = 0xCDCDCDCD, NODE_
 OS_API_C_FUNC(int) init_protocol(mem_zone_ref_ptr params)
 {
 	if (!tree_manager_get_child_value_i32(params, NODE_HASH("magic"), &magic))return 0;
-	if (!tree_manager_get_child_value_i32(params, NODE_HASH("version"), &PROTOCOL_VERSION))return 0;
-	
+
 	memset_c(null_hash, 0, sizeof(hash_t));
 
 	def_vstr.str = malloc_c(33);
@@ -55,7 +54,7 @@ OS_API_C_FUNC(int) init_protocol(mem_zone_ref_ptr params)
 	NODE_HASH_port = NODE_HASH("port");
 	NODE_HASH_p2p_addr = NODE_HASH("p2p_addr");
 	NODE_HASH_locktime = NODE_HASH("locktime");
-	NODE_HASH_tx_hash = NODE_HASH("tx hash");
+	NODE_HASH_tx_hash = NODE_HASH("txid");
 	NODE_HASH_value = NODE_HASH("value");
 	NODE_HASH_sequence = NODE_HASH("sequence");
 	NODE_HASH_idx = NODE_HASH("idx");
@@ -66,7 +65,6 @@ OS_API_C_FUNC(int) init_protocol(mem_zone_ref_ptr params)
 
 	mem_zone_ref log = { PTR_NULL };
 	tree_manager_create_node("log", NODE_LOG_PARAMS, &log);
-	tree_manager_set_child_value_i32(&log, "version", PROTOCOL_VERSION);
 	tree_manager_set_child_value_i32(&log, "magic", magic);
 	log_message					("p2p protocol ok version : %version%  magic : %magic% ", &log);
 	release_zone_ref(&log);
@@ -75,10 +73,9 @@ OS_API_C_FUNC(int) init_protocol(mem_zone_ref_ptr params)
 }
 
 
-OS_API_C_FUNC(void) get_version(unsigned int *inmagic, unsigned int *version)
+OS_API_C_FUNC(void) get_magic(unsigned int *inmagic)
 {
 	*inmagic=magic ;
-	*version=PROTOCOL_VERSION;
 }
 
 
@@ -112,6 +109,7 @@ OS_API_C_FUNC(size_t) init_node(mem_zone_ref_ptr key)
 		tree_manager_write_node_qword(key, 0, 0);
 		break;
 	case NODE_BITCORE_BLOCK_HASH:
+	case NODE_BITCORE_TX_HASH:
 	case NODE_BITCORE_HASH:
 		tree_manager_write_node_hash(key, 0, null_hash);
 		break;
@@ -141,7 +139,7 @@ OS_API_C_FUNC(size_t) init_node(mem_zone_ref_ptr key)
 		tree_manager_write_node_data(key, null_hash, 39, 32);
 	break;
 	case NODE_BITCORE_TXIN:
-		tree_manager_set_child_value_hash(key, "tx hash", null_hash);
+		tree_manager_set_child_value_hash(key, "txid", null_hash);
 		tree_manager_set_child_value_i32(key, "idx", 0xFFFFFFFF);
 		tree_manager_set_child_value_vstr(key, "script", &def_vstr);
 	break;
@@ -213,6 +211,7 @@ OS_API_C_FUNC(size_t)	get_node_size(mem_zone_ref_ptr key)
 		szData += 8;
 		break;
 	case NODE_BITCORE_BLOCK_HASH:
+	case NODE_BITCORE_TX_HASH:
 	case NODE_BITCORE_HASH:
 		szData += 32;
 		break;
@@ -408,6 +407,7 @@ OS_API_C_FUNC(char *) write_node(mem_zone_ref_const_ptr key, unsigned char *payl
 		payload += 8;
 		break;
 	case NODE_BITCORE_BLOCK_HASH:
+	case NODE_BITCORE_TX_HASH:
 	case NODE_BITCORE_HASH:
 		tree_manager_get_node_hash(key, 0, (unsigned char *)payload);
 		payload += 32;
@@ -423,11 +423,17 @@ OS_API_C_FUNC(char *) write_node(mem_zone_ref_const_ptr key, unsigned char *payl
 			*((unsigned short*)(payload))	= nc;
 			payload += 2;
 		}
+
 		for (tree_manager_get_first_child(key, &my_list, &sub); ((sub != NULL) && (sub->zone != NULL)); tree_manager_get_next_child(&my_list, &sub))
 		{
 			if (tree_mamanger_get_node_type(sub) == NODE_BITCORE_BLOCK_HASH)
 			{
 				*((unsigned int *)(payload)) = GETDATA_BLOCK;
+				payload += 4;
+			}
+			else if (tree_mamanger_get_node_type(sub) == NODE_BITCORE_TX_HASH)
+			{
+				*((unsigned int *)(payload)) = GETDATA_TX;
 				payload += 4;
 			}
 			tree_manager_get_node_hash(sub, 0, (unsigned char *)(payload));
@@ -672,6 +678,7 @@ OS_API_C_FUNC(const unsigned char *)read_node(mem_zone_ref_ptr key, const unsign
 		payload = mem_add(payload, 8);
 		break;
 	case NODE_BITCORE_BLOCK_HASH:
+	case NODE_BITCORE_TX_HASH:
 	case NODE_BITCORE_HASH:
 		tree_manager_write_node_hash(key, 0, ((unsigned char *)(payload)));
 		payload = mem_add(payload, 32);
@@ -740,6 +747,11 @@ OS_API_C_FUNC(const unsigned char *)read_node(mem_zone_ref_ptr key, const unsign
 			if (*((unsigned int *)(payload)) == GETDATA_BLOCK)
 			{
 				type	= NODE_BITCORE_BLOCK_HASH;
+				payload += 4;
+			}
+			if (*((unsigned int *)(payload)) == GETDATA_TX)
+			{
+				type = NODE_BITCORE_TX_HASH;
 				payload += 4;
 			}
 
@@ -847,7 +859,7 @@ OS_API_C_FUNC(const unsigned char *)read_node(mem_zone_ref_ptr key, const unsign
 	break;
 	case NODE_BITCORE_TXIN:
 
-		tree_manager_set_child_value_hash(key, "tx hash", payload);
+		tree_manager_set_child_value_hash(key, "txid", payload);
 		payload += 32;
 		tree_manager_set_child_value_i32(key, "idx", *((unsigned int *)payload));
 		payload += 4;
@@ -1148,6 +1160,15 @@ OS_API_C_FUNC(int) create_verack_message(mem_zone_ref_ptr node, mem_zone_ref_ptr
 	return 1;
 }
 
+OS_API_C_FUNC(int) create_mempool_message(mem_zone_ref_ptr node, mem_zone_ref_ptr mempool_pack)
+{
+	tree_manager_create_node("message", NODE_BITCORE_MSG, mempool_pack);
+	tree_manager_set_child_value_str(mempool_pack, "cmd", "mempool");
+	tree_manager_set_child_value_i32(mempool_pack, "size", 0);
+	tree_manager_set_child_value_i32(mempool_pack, "sent", 0);
+	return 1;
+}
+
 OS_API_C_FUNC(int) create_getdata_message(mem_zone_ref_ptr node, mem_zone_ref_ptr hash_list, mem_zone_ref_ptr blk_hdr_pack)
 {
 	mem_zone_ref		inv_vec = { PTR_NULL }, payload = { PTR_NULL }, nhashl = { PTR_NULL };
@@ -1172,7 +1193,7 @@ OS_API_C_FUNC(int) create_getdata_message(mem_zone_ref_ptr node, mem_zone_ref_pt
 
 	return 1;
 }
-OS_API_C_FUNC(int) create_getheaders_message(mem_zone_ref_ptr node, mem_zone_ref_ptr blk_locator,hash_t hashstop, mem_zone_ref_ptr blk_hdr_pack)
+OS_API_C_FUNC(int) create_getheaders_message(mem_zone_ref_ptr node, unsigned int version, mem_zone_ref_ptr blk_locator,hash_t hashstop, mem_zone_ref_ptr blk_hdr_pack)
 {
 	mem_zone_ref		payload = { PTR_NULL };
 	size_t				pl_size;
@@ -1184,7 +1205,7 @@ OS_API_C_FUNC(int) create_getheaders_message(mem_zone_ref_ptr node, mem_zone_ref
 	cnt = tree_manager_get_node_num_children(blk_locator);
 
 	tree_manager_add_child_node				(blk_hdr_pack, "payload", NODE_BITCORE_PAYLOAD, &payload);
-	tree_manager_set_child_value_i32		(&payload, "version", PROTOCOL_VERSION);
+	tree_manager_set_child_value_i32		(&payload, "version", version);
 	tree_manager_set_child_value_vint32		(&payload, "count", cnt);
 	for (n = 0; n < cnt;n++)
 	{
@@ -1208,7 +1229,7 @@ OS_API_C_FUNC(int) create_getheaders_message(mem_zone_ref_ptr node, mem_zone_ref
 	return 1;
 
 }
-OS_API_C_FUNC(int) create_getblocks_message(mem_zone_ref_ptr node, mem_zone_ref_ptr blk_locator, mem_zone_ref_ptr getblk_pack)
+OS_API_C_FUNC(int) create_getblocks_message(mem_zone_ref_ptr node, unsigned int version, mem_zone_ref_ptr blk_locator, mem_zone_ref_ptr getblk_pack)
 {
 	mem_zone_ref		payload = { PTR_NULL };
 	size_t				pl_size;
@@ -1221,7 +1242,7 @@ OS_API_C_FUNC(int) create_getblocks_message(mem_zone_ref_ptr node, mem_zone_ref_
 
 	tree_manager_set_child_value_str(getblk_pack, "cmd", "getblocks");
 	tree_manager_add_child_node(getblk_pack, "payload", NODE_BITCORE_PAYLOAD, &payload);
-	tree_manager_set_child_value_i32(&payload, "version", PROTOCOL_VERSION);
+	tree_manager_set_child_value_i32(&payload, "version", version);
 	tree_manager_node_add_child(&payload, blk_locator);
 	tree_manager_set_child_value_hash(&payload, "hashstop", null_hash);
 	pl_size = compute_payload_size(&payload);
@@ -1278,6 +1299,27 @@ OS_API_C_FUNC(int) create_block_message(mem_zone_ref_ptr node, mem_zone_ref_ptr 
 	tree_manager_get_node_num_children(tx_list);
 	tree_manager_set_child_value_i32(block_pack, "size", pl_size);
 	tree_manager_set_child_value_i32(block_pack, "sent", 0);
+
+	return 1;
+
+}
+
+OS_API_C_FUNC(int) create_tx_message(mem_zone_ref_ptr node, mem_zone_ref_ptr tx, mem_zone_ref_ptr tx_pack)
+{
+	mem_zone_ref		payload = { PTR_NULL };
+	size_t				pl_size;
+	int					cnt;
+
+	if (!tree_manager_create_node("message", NODE_BITCORE_MSG, tx_pack))return 0;
+	tree_manager_set_child_value_str(tx_pack, "cmd", "tx");
+	if (tree_manager_add_child_node(tx_pack, "payload", NODE_BITCORE_PAYLOAD, &payload))
+	{
+		tree_manager_node_add_child(&payload, tx);
+		pl_size = compute_payload_size(&payload);
+		release_zone_ref(&payload);
+	}
+	tree_manager_set_child_value_i32(tx_pack, "size", pl_size);
+	tree_manager_set_child_value_i32(tx_pack, "sent", 0);
 
 	return 1;
 
@@ -1501,26 +1543,41 @@ OS_API_C_FUNC(int) new_message(const struct string *data, mem_zone_ref_ptr msg)
 		cat_cstring(&pack_str, "], (0x0B800000)\"signature\":\"\"}");
 		cnt = 0;
 	}
+	else if (!strncmp_c(&data->str[4], "tx", 2))
+	{
+		unsigned int    first, n;
+
+		make_string(&pack_str, "{(\"payload\",0x0B000010)  (0x0B008000)\"tx\":\"\"}");
+		cnt = 0;
+	}
 	else if (!strncmp_c(&data->str[4], "getdata", 7))
 	{
 		unsigned int    first, n;
+		unsigned int	type;
 		unsigned char	c;
 
 		c = *((unsigned char *)(data->str + 24));
 
 		if (c < 0xFD)
+		{
 			cnt = c;
+			type = *(unsigned char *)(data->str +24+ 1);
+		}
 		else if (c == 0xFD)
 		{
 			cnt = *((unsigned short *)(data->str + 24 + 1));
+			type = *(unsigned char *)(data->str + 24 + 3);
 		}
 		else if (c == 0xFE)
 		{
 			cnt = *((unsigned int *)(data->str + 24 + 1));
+			type = *(unsigned char *)(data->str + 24 + 5);
 		}
 		else if (c == 0xFF)
 		{
 			cnt = *((uint64_t *)(data->str + 24 + 1));
+			type = *(unsigned char *)(data->str + 24 + 9);
+			
 		}
 		make_string(&pack_str, "{(\"payload\",0x0B000010) (0x0B003000)\"hashes\":[");
 		first = 1;
@@ -1528,48 +1585,117 @@ OS_API_C_FUNC(int) new_message(const struct string *data, mem_zone_ref_ptr msg)
 		while (n--)
 		{
 			if (!first){ cat_cstring(&pack_str, ","); }
-			cat_cstring(&pack_str, "{(\"hash\",0x0B005000)}");
+
+			if (type==2)
+				cat_cstring(&pack_str, "{(\"hash\",0x0B005000)}");
+			else if (type == 1)
+				cat_cstring(&pack_str, "{(\"hash\",0x0B007000)}");
 			first = 0;
 		}
 		cat_cstring(&pack_str, "]}");
 		cnt = 0;
 		elSz = 0;
 	}
+	else if (!strncmp_c(&data->str[4], "getblocks", 9))
+	{
+		unsigned int	version;
+		unsigned int    first, n;
+		unsigned char	c;
+
+		version = *((unsigned int *)(data->str + 24));
+
+		c = *((unsigned char *)(data->str + 24 + 4));
+
+		if (c < 0xFD)
+		{
+			cnt = c;
+		}
+		else if (c == 0xFD)
+		{
+			cnt = *((unsigned short *)(data->str + 24 + 4));
+		}
+		else if (c == 0xFE)
+		{
+			cnt = *((unsigned int *)(data->str + 24 + 4));
+		}
+		else if (c == 0xFF)
+		{
+			cnt = *((uint64_t *)(data->str + 24 + 4));
+		}
+		make_string(&pack_str, "{(\"payload\",0x0B000010) (0x02)\"version\": 0, (0x0B003000)\"hashes\":[");
+		first = 1;
+		n = cnt;
+		while (n--)
+		{
+			if (!first){ cat_cstring(&pack_str, ","); }
+
+			cat_cstring(&pack_str, "{(\"hash\",0x0B001000)}");
+			first = 0;
+		}
+		cat_cstring(&pack_str, "],(0x0B001000)\"stop\": 0}");
+		cnt = 0;
+		elSz = 0;
+	}
 	else if (!strncmp_c(&data->str[4], "inv", 3))
 	{
 		unsigned int    first, n;
+		unsigned int	type;
 		unsigned char	c;
 
 		c = *((unsigned char *)(data->str + 24));
 
 		if (c < 0xFD)
+		{
 			cnt = c;
+			type = *(unsigned char *)(data->str +24+ 1);
+		}
 		else if (c == 0xFD)
 		{
 			cnt = *((unsigned short *)(data->str + 24 + 1));
+			type = *(unsigned char *)(data->str + 24 + 3);
 		}
 		else if (c == 0xFE)
 		{
 			cnt = *((unsigned int *)(data->str + 24 + 1));
+			type = *(unsigned char *)(data->str + 24 + 5);
 		}
 		else if (c == 0xFF)
 		{
 			cnt = *((uint64_t *)(data->str + 24 + 1));
+			type = *(unsigned char *)(data->str + 24 + 9);
+
 		}
+
 		make_string(&pack_str, "{(\"payload\",0x0B000010) (0x0B003000)\"hashes\":[");
 		first = 1;
 		n = cnt;
 		while (n--)
 		{
 			if (!first){ cat_cstring(&pack_str, ","); }
-			cat_cstring(&pack_str, "{(\"hash\",0x0B005000)}");
+			if (type == 1)
+				cat_cstring(&pack_str, "{(\"hash\",0x0B007000)}"); 
+			else 
+				cat_cstring(&pack_str, "{(\"hash\",0x0B005000)}");
+				
+
+			
 			first = 0;
 		}
 		cat_cstring(&pack_str, "]}");
 		cnt=0;
 		elSz = 0;
 	}
-	else return 0;
+	else
+	{
+		tree_manager_set_child_value_str(msg, "cmd", &data->str[4]);
+		tree_manager_set_child_value_i32(msg, "size", (*((unsigned int *)(&data->str[16]))));
+		tree_manager_set_child_value_i32(msg, "sum", *((unsigned int *)(&data->str[20])));
+		tree_manager_set_child_value_i32(msg, "cnt", cnt);
+		tree_manager_set_child_value_i32(msg, "elSz", elSz);
+		tree_manager_node_add_child		(msg, &payload_node);
+		return 1;
+	}
+		
 
 	ret=tree_manager_json_loadb	(pack_str.str, pack_str.len, &payload_node);
 	free_string					(&pack_str);

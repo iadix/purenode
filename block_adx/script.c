@@ -9,6 +9,12 @@
 #include <strs.h>
 #include <tree.h>
 
+#define BLOCK_API C_EXPORT
+#include "block_api.h"
+
+
+
+
 
 #ifdef _DEBUG
 	LIBEC_API int	C_API_FUNC			crypto_sign_open(const struct string *sign, struct string *msgh, struct string *pk);
@@ -138,13 +144,13 @@ int b58tobin(void *bin, size_t *binszp, const char *b58, size_t b58sz)
 
 int compute_script_size(mem_zone_ref_ptr script_node)
 {
-	mem_zone_ref_ptr	key;
+	mem_zone_ref_ptr	key = PTR_NULL;
 	mem_zone_ref		my_list = { PTR_NULL };
 	size_t				length;
 
 	length = 0;
 
-	for (tree_manager_get_first_child(script_node, &my_list, &key); ((key != NULL) && (key->zone != NULL)); tree_manager_get_next_child(&my_list, &key))
+	for (tree_manager_get_first_child(script_node, &my_list, &key); ((key != PTR_NULL) && (key->zone != PTR_NULL)); tree_manager_get_next_child(&my_list, &key))
 	{
 		unsigned char	*data;
 
@@ -196,19 +202,21 @@ int compute_script_size(mem_zone_ref_ptr script_node)
 
 OS_API_C_FUNC(int) serialize_script(mem_zone_ref_ptr script_node, struct string *script)
 {
-	mem_zone_ref_ptr	key;
+	mem_zone_ref_ptr	key=PTR_NULL;
 	mem_zone_ref		my_list = { PTR_NULL };
 	size_t				length;
 	unsigned char		*script_data;
 
 	length			= compute_script_size(script_node);
+	if (length == 0)return 1;
+	
 	script->len		= length;
 	script->size	= length + 1;
 	script->str		= (char	*)calloc_c(script->size, 1);
 
 	script_data		= (unsigned char *)script->str;
 
-	for (tree_manager_get_first_child(script_node, &my_list, &key); ((key != NULL) && (key->zone != NULL)); tree_manager_get_next_child(&my_list, &key))
+	for (tree_manager_get_first_child(script_node, &my_list, &key); ((key != PTR_NULL) && (key->zone != PTR_NULL)); tree_manager_get_next_child(&my_list, &key))
 	{
 		unsigned char	*data;
 		unsigned char	byte;
@@ -533,9 +541,16 @@ int check_sign(const struct string *sign, const struct string *pubK, const hash_
 }
 
 
-OS_API_C_FUNC(int) get_out_script_address(struct string *script, struct string *pubk, btc_addr_t addr)
+OS_API_C_FUNC(int) get_out_script_address(const struct string *script, struct string *pubk, btc_addr_t addr)
 {
-	unsigned char  *p = (unsigned char  *)script->str;
+	unsigned char  *p;
+
+	if (script == PTR_NULL)return 0;
+	if (script->len == 0)return 0;
+	if (script->str == PTR_NULL)return 0;
+
+	p = (unsigned char  *)script->str;
+
 	
 	if ((p[0] == 33) && (p[34] == 0xAC))
 	{
@@ -557,6 +572,26 @@ OS_API_C_FUNC(int) get_out_script_address(struct string *script, struct string *
 	return 0;
 }
 
+OS_API_C_FUNC(int) create_p2sh_script(btc_addr_t addr,mem_zone_ref_ptr script_node)
+{
+	unsigned char	addrBin[26];
+	struct string  strKey = { PTR_NULL };
+	size_t sz;
+
+	sz = 25;
+	b58tobin			(addrBin, &sz, addr, sizeof(btc_addr_t));
+	make_string_l		(&strKey, addrBin + 1, 20);
+
+
+	add_script_opcode	(script_node, 0x76);
+	add_script_opcode	(script_node, 0xA9);
+	add_script_var		(script_node, &strKey);
+	add_script_opcode	(script_node, 0x88);
+	add_script_opcode	(script_node, 0xAC);
+
+	return 0;
+}
+
 OS_API_C_FUNC(int) create_payment_script(struct string *pubk, unsigned int type, mem_zone_ref_ptr script_node)
 {
 	if (type == 1)
@@ -573,6 +608,7 @@ OS_API_C_FUNC(int) create_payment_script(struct string *pubk, unsigned int type,
 		add_script_opcode(script_node, 0x76);
 		add_script_opcode(script_node, 0xA9);
 		add_script_var	 (script_node, &strKey);
+		add_script_opcode(script_node, 0x88);
 		add_script_opcode(script_node, 0xAC);
 	}
 	else
@@ -586,22 +622,21 @@ OS_API_C_FUNC(int) create_payment_script(struct string *pubk, unsigned int type,
 }
 
 
-int check_txout_key(mem_zone_ref_ptr output, unsigned char *pkey)
+int check_txout_key(mem_zone_ref_ptr output, unsigned char *pkey, btc_addr_t inaddr)
 {
-	btc_addr_t inaddr;
 	struct string oscript = { PTR_NULL };
 	int ret;
+
 
 	if (tree_manager_get_child_value_istr(output, NODE_HASH("script"), &oscript, 0))
 	{
 		btc_addr_t outaddr;
 		if (pkey[0] != 0)
 		{ 
-			unsigned char ppk[33];
 			int n = 32;
 			
 
-			key_to_addr				(ppk, inaddr);
+			key_to_addr				(pkey, inaddr);
 			get_out_script_address	(&oscript, PTR_NULL, outaddr);
 			ret = (memcmp_c(outaddr, inaddr, sizeof(btc_addr_t)) == 0) ? 1 : 0;
 		}
