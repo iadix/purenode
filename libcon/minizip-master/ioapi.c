@@ -13,6 +13,7 @@
 #define LIBC_API C_EXPORT
 #include "../../base/std_base.h"
 #include "../../base/std_def.h"
+#include "../../base/std_mem.h"
 #include "../../base/std_str.h"
 
 #if defined unix || defined __APPLE__
@@ -100,11 +101,11 @@ static voidpf file_build_ioposix(FILE *file, const char *filename)
     FILE_IOPOSIX *ioposix = NULL;
     if (file == NULL)
         return NULL;
-    ioposix = (FILE_IOPOSIX*)malloc(sizeof(FILE_IOPOSIX));
+    ioposix = (FILE_IOPOSIX*)malloc_c(sizeof(FILE_IOPOSIX));
     ioposix->file = file;
-    ioposix->filenameLength = (int)strlen(filename) + 1;
-    ioposix->filename = (char*)malloc(ioposix->filenameLength * sizeof(char));
-    strncpy((char*)ioposix->filename, filename, ioposix->filenameLength);
+    ioposix->filenameLength = (int)strlen_c(filename) + 1;
+    ioposix->filename = (char*)malloc_c(ioposix->filenameLength * sizeof(char));
+    strncpy_c((char*)ioposix->filename, filename, ioposix->filenameLength);
     return (voidpf)ioposix;
 }
 
@@ -156,8 +157,8 @@ static voidpf ZCALLBACK fopendisk64_file_func(voidpf opaque, voidpf stream, uint
     if (stream == NULL)
         return NULL;
     ioposix = (FILE_IOPOSIX*)stream;
-    diskFilename = (char*)malloc(ioposix->filenameLength * sizeof(char));
-    strncpy(diskFilename, (const char*)ioposix->filename, ioposix->filenameLength);
+    diskFilename = (char*)malloc_c(ioposix->filenameLength * sizeof(char));
+    strncpy_c(diskFilename, (const char*)ioposix->filename, ioposix->filenameLength);
     for (i = ioposix->filenameLength - 1; i >= 0; i -= 1)
     {
         if (diskFilename[i] != '.')
@@ -167,7 +168,7 @@ static voidpf ZCALLBACK fopendisk64_file_func(voidpf opaque, voidpf stream, uint
     }
     if (i >= 0)
         ret = fopen64_file_func(opaque, diskFilename, mode);
-    free(diskFilename);
+    free_c(diskFilename);
     return ret;
 }
 
@@ -181,8 +182,8 @@ static voidpf ZCALLBACK fopendisk_file_func(voidpf opaque, voidpf stream, uint32
     if (stream == NULL)
         return NULL;
     ioposix = (FILE_IOPOSIX*)stream;
-    diskFilename = (char*)malloc(ioposix->filenameLength * sizeof(char));
-    strncpy(diskFilename, (const char*)ioposix->filename, ioposix->filenameLength);
+    diskFilename = (char*)malloc_c(ioposix->filenameLength * sizeof(char));
+    strncpy_c(diskFilename, (const char*)ioposix->filename, ioposix->filenameLength);
     for (i = ioposix->filenameLength - 1; i >= 0; i -= 1)
     {
         if (diskFilename[i] != '.')
@@ -192,7 +193,7 @@ static voidpf ZCALLBACK fopendisk_file_func(voidpf opaque, voidpf stream, uint32
     }
     if (i >= 0)
         ret = fopen_file_func(opaque, diskFilename, mode);
-    free(diskFilename);
+    free_c(diskFilename);
     return ret;
 }
 
@@ -308,9 +309,9 @@ static int ZCALLBACK fclose_file_func(voidpf opaque, voidpf stream)
         return ret;
     ioposix = (FILE_IOPOSIX*)stream;
     if (ioposix->filename != NULL)
-        free(ioposix->filename);
+        free_c(ioposix->filename);
     ret = fclose(ioposix->file);
-    free(ioposix);
+    free_c(ioposix);
     return ret;
 }
 

@@ -1,7 +1,7 @@
 CONSRC=libcon/base/utf.c libcon/base/string.c libcon/base/mem_base.c libcon/unix/stat_file.c libcon/unix/connect.c libcon/strs.c libcon/mem_stream.c libcon/tpo_mod.c libcon/exp.c libcon/zlibexp.c
 XMLSRC=libcon/expat/xmlparse/xmlparse.c libcon/expat/xmltok/xmltok.c libcon/expat/xmltok/xmlrole.c
-ZLIBSRC=libcon/zlib-1.2.8/zutil.c libcon/zlib-1.2.8/uncompr.c libcon/zlib-1.2.8/inftrees.c libcon/zlib-1.2.8/compress.c libcon/zlib-1.2.8/infback.c libcon/zlib-1.2.8/trees.c libcon/zlib-1.2.8/inflate.c libcon/zlib-1.2.8/crc32.c libcon/zlib-1.2.8/inffast.c libcon/zlib-1.2.8/adler32.c libcon/zlib-1.2.8/deflate.c
-CFLAGS=-m32 -msse#-O2 -std=c99 -pedantic -D_DEFAULT_SOURCE
+ZLIBSRC=libcon/zlib-1.2.8/zutil.c libcon/zlib-1.2.8/uncompr.c libcon/zlib-1.2.8/inftrees.c libcon/zlib-1.2.8/compress.c libcon/zlib-1.2.8/infback.c libcon/zlib-1.2.8/trees.c libcon/zlib-1.2.8/inflate.c libcon/zlib-1.2.8/crc32.c libcon/zlib-1.2.8/inffast.c libcon/zlib-1.2.8/adler32.c libcon/zlib-1.2.8/deflate.c libcon/minizip-master/ioapi.c libcon/minizip-master/ioapi_mem.c libcon/minizip-master/zip.c libcon/dozip.c
+CFLAGS=-m32 -msse #-O2 -std=c99 -pedantic -D_DEFAULT_SOURCE
 
 default: export/libcon.a export/launcher
 	@echo 'done'
@@ -12,8 +12,8 @@ export/launcher: launcher/main.c export/libcon.a
 export/raytrace: raytrace/main.c export/libcon.a
 	gcc $(CFLAGS) -lc -lm -pthread -Ilibcon  -Ilibcon/zlib-1.2.8/ -Ilibcon/include -Ilibbase/include raytrace/main.c export/libcon.a -o export/raytrace
 
-export/libiadixcoin.so:export/libbase.so export/libcon.so purenode/main.c
-	gcc $(CFLAGS)  -Lexport -lcon -lblock_adx -lbase -Ilibcon  -Ilibcon/zlib-1.2.8/ -Ilibcon/include -Ilibbase/include -Ilibcon/zlib-1.2.8 purenode/main.c  -nodefaultlibs -nostdlib -Wl,--export-dynamic,-soname,libiadixcoin.so,-melf_i386 -shared -o export/libiadixcoin.so
+export/libnodix.so:export/libbase.so export/node_adx.so export/libcon.so nodix/main.c
+	gcc $(CFLAGS)  -Lexport -lcon -lblock_adx -lnode_adx -lbase -Ilibcon  -Ilibcon/zlib-1.2.8/ -Ilibcon/include -Ilibbase/include -Ilibcon/zlib-1.2.8 nodix/main.c  -nodefaultlibs -nostdlib -Wl,--export-dynamic,-soname,libnodix.so,-melf_i386 -shared -o export/libnodix.so
 
 export/libstake_pos2.so:export/libbase.so export/libcon.so stake_pos2/kernel.c
 	gcc $(CFLAGS)  -Lexport -lcon -lbase -Ilibcon  -Ilibcon/zlib-1.2.8/ -lblock_adx -Ilibcon/include -Ilibbase/include -Ilibcon/zlib-1.2.8 stake_pos2/kernel.c -nodefaultlibs -nostdlib -Wl,--export-dynamic,-soname,libstake_pos2.so,-melf_i386 -shared -o export/libstake_pos2.so
@@ -29,6 +29,10 @@ export/libblock_adx.so:block_adx/main.c block_adx/script.c block_adx/block.c blo
 
 export/libprotocol_adx.so:protocol_adx/main.c protocol_adx/protocol.c export/libbase.so export/libcon.so
 	gcc $(CFLAGS)  -Lexport -lcon -lbase -Ilibcon  -Ilibcon/zlib-1.2.8/ -Ilibcon/include -Ilibbase/include protocol_adx/main.c protocol_adx/protocol.c -nodefaultlibs -nostdlib -Wl,--export-dynamic,-soname,libprotocol_adx.so,-melf_i386 -shared -o export/libprotocol_adx.so
+
+export/libnode_adx.so: node/node_impl.c node_adx/node_api.h
+	gcc $(CFLAGS) -Ilibcon  -Ilibcon/zlib-1.2.8/ -Ilibcon/include -Ilibbase/include -lcon  -lprotocol_adx -lblock_adx -lnode_adx -lbase node/node_impl.c -shared -o export/libnode_adx.so
+
 
 export/libbase.so:libbaseimpl/funcs.c
 	gcc $(CFLAGS) -Ilibcon  -Ilibcon/zlib-1.2.8/ -Ilibcon/include -Ilibbase/include  libbaseimpl/funcs.c -shared -o export/libbase.so
@@ -48,9 +52,9 @@ export/modz/stake_pos3.tpo:export/mod_maker export/libstake_pos3.so
 	export/mod_maker export/libstake_pos3.so ./export/modz
 	mv export/modz/libstake_pos3.tpo export/modz/stake_pos3.tpo
 
-export/modz/iadixcoin.tpo:export/mod_maker export/libiadixcoin.so
-	export/mod_maker export/libiadixcoin.so ./export/modz
-	mv export/modz/libiadixcoin.tpo export/modz/iadixcoin.tpo
+export/modz/nodix.tpo:export/mod_maker export/libnodix.so
+	export/mod_maker export/libnodix.so ./export/modz
+	mv export/modz/libnodix.tpo export/modz/nodix.tpo
 
 export/modz/block_adx.tpo:export/mod_maker export/libblock_adx.so
 	export/mod_maker ./export/libblock_adx.so ./export/modz
@@ -66,7 +70,7 @@ export/mod_maker:  export/libcon.so
 export/libcon.a: $(CONSRC) $(XMLSRC) $(ZLIBSRC)
 	nasm -f elf32 libcon/tpo.asm -o tpo.o
 	nasm -f elf32 libcon/runtime.asm -o runtime.o
-	gcc $(CFLAGS) -Ilibcon -Ilibcon/zlib-1.2.8/ -Ilibcon/include -Ilibcon/unix/include -Ilibcon/expat/xmlparse -Ilibcon/expat/xmltok $(CONSRC) $(XMLSRC) $(ZLIBSRC) -c
+	gcc $(CFLAGS) -Ilibcon -Ilibcon/zlib-1.2.8/ -Ilibcon/include -Ilibcon/unix/include -Ilibcon/expat/xmlparse -Ilibcon/expat/xmltok $(CONSRC) $(XMLSRC) $(ZLIBSRC) -DNOCRYPT -c
 	ld *.o -shared -melf_i386 -soname libcon.so -o export/libcon.so
 	ar -cvq export/libcon.a *.o
 

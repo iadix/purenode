@@ -783,3 +783,8 @@ void init_exit()
 {
 	atexit(exited);
 }*/
+
+OS_API_C_FUNC(void) snooze(size_t n)
+{
+	usleep(n*1000);
+}

@@ -12,8 +12,8 @@
 #include "minizip-master/zip.h"
 #include "minizip-master/ioapi_mem.h"
 
-zlib_filefunc_def	my_def = { 0xFF };
-ourmemory_t			mem = { 0xFF };
+zlib_filefunc_def	my_def = { PTR_INVALID };
+ourmemory_t			mem = { PTR_INVALID };
 
 OS_API_C_FUNC(int) do_zip(const char *fileName, struct string *initial_data,const char **files, size_t nFiles,struct string *zipData)
 {
@@ -35,7 +35,7 @@ OS_API_C_FUNC(int) do_zip(const char *fileName, struct string *initial_data,cons
 
 	while (nFiles--)
 	{
-		mem_ptr data;
+		unsigned char *data;
 		size_t	size;
 		if (get_file(files[nFiles], &data, &size)>0)
 		{

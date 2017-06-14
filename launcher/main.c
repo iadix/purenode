@@ -306,7 +306,7 @@ int main(int argc, const char **argv)
 		return 0;
 	}
 
-	get_script_var_value_ptr(&script_vars, "nodix.mod_ptr"	, &nodix_mod);
+	get_script_var_value_ptr(&script_vars, "nodix.mod_ptr"	, (mem_ptr)&nodix_mod);
 	
 	resolve_script_var		(&script_vars,PTR_NULL, "init_node"	, 0xFFFFFFFF	,&init_node_proc);
 
