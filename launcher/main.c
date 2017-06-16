@@ -35,6 +35,9 @@ C_IMPORT int C_API_FUNC	find_last_pos_block(mem_zone_ref_ptr params);
 C_IMPORT int C_API_FUNC	compute_last_pos_diff(mem_zone_ref_ptr in, mem_zone_ref_ptr out);
 C_IMPORT int C_API_FUNC	store_block(mem_zone_ref_ptr in, mem_zone_ref_ptr out);
 C_IMPORT int C_API_FUNC	node_is_next_block(mem_zone_ref_ptr in);
+
+C_IMPORT int C_API_FUNC	node_list_accounts(mem_zone_ref_ptr account_list);
+C_IMPORT int C_API_FUNC	node_list_addrs(mem_zone_ref_ptr account_name, mem_zone_ref_ptr addr_list);
 			 
 C_IMPORT int C_API_FUNC	accept_block(mem_zone_ref_ptr in, mem_zone_ref_ptr out);
 C_IMPORT int C_API_FUNC	compute_pow_diff(mem_zone_ref_ptr in, mem_zone_ref_ptr out);
@@ -52,6 +55,9 @@ C_IMPORT int C_API_FUNC	node_check_chain(mem_zone_ref_ptr in, mem_zone_ref_ptr o
 C_IMPORT int C_API_FUNC	node_set_last_block(mem_zone_ref_ptr header);
 C_IMPORT int C_API_FUNC	node_init_service(mem_zone_ref_ptr in, mem_zone_ref_ptr out);
 C_IMPORT int C_API_FUNC	make_genesis_block(mem_zone_ref_ptr in, mem_zone_ref_ptr out);
+C_IMPORT int C_API_FUNC	get_sess_account(mem_zone_ref_ptr in, mem_zone_ref_ptr out);
+
+
 			 
 C_IMPORT int C_API_FUNC	node_log_version_infos(mem_zone_ref_ptr in);
 C_IMPORT int C_API_FUNC	queue_verack_message(mem_zone_ref_ptr in);
@@ -70,7 +76,7 @@ C_IMPORT int C_API_FUNC	node_add_tx_to_mempool(mem_zone_ref_ptr tx);
 
 C_IMPORT int C_API_FUNC	node_load_block_indexes(void);
 C_IMPORT int C_API_FUNC	node_load_last_blks(void);
-
+C_IMPORT int C_API_FUNC node_del_txs_from_mempool(mem_zone_ref_ptr tx_list);
 
 C_IMPORT int C_API_FUNC	store_wallet_tx(mem_zone_ref_ptr params);
 C_IMPORT int C_API_FUNC	store_wallet_txs(mem_zone_ref_ptr params);
@@ -84,7 +90,7 @@ C_IMPORT int C_API_FUNC app_stop(mem_zone_ref_ptr params);
 
 C_IMPORT void C_API_FUNC tree_manager_init(size_t size);
 
-C_IMPORT void C_API_FUNC node_del_txs_from_mempool(mem_zone_ref_ptr tx_list);
+
 
 typedef int C_API_FUNC init_func();
 typedef init_func *init_func_ptr;
@@ -289,7 +295,10 @@ int main(int argc, const char **argv)
 
 #ifdef _DEBUG
 	set_dbg_ptr		(init_protocol, init_blocks, node_init_self, node_load_block_indexes, make_genesis_block, node_load_last_blks, new_peer_node, node_log_version_infos, queue_verack_message, queue_getaddr_message, queue_version_message,queue_ping_message, queue_pong_message, queue_inv_message, queue_getdata_message, node_is_next_block, node_check_chain, node_store_last_pos_hash, node_set_last_block, set_block_hash, add_money_supply, node_truncate_chain_to, sub_money_supply, remove_stored_block, block_has_pow, set_next_check);
-	set_dbg_ptr2(node_add_block_header, accept_block, compute_pow_diff, store_block, node_init_service, node_get_script_modules, get_pow_reward, node_get_script_msg_handlers, node_get_mem_pool, node_del_txs_from_mempool, node_add_tx_to_mempool, store_wallet_tx, store_wallet_txs, queue_mempool_message);
+
+	
+
+	set_dbg_ptr2(node_add_block_header, accept_block, compute_pow_diff, store_block, node_init_service, node_get_script_modules, get_pow_reward, node_get_script_msg_handlers, node_get_mem_pool, node_del_txs_from_mempool, node_add_tx_to_mempool, store_wallet_tx, store_wallet_txs, queue_mempool_message, node_list_accounts, node_list_addrs, get_sess_account);
 	set_pos_dbg_ptr	(init_pos, store_blk_staking, load_last_pos_blk, find_last_pos_block, compute_last_pos_diff, store_blk_tx_staking,stake_get_reward);
 #endif
 
@@ -306,7 +315,7 @@ int main(int argc, const char **argv)
 		return 0;
 	}
 
-	get_script_var_value_ptr(&script_vars, "nodix.mod_ptr"	, (mem_ptr)&nodix_mod);
+	get_script_var_value_ptr(&script_vars, "nodix.mod_ptr"	, &nodix_mod);
 	
 	resolve_script_var		(&script_vars,PTR_NULL, "init_node"	, 0xFFFFFFFF	,&init_node_proc);
 

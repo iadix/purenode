@@ -302,7 +302,7 @@ OS_API_C_FUNC(int) accept_block(mem_zone_ref_ptr header, mem_zone_ref_ptr tx_lis
 	uint64_t			block_reward = 0, staking_reward = 0, nblks;
 	int					ret = 1;
 	unsigned int		is_staking;
-
+	unsigned int		checktx;
 
 	tree_manager_get_child_value_i64(&self_node, NODE_HASH("block_height"), &nblks);
 
@@ -353,9 +353,12 @@ OS_API_C_FUNC(int) accept_block(mem_zone_ref_ptr header, mem_zone_ref_ptr tx_lis
 	}
 	log_output("verify block txs\n");
 
+	
+	if (!tree_manager_get_child_value_i32(&self_node, NODE_HASH("checktxsign"), &checktx))
+		checktx = 0;
 
 	tree_manager_get_child_value_hash(header, NODE_HASH("merkle_root"), merkle);
-	return check_tx_list(tx_list, block_reward, merkle);
+	return check_tx_list(tx_list, block_reward, merkle, checktx);
 }
 int handle_getblocks(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 {

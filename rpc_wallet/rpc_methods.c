@@ -12,9 +12,9 @@
 #include <mem_stream.h>
 #include <tpo_mod.h>
 
+#include "../node_adx/node_api.h"
 #include "../block_adx/block_api.h"
 #include "../wallet/wallet_api.h"
-#include "../node_adx/node_api.h"
 
 #ifdef _DEBUG
 C_IMPORT int			C_API_FUNC		get_last_stake_modifier(mem_zone_ref_ptr pindex, hash_t nStakeModifier, unsigned int *nModifierTime);
@@ -45,12 +45,7 @@ get_min_stake_depth_func_ptr		 get_min_stake_depth = PTR_INVALID;
 
 
 
-struct key_entry
-{
-	char label[32];
-	btc_addr_t addr;
-	dh_key_t key;
-};
+
 
 
 unsigned int			WALLET_VERSION = 60000;
@@ -71,7 +66,7 @@ OS_API_C_FUNC(int) set_node_rpc_wallet(mem_zone_ref_ptr node,tpo_mod_file *pos_m
 	get_stake_reward			= (get_stake_reward_func_ptr)			get_tpo_mod_exp_addr_name(pos_mod, "get_stake_reward", 0);
 	get_last_stake_modifier		= (get_last_stake_modifier_func_ptr)	get_tpo_mod_exp_addr_name(pos_mod, "get_last_stake_modifier", 0);
 	get_current_pos_difficulty  = (get_current_pos_difficulty_func_ptr)	get_tpo_mod_exp_addr_name(pos_mod, "get_current_pos_difficulty", 0);
-	compute_tx_pos				= (compute_tx_pos_func_ptr)	get_tpo_mod_exp_addr_name(pos_mod, "compute_tx_pos", 0);
+	compute_tx_pos				= (get_current_pos_difficulty_func_ptr)	get_tpo_mod_exp_addr_name(pos_mod, "compute_tx_pos", 0);
 	check_tx_pos				= (check_tx_pos_func_ptr)				get_tpo_mod_exp_addr_name(pos_mod, "check_tx_pos", 0);
 	create_pos_block			= (create_pos_block_func_ptr)			get_tpo_mod_exp_addr_name(pos_mod, "create_pos_block", 0);
 	get_min_stake_depth			= (get_min_stake_depth_func_ptr)		get_tpo_mod_exp_addr_name(pos_mod, "get_min_stake_depth", 0);
@@ -1825,6 +1820,7 @@ OS_API_C_FUNC(int) importkeypair(mem_zone_ref_const_ptr params, unsigned int rpc
 			release_zone_ref(&tx_list);
 		}
 	}
+	tree_manager_set_child_value_i32(result, "new", found == 1 ? 0 : 1);
 	
 
 	free_string(&adr_path);
@@ -1887,72 +1883,34 @@ OS_API_C_FUNC(int) getprivaddr(mem_zone_ref_const_ptr params, unsigned int rpc_m
 OS_API_C_FUNC(int) setaccountpw(mem_zone_ref_const_ptr params, unsigned int rpc_mode, mem_zone_ref_ptr result)
 {
 	mem_zone_ref		pn = { PTR_NULL };
-	struct string		username = { PTR_NULL };
-	struct string		user_pw_file = { PTR_NULL };
+	struct string		username = { PTR_NULL }, pw = { PTR_NULL }, newpw = { PTR_NULL };
 	int					ret;
 
 	if (!tree_manager_get_child_at(params, 0, &pn))
 		return 0;
 
-	make_string		(&user_pw_file, "acpw");
-	cat_cstring_p	(&user_pw_file, username.str);
-	free_string		(&username);
+	tree_manager_get_node_istr(&pn, 0, &username,0);
 	release_zone_ref(&pn);
 
 	if (!tree_manager_get_child_at(params, 1, &pn))
 	{
-		free_string(&user_pw_file);
+		free_string(&username);
 		return 0;
 	}
+	tree_manager_get_node_istr(&pn, 0, &pw, 0);
+	release_zone_ref(&pn);
+
+	if (tree_manager_get_child_at(params, 2, &pn))
+	{
+		tree_manager_get_node_istr(&pn, 0, &newpw, 0);
+		release_zone_ref(&pn);
+	}
+	ret = setpassword(&username, &pw, &newpw);
+
+	free_string(&pw);
+	free_string(&newpw);
+	free_string(&username);
 	
-	if (stat_file(user_pw_file.str) != 0)
-	{
-		hash_t				pwh;
-		struct string		pw = { PTR_NULL };
-
-		tree_manager_get_node_istr	(&pn, 0, &pw, 0);
-		release_zone_ref			(&pn);
-
-		mbedtls_sha256				(pw.str, pw.len, pwh, 0);
-		put_file					(user_pw_file.str,pwh,32);
-		free_string					(&pw);
-
-		ret = 1;
-	}
-	else
-	{
-		struct string  pw = { PTR_NULL }, newpw = { PTR_NULL };
-		unsigned char *pwh;
-		size_t		   len;
-
-		tree_manager_get_node_istr	(&pn, 0, &pw, 0);
-		release_zone_ref			(&pn);
-
-		if (get_file(user_pw_file.str, &pwh, &len) > 0)
-		{
-			if (len >= sizeof(hash_t))
-			{
-				hash_t		ipwh;
-
-				mbedtls_sha256(pw.str, pw.len, ipwh, 0);
-				if (!memcmp_c(ipwh, pwh, sizeof(hash_t)))
-				{
-					if (tree_manager_get_child_at(params, 2, &pn))
-					{
-						tree_manager_get_node_istr	(&pn, 2, &newpw, 0);
-						release_zone_ref			(&pn);
-
-						mbedtls_sha256				(newpw.str, newpw.len, ipwh, 0);
-						put_file					(user_pw_file.str, pwh, 32);
-						ret = 1;
-					}
-				}
-			}
-			free_c(pwh);
-		}
-		free_string(&pw);
-	}
-	free_string(&user_pw_file);
 
 	return ret;
 }
@@ -2000,6 +1958,24 @@ OS_API_C_FUNC(int) listaccounts(mem_zone_ref_const_ptr params, unsigned int rpc_
 			make_string_l	(&user_name, optr, sz);
 			make_string		(&user_key_file, "keypairs");
 			cat_cstring_p	(&user_key_file, user_name.str);
+
+			if (tree_manager_add_child_node(&accnt_list, user_name.str, NODE_GFX_OBJECT, &accnt))
+			{
+				struct string user_pw_file = { PTR_NULL };
+
+				tree_manager_set_child_value_vstr	(&accnt, "name", &user_name);
+
+				make_string				(&user_pw_file, "acpw");
+				cat_cstring_p			(&user_pw_file, user_name.str);
+				if (stat_file(user_pw_file.str) == 0)
+					tree_manager_set_child_value_i32(&accnt, "pw", 1);
+				else
+					tree_manager_set_child_value_i32(&accnt, "pw", 0);
+
+				free_string(&user_pw_file);
+				release_zone_ref(&accnt);
+			}
+			/*
 			if (get_file(user_key_file.str, &keys_data, &keys_data_len))
 			{
 				struct key_entry *keys_ptr = (struct key_entry *)keys_data;
@@ -2026,6 +2002,7 @@ OS_API_C_FUNC(int) listaccounts(mem_zone_ref_const_ptr params, unsigned int rpc_
 				}
 				free_c(keys_data);
 			}
+			*/
 			free_string(&user_name);
 			free_string(&user_key_file);
 			cur++;
@@ -2042,93 +2019,20 @@ OS_API_C_FUNC(int) listaccounts(mem_zone_ref_const_ptr params, unsigned int rpc_
 OS_API_C_FUNC(int) getpubaddrs(mem_zone_ref_const_ptr params, unsigned int rpc_mode, mem_zone_ref_ptr result)
 {
 	mem_zone_ref username_n = { PTR_NULL }, addr_list = { PTR_NULL };
-	struct string username = { PTR_NULL };
-	struct string user_key_file = { PTR_NULL };
-	struct string		user_pw_file = { PTR_NULL };
-	size_t			keys_data_len = 0;
-	uint64_t		conf_amount, unconf_amount;
-	unsigned int	minconf;
-	unsigned char	*keys_data = PTR_NULL;
 	
 	if (!tree_manager_get_child_at(params, 0, &username_n))
 		return 0;
 
-	tree_manager_get_node_istr	(&username_n, 0, &username, 0);
-	release_zone_ref			(&username_n);
-
-	make_string(&user_pw_file, "acpw");
-	cat_cstring_p(&user_pw_file, username.str);
-
-
-	if (stat_file(user_pw_file.str) == 0)
-	{
-		unsigned char *vph;
-		size_t			len;
-		hash_t		pwh;
-		struct string pw = { PTR_NULL };
-
-		if (!tree_manager_get_child_at(params, 1, &username_n))
-		{
-			free_string(&username);
-			free_string(&user_pw_file);
-			return 0;
-		}
-		tree_manager_get_node_istr	(&username_n, 0, &pw, 0);
-		release_zone_ref			(&username_n);
-		
-		mbedtls_sha256				(pw.str, pw.len, pwh, 32);
-		free_string					(&pw);
-
-		get_file					(user_pw_file.str, &vph, &len);
-		if ((len==32)&&(!memcmp_c(pwh, vph, 32)))
-		{
-			
-		}
-		free_c(vph);
-	}
-
 	if (!tree_manager_add_child_node(result, "addrs", NODE_JSON_ARRAY, &addr_list))
 	{
-		free_string(&username);
+		release_zone_ref(&username_n);
 		return 0;
 	}
-
-
-	make_string(&user_key_file, "keypairs");
-	cat_cstring_p(&user_key_file, username.str);
-
-	free_string(&username);
-
+		
+	wallet_list_addrs		(&username_n, &addr_list);
+	release_zone_ref		(&username_n);
+	release_zone_ref		(&addr_list);
 	
-	
-	minconf = 1;
-
-	if (get_file(user_key_file.str, &keys_data, &keys_data_len))
-	{
-		struct key_entry *keys_ptr = (struct key_entry *)keys_data;
-		while (keys_data_len >= sizeof(struct key_entry))
-		{
-			mem_zone_ref new_addr = { PTR_NULL };
-			conf_amount = 0;
-			unconf_amount = 0;
-
-			get_balance	(keys_ptr->addr, &conf_amount, &unconf_amount, minconf);
-			if(tree_manager_add_child_node			(&addr_list	, "addr"		 , NODE_GFX_OBJECT, &new_addr))
-			{
-				tree_manager_set_child_value_str	(&new_addr	, "label"		 , keys_ptr->label);
-				tree_manager_set_child_value_btcaddr(&new_addr	, "address"		 , keys_ptr->addr);
-				tree_manager_set_child_value_i64	(&new_addr	, "amount"		 , conf_amount);
-				tree_manager_set_child_value_i64	(&new_addr	, "unconf_amount", unconf_amount);
-				release_zone_ref					(&new_addr);
-			}		
-			keys_ptr++;
-			keys_data_len -= sizeof(struct key_entry);
-		}
-		free_c(keys_data);
-	}
-	
-	release_zone_ref			(&addr_list);
-	free_string					(&user_key_file);
 	
 	return 1;
 }

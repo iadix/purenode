@@ -48,12 +48,7 @@ check_tx_pos_func_ptr				 check_tx_pos = PTR_INVALID;
 get_min_stake_depth_func_ptr		get_min_stake_depth = PTR_INVALID;
 #endif
 
-struct key_entry
-{
-	char label[32];
-	btc_addr_t addr;
-	dh_key_t key;
-};
+
 
 hash_t					nullh = { 0xFF };
 btc_addr_t				nulladdr = {'0' };
@@ -1634,4 +1629,199 @@ OS_API_C_FUNC(int) store_wallet_txs(mem_zone_ref_ptr tx_list)
 	}
 
 	return 1;
+}
+
+
+
+
+
+OS_API_C_FUNC(int) wallet_list_addrs(mem_zone_ref_ptr account_name, mem_zone_ref_ptr addr_list)
+{
+	struct string username = { PTR_NULL };
+	struct string user_key_file = { PTR_NULL };
+	struct string user_pw_file = { PTR_NULL };
+	struct string   pw = { PTR_NULL };
+	size_t		  keys_data_len = 0;
+	size_t			of;
+
+	unsigned int  minconf;
+	unsigned char *keys_data = PTR_NULL;
+	int ret;
+
+	tree_remove_children		(addr_list);
+
+	tree_manager_get_node_istr	(account_name, 0, &username, 0);
+
+	of = strlpos_c(username.str, 0, ':');
+	if (of != INVALID_SIZE)
+	{
+		make_string	(&pw, &username.str[of + 1]);
+		username.str[of] = 0;
+		username.len = of;
+	}
+	
+	if (username.len < 3)
+	{
+		free_string(&username);
+		free_string(&pw);
+		return 0;
+	}
+
+	make_string(&user_key_file, "keypairs");
+	cat_cstring_p(&user_key_file, username.str);
+	free_string(&username);
+	/*
+	make_string(&user_pw_file, "acpw");
+	cat_cstring_p(&user_pw_file, username.str);
+
+	
+	if (stat_file(user_pw_file.str) == 0)
+	{
+		unsigned char	*vph;
+		size_t			len;
+		hash_t			pwh;
+
+		if (get_file(user_pw_file.str, &vph, &len) > 0)
+		{
+			mbedtls_sha256(pw.str, pw.len, pwh, 32);
+
+			if ((len == 32) && (!memcmp_c(pwh, vph, 32)))
+				ret = 1;
+			else
+				ret = 0;
+		
+			free_c(vph);
+		}
+	}
+	free_string(&pw);
+	free_string(&user_pw_file);
+
+	if (!ret)
+	{
+	free_string(&user_key_file);
+	return 0;
+	}
+	*/
+	
+
+	minconf = 1;
+	
+	if (get_file(user_key_file.str, &keys_data, &keys_data_len))
+	{
+		struct key_entry *keys_ptr = (struct key_entry *)keys_data;
+		while (keys_data_len >= sizeof(struct key_entry))
+		{
+			mem_zone_ref new_addr = { PTR_NULL };
+
+			if (tree_manager_add_child_node(addr_list, "addr", NODE_GFX_OBJECT, &new_addr))
+			{
+				uint64_t	  conf_amount = 0, unconf_amount = 0;
+
+				get_balance	(keys_ptr->addr, &conf_amount, &unconf_amount, minconf);
+
+				tree_manager_set_child_value_str(&new_addr, "label", keys_ptr->label);
+				tree_manager_set_child_value_btcaddr(&new_addr, "address", keys_ptr->addr);
+				tree_manager_set_child_value_i64(&new_addr, "amount", conf_amount);
+				tree_manager_set_child_value_i64(&new_addr, "unconf_amount", unconf_amount);
+				release_zone_ref(&new_addr);
+			}
+			keys_ptr++;
+			keys_data_len -= sizeof(struct key_entry);
+		}
+		free_c(keys_data);
+	}
+
+	free_string(&user_key_file);
+
+	return 1;
+}
+
+OS_API_C_FUNC(int) checkpassword(struct string *username, struct string *pw)
+{
+	struct string		user_pw_file = { PTR_NULL };
+	int					ret = 0;
+	unsigned char		*pwh_ptr;
+	size_t				len;
+
+	make_string(&user_pw_file, "acpw");
+	cat_cstring_p(&user_pw_file, username->str);
+	
+	ret = get_file(user_pw_file.str, &pwh_ptr, &len) > 0 ? 1 : 0;
+	if (ret)
+	{
+		if (len == 32)
+		{
+			hash_t		ipwh;
+			mbedtls_sha256(pw->str, pw->len, ipwh, 0);
+			ret = memcmp_c(ipwh, pwh_ptr, sizeof(hash_t)) == 0 ? 1 : 0;
+		}
+		else
+			ret = 0;
+		free_c(pwh_ptr);
+	}
+	return ret;
+
+}
+
+
+OS_API_C_FUNC(int) get_sess_account(mem_zone_ref_ptr sessid,mem_zone_ref_ptr account_name)
+{
+	char sessionid[16];
+	struct string sessionfile = { PTR_NULL };
+	unsigned char *data;
+	size_t len;
+
+	tree_manager_get_node_str	(sessid, 0, sessionid, 16, 16);
+
+	if (strlen_c(sessionid) < 8)return 0;
+
+	make_string(&sessionfile, "sess");
+	cat_cstring_p(&sessionfile, sessionid);
+	if (get_file(sessionfile.str, &data, &len) > 0)
+	{
+		struct string sacnt = { PTR_NULL };
+		make_string_l	(&sacnt, data, len);
+
+		tree_manager_write_node_str(account_name, 0, sacnt.str);
+		free_string(&sacnt);
+	}
+	free_string(&sessionfile);
+
+	return 1;
+}
+
+OS_API_C_FUNC(int) setpassword(struct string *username, struct string *pw, struct string *newpw)
+{
+	struct string		user_pw_file = { PTR_NULL };
+	int					ret=0;
+	unsigned char		*pwh_ptr;
+	size_t				len;
+
+	make_string(&user_pw_file, "acpw");
+	cat_cstring_p(&user_pw_file, username->str);
+
+	if ((get_file(user_pw_file.str, &pwh_ptr, &len) > 0) && (len == sizeof(hash_t)))
+	{
+		hash_t		ipwh;
+		mbedtls_sha256(pw->str, pw->len, ipwh, 0);
+		if (!memcmp_c(ipwh, pwh_ptr, sizeof(hash_t)))
+		{
+			hash_t		npwh;
+			mbedtls_sha256	(newpw->		str, newpw->len, npwh, 0);
+			put_file		(user_pw_file.str, npwh, sizeof(hash_t));
+			ret = 1;
+		}
+		free_c(pwh_ptr);
+	}
+	else
+	{
+		hash_t				pwh;
+
+		mbedtls_sha256	(pw->str, pw->len, pwh, 0);
+		put_file		(user_pw_file.str, pwh, 32);
+		ret = 1;
+	}
+
+	free_string(&user_pw_file);
+	return ret;
 }

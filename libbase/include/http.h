@@ -47,7 +47,7 @@ LIBBASE_API int						C_API_FUNC parse_http_req_line(const struct string *req_lin
 LIBBASE_API void					C_API_FUNC parse_http_query_vars(struct http_req *req, struct string *query);
 LIBBASE_API int						C_API_FUNC parse_query_line(const struct string *line, struct key_val *key);
 LIBBASE_API int						C_API_FUNC parse_http_url_params(const char *params, char sep, mem_zone_ref_ptr vars, unsigned int type);
-
+LIBBASE_API int						C_API_FUNC http_add_query_line(const struct string *line, struct key_val *hdrs);
 LIBBASE_API void					C_API_FUNC init_http_infos(struct http_infos *infos);
 LIBBASE_API void					C_API_FUNC free_http_infos(struct http_infos *infos);
 LIBBASE_API char *					C_API_FUNC http_add_header_line(const struct string *line, struct key_val *hdrs, char sep);

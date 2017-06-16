@@ -109,6 +109,7 @@
 
 
 #define		NODE_NET_IP						0x0C000000
+#define		NODE_COOKIES					0x0C000001
 
 #define		NODE_RT_SCENE					0x0D000001
 #define		NODE_RT_VEC3					0x0D000002
@@ -200,6 +201,7 @@ LIBBASE_API  int			C_API_FUNC  tree_find_child_node_idx_by_id			(mem_zone_ref *p
 LIBBASE_API  int			C_API_FUNC	tree_find_child_node_by_member_name		(mem_zone_ref_const_ptr p_node_ref,unsigned int child_type, unsigned int child_member_type,const char *child_member_name,mem_zone_ref_ptr out_node);
 LIBBASE_API  int			C_API_FUNC	tree_find_child_node_by_member_name_hash(mem_zone_ref_const_ptr p_node_ref,unsigned int child_type, const char *child_member_name,hash_t hash, mem_zone_ref_ptr out_node);
 LIBBASE_API  int			C_API_FUNC	tree_swap_child_node_by_id				(mem_zone_ref_ptr p_node_ref,unsigned int id_val,mem_zone_ref_ptr node);
+LIBBASE_API  int			C_API_FUNC	tree_manager_swap_child_ref				(mem_zone_ref_const_ptr parent_ref_ptr, unsigned int crc_name, unsigned int type, mem_zone_ref_ptr ref_ptr);
 
 LIBBASE_API  int			C_API_FUNC	tree_remove_children					(mem_zone_ref_ptr p_node_ref);
 LIBBASE_API  int			C_API_FUNC	tree_remove_child_by_type				(mem_zone_ref_ptr p_node_ref,unsigned int child_type);

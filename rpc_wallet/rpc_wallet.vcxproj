@@ -40,7 +40,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LinkIncremental>true</LinkIncremental>
+    <LinkIncremental>false</LinkIncremental>
     <TargetName>$(ProjectName)_d</TargetName>
     <OutDir>$(SolutionDir)export\</OutDir>
   </PropertyGroup>
@@ -61,7 +61,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>protocol_adx_d.lib;libbase_d.lib;libcon_d.lib;block_adx_d.lib;stake_pos3_d.lib;wallet_d.lib;node_adx_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>node_adx_d.lib;protocol_adx_d.lib;libbase_d.lib;libcon_d.lib;block_adx_d.lib;stake_pos3_d.lib;wallet_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)export\</AdditionalLibraryDirectories>
       <ForceFileOutput>Enabled</ForceFileOutput>
     </Link>

@@ -17,6 +17,7 @@ let NODE_JSON_ARRAY scripts = `[
 	"/assets/plugins/jquery/jquery.min.js",
 	"/assets/plugins/jquery/jquery-migrate.min.js",
 	"/assets/plugins/jquery/jquery-ui.min.js",
+	"/assets/plugins/jquery/jquery-cookies.js",
 	"/assets/plugins/bootstrap/js/bootstrap.min.js",
 	"/assets/plugins/back-to-top.js",
 	"/assets/js/custom.js"
@@ -30,9 +31,14 @@ let NODE_JSON_ARRAY metas = `[
 
 
 
-let NODE_MODULE_DEF	node_adx = `{"file" : "modz/node_adx.tpo"}`
+let NODE_MODULE_DEF	node_adx = ` {"file" : "modz/node_adx.tpo"} `
+let NODE_MODULE_DEF	wallet = ` {"file" : "modz/wallet.tpo"} `
 
-let NODE_JSON_ARRAY node_modules = `[]`
+let NODE_GFX_BINT logged = 0
+
+let NODE_JSON_ARRAY node_modules  = `[]`
+let NODE_JSON_ARRAY node_accounts = `[]`
+let NODE_JSON_ARRAY node_addrs = `[]`
 
 
 page index = `
@@ -41,7 +47,7 @@ page index = `
 	node_adx.node_get_script_modules(node_modules);
 	node_adx.node_get_mem_pool		(SelfNode.mempool);
 	
-	html_head "PURENODE INFOS" 
+	html_head "NodiX INFOS" 
 	html_block "templates/menu.html"
 	html_block "templates/node.html"
 	html_scripts
@@ -104,7 +110,7 @@ page index = `
 `
 
 page services = `
-	html_head "PURENODE SERVICE INFO ( SERVICES )" 
+	html_head "NodiX SERVICE INFO ( SERVICES )" 
 	html_block "templates/menu.html"
 	html_block "templates/services.html"
 	html_scripts
@@ -146,7 +152,7 @@ page blocks = `
 	push scripts,"/assets/js/plugins/datepicker.js"
 	push scripts,"/assets/js/blocks.js"
 	
-	html_head "PURENODE BLOCK EXPLORER" 
+	html_head "NodiX BLOCK EXPLORER" 
 	html_block "templates/menu.html"
 	html_block "templates/blocks.html"
 	html_scripts
@@ -182,7 +188,7 @@ page address(addr,page_idx) = `
 	push stylesheets,"/assets/css/plugins/blocks.css"
 	push scripts,"/assets/js/blocks.js"
 	
-	html_head "PURENODE BLOCK EXPLORER ( ADDRESS )" 
+	html_head "NodiX BLOCK EXPLORER ( ADDRESS )" 
 	html_block "templates/menu.html"
 	html_block "templates/address.html"
 	html_scripts
@@ -209,16 +215,13 @@ page tx(txid) = `
 	push stylesheets,"/assets/css/plugins/blocks.css"
 	push scripts,"/assets/js/blocks.js"
 	
-	html_head "PURENODE BLOCK EXPLORER ( TRANSACTION )" 
+	html_head "NodiX BLOCK EXPLORER ( TRANSACTION )" 
 	html_block "templates/menu.html"
 	html_block "templates/tx.html"
 	html_scripts
 	html_js
 		$(document).ready(function () 
 		{
-			
-			
-
 			lang			= 'en';
 			site_base_url = '/nodix.site';
 	        api_base_url	= '';
@@ -239,7 +242,7 @@ page block(block_hash) = `
 	push stylesheets,"/assets/css/plugins/blocks.css"
 	push scripts,"/assets/js/blocks.js"
 	
-	html_head "PURENODE BLOCK EXPLORER ( BLOCK )" 
+	html_head "NodiX BLOCK EXPLORER ( BLOCK )" 
 	html_block "templates/menu.html"
 	html_block "templates/block.html"
 	html_scripts
@@ -266,6 +269,17 @@ page block(block_hash) = `
 
 page wallet(account_name) = `
 
+	node_adx.node_list_accounts	(node_accounts)
+
+	set logged = 0;
+
+	if(cookies.sessionid ! "" )
+		wallet.get_sess_account(cookies.sessionid,account_name)? set logged = 1;  endor
+	endif
+
+	node_adx.node_list_addrs	(account_name,node_addrs)
+	
+
 	push stylesheets,"/assets/css/plugins/blocks.css"
 	push scripts,"/assets/js/blocks.js"
 	push scripts,"/assets/js/ecdsa_bundle.js"
@@ -273,10 +287,15 @@ page wallet(account_name) = `
     push scripts,"/assets/js/keys.js"
     push scripts,"/assets/js/md5.min.js"
 
-	html_head "PURENODE WALLET" 
+
+	html_head "NodiX WALLET" 
 	html_block "templates/menu.html"
 	html_block "templates/wallet.html"
 	html_scripts
+	html_var node_accounts;
+	html_var node_addrs;
+	html_var logged;
+	html_var cookies.sessionid;
 	html_js
     jQuery(document).ready(function() {
 		
@@ -285,11 +304,20 @@ page wallet(account_name) = `
 		api_base_url	='';
 		site_base_url	='/nodix.site';
 		ec				= new EC('secp256k1');
+
 		accountName		= '%account_name%';
-		
+
+	
 		$('#addrlabel').val('new address');
-		get_accounts	('my_address_list_table',1);
-		get_addrs		(accountName,'my_address_list_table')
+		my_accounts		= node_accounts;
+		my_addrs		= node_addrs;
+
+		update_accounts ('new account');
+		select_account  (accountName);
+		update_my_addrs ('my_address_list_table');
+
+		$('#account_name').val(accountName);  
+
 
     });
 	end_js
@@ -307,11 +335,19 @@ page staking(account_name) = `
     push scripts,"/assets/js/keys.js"
     push scripts,"/assets/js/md5.min.js"
 
+	node_adx.node_list_accounts	(node_accounts)
+
+	node_adx.node_list_addrs	(account_name,node_addrs)
+
 	
-	html_head "PURENODE WALLET" 
+
+	
+	html_head "NodiX WALLET" 
 	html_block "templates/menu.html"
 	html_block "templates/staking.html"
 	html_scripts
+	html_var node_accounts;
+	html_var node_addrs;
 	html_js
     jQuery(document).ready(function() {
 		
@@ -321,8 +357,11 @@ page staking(account_name) = `
 		site_base_url	='/nodix.site';
 		ec				= new EC('secp256k1');
 		accountName		= '%account_name%';
-		get_accounts		('address_list_table',0);
-		get_staking_addrs	(accountName);
+
+		my_accounts		= node_accounts;
+
+		update_accounts		('select an account');
+		get_staking_addrs	('%account_name%',node_addrs);
     });
 	end_js
 
@@ -339,25 +378,50 @@ page transaction(account_name) = `
     push scripts,"/assets/js/keys.js"
     push scripts,"/assets/js/md5.min.js"
 
+	node_adx.node_list_accounts	(node_accounts)
+
+	set logged = 0;
+
+	if(cookies.sessionid ! "" )
+		wallet.get_sess_account(cookies.sessionid,account_name)? set logged = 1;  endor
+	endif
+
+	node_adx.node_list_addrs	(account_name,node_addrs)
+
 	
-	html_head "PURENODE WALLET transaction" 
+	
+	html_head "NodiX WALLET transaction" 
 	html_block "templates/menu.html"
 	html_block "templates/transaction.html"
 	html_scripts
+	html_var node_accounts;
+	html_var node_addrs;
+	html_var logged;
+	html_var cookies.sessionid;
 	html_js
     jQuery(document).ready(function() {
 		lang			='en';
 		api_base_url	='';
 		site_base_url	='/nodix.site';
 		ec				= new EC('secp256k1');
-
-		paytxfee		=  %SelfNode.paytxfee%;
 		accountName		= '%account_name%';
+		paytxfee		=  %SelfNode.paytxfee%;
+		my_accounts		= node_accounts;
 
 		$('#paytxfee').val(paytxfee);
 
-		get_accounts		('address_list_table',0);
-		get_source_addrs	(accountName);
+		update_accounts		('select an account');
+		select_account		(accountName);
+
+		if(accountName == '')
+		{
+			$('#accnt_pw').css('display', 'none'); 
+			$('#account_name').val('');  
+			$('#account_name').css('display', 'none');
+		}
+			
+
+		get_source_addrs	('%account_name%',node_addrs);
     });
 	end_js
 

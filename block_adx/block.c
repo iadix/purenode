@@ -52,7 +52,6 @@ unsigned int			diff_limit			= 0x1E0FFFFF;
 unsigned int			TargetTimespan		= 960;
 unsigned int			TargetSpacing		= 64;
 unsigned int			MaxTargetSpacing	= 640;
-unsigned int			checktxsign			= 0;
 uint64_t				pow_reward			= 100000*ONE_COIN;
 
 //#undef _DEBUG
@@ -174,10 +173,7 @@ OS_API_C_FUNC(int) get_block_version(unsigned int *v)
 	return 1;
 }
 
-OS_API_C_FUNC(void) set_tx_sign_chk(unsigned int v)
-{
-	checktxsign = v;
-}
+
 
 
 
@@ -1182,7 +1178,7 @@ OS_API_C_FUNC(int) tx_sign(mem_zone_ref_const_ptr tx, unsigned int nIn, unsigned
 
 
 
-OS_API_C_FUNC(int) check_tx_inputs(mem_zone_ref_ptr tx, uint64_t *total_in, unsigned int *is_coinbase)
+OS_API_C_FUNC(int) check_tx_inputs(mem_zone_ref_ptr tx, uint64_t *total_in, unsigned int *is_coinbase,unsigned int check_sig)
 {
 	mem_zone_ref		txin_list = { PTR_NULL }, my_list = { PTR_NULL };
 	mem_zone_ref_ptr	input = PTR_NULL;
@@ -1296,7 +1292,7 @@ OS_API_C_FUNC(int) check_tx_inputs(mem_zone_ref_ptr tx, uint64_t *total_in, unsi
 						
 						if (ret)
 						{
-							if (checktxsign)
+							if (check_sig)
 							{
 								hash_t txh;
 
@@ -1341,7 +1337,7 @@ OS_API_C_FUNC(int) check_tx_inputs(mem_zone_ref_ptr tx, uint64_t *total_in, unsi
 }
 
 
-OS_API_C_FUNC(int) check_tx_list(mem_zone_ref_ptr tx_list,uint64_t block_reward,hash_t merkle)
+OS_API_C_FUNC(int) check_tx_list(mem_zone_ref_ptr tx_list,uint64_t block_reward,hash_t merkle,unsigned int check_sig)
 {
 	hash_t				merkleRoot;
 	mem_zone_ref		my_list = { PTR_NULL };
@@ -1394,7 +1390,7 @@ OS_API_C_FUNC(int) check_tx_list(mem_zone_ref_ptr tx_list,uint64_t block_reward,
 			continue;
 
 		
-		if (!check_tx_inputs(tx, &total_in, &is_coinbase))
+		if (!check_tx_inputs(tx, &total_in, &is_coinbase, check_sig))
 		{
 			dec_zone_ref(tx);
 			release_zone_ref(&my_list);

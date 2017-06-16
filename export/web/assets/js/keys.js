@@ -248,10 +248,16 @@ function import_keys(username, label,table_name) {
     HexKey = strtoHexString(encKey);
 
     rpc_call('importkeypair', [acName, label, pubkey, HexKey, 0], function (data) {
+
+        if (data.result.new == 1)
+            set_account_pw(acName, $('#pw').val());
+
         $('#prv_key_msg').empty();
         $('#imp_key_msg').empty();
         get_accounts(table_name , 1);
-        get_addrs   (username   , table_name);
+        get_addrs(username, table_name);
+
+       
 
         
     });
@@ -292,10 +298,10 @@ function get_addrs_divs(username, parent_name) {
 
 function get_addrs(username,table_name) {
 
-    accountName = username.replace('@', '-');
-    $('#uname').html(accountName);
+    var acName = username.replace('@', '-');
+    $('#uname').html(acName);
 
-    rpc_call('getpubaddrs', [accountName], function (data) {
+    rpc_call('getpubaddrs', [acName], function (data) {
 
         $('#newaddr').css('display', 'block');
         if ((typeof data.result.addrs === 'undefined') || (data.result.addrs.length == 0)) {
@@ -331,38 +337,14 @@ function get_accounts(table_name, new_account) {
         }
         else {
             my_accounts = data.result.accounts;
-
-            $('#my_account').empty();
-
-            if (new_account)
-                $('<option value="">new account</option>').appendTo('#my_account');
-
-            for (var i = 0; i < my_accounts.length; i++) {
-                var selected;
-
-                if ((accountName != null) && (accountName == my_accounts[i].name))
-                    selected = 'selected="selected"';
-                else
-                    selected = '';
-
-                $('<option '+selected+' value="' + my_accounts[i].name + '">' + my_accounts[i].name + '</option>').appendTo('#my_account');
-            }
-
-            if ((accountName == null) || (accountName.length == 0)) {
-                accountName = my_accounts[0].name;
-                my_addrs = my_accounts[0].addresses;
-            }
-            else {
-                var accnt = find_account(accountName);
-
-                if (accnt != null)
-                    my_addrs = accnt.addresses;
-            }
-            $('#uname').html(accountName);
-            update_my_addrs(table_name);
+            update_accounts(new_account);
         }
     });
 }
+
+
+
+
 
 /*
 function update_addr_txs() {

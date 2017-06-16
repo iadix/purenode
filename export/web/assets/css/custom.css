@@ -10,14 +10,11 @@
 
 #addr_list th {
 	border-bottom: 1px solid;
-    background-color:#606060;
 	padding:2px;
 }  
 
 #addr_list td {
-    padding: 4px;
     border-bottom: 1px solid #000;
-    background-color:#C8C8C8;
 	padding:2px;
 }
 

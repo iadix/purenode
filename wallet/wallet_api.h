@@ -2,6 +2,13 @@
 	#define WALLET_API C_IMPORT
 #endif
 
+struct key_entry
+{
+	char label[32];
+	btc_addr_t addr;
+	dh_key_t key;
+};
+
 WALLET_API int C_API_FUNC init_wallet(mem_zone_ref_ptr node, tpo_mod_file *pos_mod);
 WALLET_API int C_API_FUNC find_stake_hash(hash_t hash, unsigned char *stakes, unsigned int len);
 WALLET_API int C_API_FUNC get_tx_inputs_from_addr(btc_addr_t addr, uint64_t *total_unspent, uint64_t min_amount, size_t min_conf, size_t max_conf, mem_zone_ref_ptr tx);
@@ -16,3 +23,6 @@ WALLET_API int C_API_FUNC store_tx_wallet(btc_addr_t addr, hash_t tx_hash);
 WALLET_API int C_API_FUNC store_wallet_tx(mem_zone_ref_ptr tx);
 WALLET_API int C_API_FUNC store_wallet_txs(mem_zone_ref_ptr tx_list);
 WALLET_API int C_API_FUNC list_staking_unspent(mem_zone_ref_ptr last_blk, btc_addr_t addr, mem_zone_ref_ptr unspents, unsigned int min_depth, int *max);
+WALLET_API int C_API_FUNC wallet_list_addrs(mem_zone_ref_ptr account_name, mem_zone_ref_ptr addr_list);
+WALLET_API int C_API_FUNC setpassword(struct string *username, struct string *pw, struct string *newpw);
+WALLET_API int C_API_FUNC checkpassword(struct string *username, struct string *pw);

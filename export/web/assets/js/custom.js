@@ -1215,12 +1215,17 @@ function show_tx(txid) {
 function update_my_addrs(table_name) {
     var old_tbody = document.getElementById(table_name).tBodies[0];
     var new_tbody = document.createElement('tbody');
+
+    
+
     if ((my_addrs == null) || (my_addrs.length == 0)) {
         document.getElementById(table_name).style.display = 'none';
         $('#myaddrhdr').html('no addresses');
     }
     else {
         var num_addrs = my_addrs.length;
+
+     
         for (n = 0; n < num_addrs; n++) {
             var row = new_tbody.insertRow(n);
             var cell;
@@ -1547,4 +1552,95 @@ function get_node_lag(node)
 
 
 }
+function deleteAllCookies() {
+    var cookies = document.cookie.split(";");
 
+    for (var i = 0; i < cookies.length; i++) {
+        var cookie = cookies[i];
+        var eqPos = cookie.indexOf("=");
+        var name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    }
+}
+function get_session(account, pw) {
+
+    deleteAllCookies();
+    $.getJSON('/siteapi/getsession/' + account + '/' + pw).done(function (data) { $.cookie("sessionid", data.sessionid); location.reload(); }).error(function (data) { $('#pw').css('border-color', '#F00'); });
+}
+
+function clear_session() {
+    deleteAllCookies();
+    $.getJSON('/siteapi/clearsession/' + sessionid).done(function (data) { sessionid = null;location.reload(); });
+}
+
+function set_account_pw(account,pw) {
+    rpc_call('setaccountpw', [account, pw], function (data) { if (data.error == 0) $('#pw').css('border-color', '#0F0'); else $('#pw').css('border-color', '#F00'); });
+}
+
+
+function select_account(account_name)
+{
+    var acnt=null;
+
+    if (my_accounts == null) return;
+
+    for (var n = 0; n < my_accounts.length; n++)
+    {
+        if(my_accounts[n].name==account_name)
+        {
+            acnt = my_accounts[n];
+           break;
+        }
+    }
+    if (acnt == null) return;
+        
+   
+    if (acnt.pw) {
+
+        if((logged)&&(accountName == account_name))
+        {
+            $('#signin').val('logout');
+            $('#pw').css('display', 'none');
+            $('#signin').click(clear_session);
+        }
+        else{
+            $('#signin').val('login');
+            $('#pw').css('display', 'inline');
+            $('#signin').click(function () { get_session(account_name, $('#pw').val()); });
+        }
+        
+    }
+    else {
+        $('#signin').val('set pass');
+        $('#pw').css('display', 'inline');
+        $('#signin').click(function () { set_account_pw(account_name, $('#pw').val()); });
+    }
+    $('#signin').css('display', 'inline');
+    $('#account_name').prop('disabled', true);
+    $('#account_name').val(account_name);
+    $('#uname').html(accountName);
+}
+
+
+
+function update_accounts(new_account)
+{
+    $('#my_account').empty();
+
+    if (new_account!=null)
+        $('<option value="">'+new_account+'</option>').appendTo('#my_account');
+
+    for (var i = 0; i < my_accounts.length; i++) {
+        var selected;
+
+        if ((accountName != null) && (accountName == my_accounts[i].name))
+            selected = 'selected="selected"';
+        else
+            selected = '';
+
+        $('<option ' + selected + ' value="' + my_accounts[i].name + '">' + my_accounts[i].name + '</option>').appendTo('#my_account');
+    }
+
+  
+    $('#uname').html(accountName);
+}

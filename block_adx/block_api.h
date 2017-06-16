@@ -79,7 +79,7 @@ BLOCK_API  int	C_API_FUNC check_tx_input_sig(mem_zone_ref_ptr tx, unsigned int n
 BLOCK_API  int	C_API_FUNC check_tx_outputs(mem_zone_ref_ptr tx, uint64_t *total, unsigned int *is_staking);
 
 /* check tx outputs */
-BLOCK_API  int	C_API_FUNC check_tx_inputs(mem_zone_ref_ptr tx, uint64_t *total_in, unsigned int *is_coinbase);
+BLOCK_API  int	C_API_FUNC check_tx_inputs(mem_zone_ref_ptr tx, uint64_t *total_in, unsigned int *is_coinbase,unsigned int check_sig);
 
 
 /*check block pow */
@@ -117,7 +117,7 @@ BLOCK_API int	C_API_FUNC	get_block_version(unsigned int *v);
 BLOCK_API int	C_API_FUNC	blk_check_sign(const struct string *sign, const struct string *pubk, const hash_t hash);
 
 /* check validity of input transactions */
-BLOCK_API  int	C_API_FUNC check_tx_list(mem_zone_ref_ptr tx_list, uint64_t block_reward,hash_t merkle);
+BLOCK_API  int	C_API_FUNC check_tx_list(mem_zone_ref_ptr tx_list, uint64_t block_reward,hash_t merkle,unsigned int check_sig);
 
 /* get tx input idx */
 BLOCK_API int	C_API_FUNC	get_tx_input(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr vin);
@@ -126,9 +126,6 @@ BLOCK_API int	C_API_FUNC	get_tx_input(mem_zone_ref_const_ptr tx, unsigned int id
 /* set hash from compact from */
 BLOCK_API unsigned int	C_API_FUNC SetCompact(unsigned int bits, hash_t out);
 
-
-/* enable tx signature checking */
-BLOCK_API void	C_API_FUNC set_tx_sign_chk(unsigned int v);
 
 /*
 *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=
