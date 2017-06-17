@@ -46,9 +46,14 @@ OS_API_C_FUNC(int) do_zip(const char *fileName, struct string *initial_data,cons
 		}
 		else
 		{
-			log_output("unable to open zip file : '");
+			char xx[16];
+
+			itoa_s(nFiles, xx, 16, 10);
+			log_output("unable to open zip file[");
+			log_output(xx);
+			log_output("] : '");
 			log_output(files[nFiles]);
-			log_output("'");
+			log_output("'\n");
 		}
 	}
 	zipClose(myzip, "Nodix");
