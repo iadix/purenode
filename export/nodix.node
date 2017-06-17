@@ -74,7 +74,7 @@ let NODE_BITCORE_NODE SelfNode = `
 		"indexpage" : "/nodix.site",
 		"mimes" : {"js":"text/javascript", "css" : "text/css", "png" : "image/png", "gif" : "image/gif", "svg" : "image/svg+xml", "html" : "text/html" },
 		"defaultmime" : "text/plain",
-		"cacheTime" : 0,
+		"cacheTime" : 100000,
 		"maxpost"	: 1024,
 		"modules"	: 
 		[
