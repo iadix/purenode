@@ -18,7 +18,7 @@ ourmemory_t			mem = { PTR_INVALID };
 OS_API_C_FUNC(int) do_zip(const char *fileName, struct string *initial_data,const char **files, size_t nFiles,struct string *zipData)
 {
 	zipFile		myzip;
-	zip_fileinfo infos;
+	
 	mem.grow = 1;
 
 	if (initial_data != PTR_NULL)
@@ -36,13 +36,19 @@ OS_API_C_FUNC(int) do_zip(const char *fileName, struct string *initial_data,cons
 	while (nFiles--)
 	{
 		unsigned char *data;
-		size_t	size;
+		size_t		  size;
 		if (get_file(files[nFiles], &data, &size)>0)
 		{
 			zipOpenNewFileInZip (myzip, files[nFiles], PTR_NULL, PTR_NULL, 0, PTR_NULL, 0, "", Z_DEFLATED, 1);
 			zipWriteInFileInZip	(myzip, data, size);
 			zipCloseFileInZip	(myzip);
 			free_c				(data);
+		}
+		else
+		{
+			log_output("unable to open zip file : '");
+			log_output(files[nFiles]);
+			log_output("'");
 		}
 	}
 	zipClose(myzip, "Nodix");
