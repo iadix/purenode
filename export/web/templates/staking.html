@@ -127,54 +127,46 @@
 
   
 
-    function get_staking_addrs(username) {
-        rpc_call('getpubaddrs', [username], function (data) {
-            var n;
-            var arAddr = [];
+    function get_staking_addrs(username,user_addrs) {
+        var arAddr = [];
+        accountName = username;
+        my_addrs = user_addrs;
 
-            if (data.error != 0) return;
+        for (var n = 0; n < my_addrs.length; n++) {
+            arAddr[n] = my_addrs[n].address;
+        }
 
-            my_addrs = data.result.addrs;
+        list_staking_unspent    (arAddr);
+        update_staking_addrs    ('address_list_table');
+        
+        $('.dostake').change(function () {
+            var addr = $(this).attr('addr');
+            var secret = $('#secret_' + addr).val();
+            rpc_call('getprivaddr', [accountName, addr], function (keyData) {
+                var stakeAddrAr = [];
+                var DecHexkey = strtoHexString(un_enc(secret, keyData.result.privkey.slice(0, 64)));
+                var test_key = ec.keyPair({ priv: DecHexkey, privEnc: 'hex' });
+                var tpubkey = test_key.getPublic().encodeCompressed('hex');
+                rpc_call('pubkeytoaddr', [tpubkey], function (data) {
+                    if (data.result.addr != addr) {
+                        $('#dostake_' + addr).prop('checked', false);
+                        $('#secret_' + addr).css('color', 'red');
+                        $('#dostake_' + addr).attr('pubkey', '');
+                    }
+                    else {
+                        $('#dostake_' + addr).prop('checked', true);
+                        $('#dostake_' + addr).attr('pubkey', tpubkey);
+                        $('#secret_' + addr).css('color', 'green');
+                    }
+                    for (n = 0; n < my_addrs.length; n++) {
+                        if ($('#dostake_' + my_addrs[n].address).is(':checked'))
+                            stakeAddrAr[n] = my_addrs[n].address;
+                    }
+                    list_staking(stakeAddrAr)
+                    update_unspent('list_table');
 
-            for (n = 0; n < my_addrs.length; n++) {
-                arAddr[n] = my_addrs[n].address;
-            }
-            list_staking_unspent(arAddr);
-            update_staking_addrs('address_list_table');
-
-
-
-            $('.dostake').change(function () {
-                var addr = $(this).attr('addr');
-                var secret = $('#secret_' + addr).val();
-                rpc_call('getprivaddr', [accountName, addr], function (keyData) {
-                    var stakeAddrAr = [];
-                    var DecHexkey = strtoHexString(un_enc(secret, keyData.result.privkey.slice(0, 64)));
-                    var test_key = ec.keyPair({ priv: DecHexkey, privEnc: 'hex' });
-                    var tpubkey = test_key.getPublic().encodeCompressed('hex');
-                    rpc_call('pubkeytoaddr', [tpubkey], function (data) {
-                        if (data.result.addr != addr) {
-                            $('#dostake_' + addr).prop('checked', false);
-                            $('#secret_' + addr).css('color', 'red');
-                            $('#dostake_' + addr).attr('pubkey', '');
-                        }
-                        else {
-                            $('#dostake_' + addr).prop('checked', true);
-                            $('#dostake_' + addr).attr('pubkey', tpubkey);
-                            $('#secret_' + addr).css('color', 'green');
-                        }
-                        for (n = 0; n < my_addrs.length; n++) {
-                            if ($('#dostake_' + my_addrs[n].address).is(':checked'))
-                                stakeAddrAr[n] = my_addrs[n].address;
-                        }
-                        list_staking(stakeAddrAr)
-                        update_unspent('list_table');
-
-                    });
                 });
             });
-
-     
         });
     }
 

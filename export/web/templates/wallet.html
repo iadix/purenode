@@ -1,3 +1,9 @@
+<style>
+    .accnt_pw
+    {
+        disp^l
+    }
+</style>
 <!--=== Wallet ===-->
 <div class="container content">
   <section>
@@ -22,10 +28,17 @@
       
       <div class="row">
           <div class="col-md-2">
-              <select id="my_account" name="my_account" style="max-width:120px;" onchange="accountName = this.options[this.selectedIndex].value; if (accountName.length == 0) { $('#account_name').prop('disabled', false); my_addrs = null; update_my_addrs('my_address_list_table'); } else { $('#account_name').prop('disabled', true); $('#account_name').val(accountName); get_addrs(accountName, 'my_address_list_table'); $('#uname').html(accountName); }"></select>
+              <label>account</label>
           </div>
-          <div class="col-md-2">
-              <label>account</label><input type="text" name="account_name" id="account_name" />
+          <div class="col-md-4">
+              <select id="my_account" name="my_account" style="display:inline;max-width:120px;" onchange="var value = $(this).val(); if (value.length == 0) { $('#signin').css('display', 'none'); $('#accnt_pw').css('display', 'inline'); $('#account_name').prop('disabled', false); my_addrs = null; update_my_addrs('my_address_list_table'); } else { $('#accnt_pw').css('display', 'block'); select_account(value); get_addrs(value, 'my_address_list_table'); }"></select>
+              <input type="text" size="12" name="account_name" id="account_name" />
+          </div>
+
+      </div>
+      <div id="accnt_pw">
+          <div class="row">
+               <div class="col-md-2"><label>password</label></div><div class="col-md-2"><input size="12" type="password" name="pw" id="pw" /><input type="button" id="signin" name="signin" /></div>
           </div>
       </div>
       <!-- <div id="my_address_list_table"></div>-->
@@ -71,7 +84,7 @@
                   <section>
                       <label class="input">
                           <b class="tooltip tooltip-bottom-right">Do not forget this key, we do not own a copy, it is your responsibility to note it somewhere. <br /> You will not be able to withdraw your coins or make any transaction on our website if you loose it, neither sign bounties & get key your reward !</b>
-                          <input type="text" value="" name="imp_key" id="imp_key" /><span style="color:red;" id="imp_key_msg"></span><input type="button" value="import" onclick="import_keys($('#account_name').val(), $('#addrlabel').val(), 'my_address_list_table');" /><i class="icon-append fa fa-lock"></i>
+                          <input type="text" value="" name="imp_key" id="imp_key" /><span style="color:red;" id="imp_key_msg"></span><input type="button" value="import" onclick="import_keys($('#account_name').val(), $('#addrlabel').val(), 'my_address_list_table'); " /><i class="icon-append fa fa-lock"></i>
                           <span>
                               Do not forget this key, we do not own a copy, it is your responsibility to note it somewhere. <br /> You will not be able to withdraw your coins or make any transaction on our website if you loose it, neither sign bounties & get key your reward !
                           </span>
@@ -84,7 +97,7 @@
   </section>
   <section>
       <h2 class="heading-md">Manage your transactions</h2>
-      <div id="my_wallet">
+      <div id="my_wallet" class="container">
           <section>
               <h3 id="unspentaddr"></h3>
               <div class="row">
@@ -94,11 +107,13 @@
           </section>
           <section>
               <div class="row">
-                  <h2 id="tab_unspent" onclick="list_unspent($('#unspentaddr').html(),'addr_list');">unspent</h2><h2 id="tab_spent" onclick="list_spent($('#unspentaddr').html());">spent</h2><h2 id="tab_received" onclick="list_recvs($('#unspentaddr').html());">received</h2>
-                  <div class="info">total:<span id="txtotal"></span></div>
-                  <div class="info">showing:<span id="ntx"></span>/<span id="total_tx"></span></div>
-                  <table id="addr_list"><thead><tr><th>time</th><th>tx</th><th>from</th><th>amount</th><th>nconf</th></tr></thead><tbody></tbody></table>
+                  <div class="col-md-6">
+                      <h2 id="tab_unspent" onclick="list_unspent($('#unspentaddr').html(),'addr_list');">unspent</h2><h2 id="tab_spent" onclick="list_spent($('#unspentaddr').html());">spent</h2><h2 id="tab_received" onclick="list_recvs($('#unspentaddr').html());">received</h2>
+                      <div class="info">total:<span id="txtotal"></span></div>
+                      <div class="info">showing:<span id="ntx"></span>/<span id="total_tx"></span></div>
+                  </div>
               </div>
+              <div class="row"><div class="col-md-8"><table id="addr_list" class="table hover"><thead><tr><th>time</th><th>tx</th><th>amount</th><th>nconf</th></tr></thead><tbody></tbody></table></div></div>
           </section>
       </div>
   </section>

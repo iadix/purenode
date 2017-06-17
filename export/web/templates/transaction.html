@@ -31,46 +31,44 @@
     var block_target, now, last_block_time;
     var nHashes = 0;
 
-    function get_source_addrs(username) {
-        rpc_call('getpubaddrs', [username], function (data) {
-            var n;
-            var arAddr = [];
+    function get_source_addrs(username,user_addrs) 
+    {
+        var n;
+        var arAddr = [];
+        my_addrs = user_addrs;
+        accountName = username;
 
-            my_addrs = data.result.addrs;
-            update_staking_addrs('address_list_table');
+        update_staking_addrs('address_list_table');
 
-            $('.dostake').change(function () {
-                var addr = $(this).attr('addr');
-                var secret = $('#secret_' + addr).val();
-                rpc_call('getprivaddr', [accountName, addr], function (keyData) {
-                    var AddrAr = [];
-                    var DecHexkey = strtoHexString(un_enc(secret, keyData.result.privkey.slice(0, 64)));
-                    var test_key = ec.keyPair({ priv: DecHexkey, privEnc: 'hex' });
-                    var tpubkey = test_key.getPublic().encodeCompressed('hex');
-                    rpc_call('pubkeytoaddr', [tpubkey], function (data) {
-                        if (data.result.addr != addr) {
-                            $('#dostake_' + addr).prop('checked', false);
-                            $('#secret_' + addr).css('color', 'red');
-                            $('#dostake_' + addr).attr('pubkey', '');
-                            $('#dostake_' + addr).attr('privkey', '');
-                        }
-                        else {
-                            $('#dostake_' + addr).prop('checked', true);
+        $('.dostake').change(function () {
+            var addr = $(this).attr('addr');
+            var secret = $('#secret_' + addr).val();
+            rpc_call('getprivaddr', [accountName, addr], function (keyData) {
+                var AddrAr = [];
+                var DecHexkey = strtoHexString(un_enc(secret, keyData.result.privkey.slice(0, 64)));
+                var test_key = ec.keyPair({ priv: DecHexkey, privEnc: 'hex' });
+                var tpubkey = test_key.getPublic().encodeCompressed('hex');
+                rpc_call('pubkeytoaddr', [tpubkey], function (data) {
+                    if (data.result.addr != addr) {
+                        $('#dostake_' + addr).prop('checked', false);
+                        $('#secret_' + addr).css('color', 'red');
+                        $('#dostake_' + addr).attr('pubkey', '');
+                        $('#dostake_' + addr).attr('privkey', '');
+                    }
+                    else {
+                        $('#dostake_' + addr).prop('checked', true);
 
 
-                            $('#dostake_' + addr).attr('pubkey' , tpubkey);
-                            $('#dostake_' + addr).attr('privkey', DecHexkey);
-                            $('#secret_' + addr).css  ('color', 'green');
-                        }
+                        $('#dostake_' + addr).attr('pubkey' , tpubkey);
+                        $('#dostake_' + addr).attr('privkey', DecHexkey);
+                        $('#secret_' + addr).css  ('color', 'green');
+                    }
 
-                        for (n = 0; n < my_addrs.length; n++) {
-                            if ($('#dostake_' + my_addrs[n].address).is(':checked'))
-                                AddrAr.push(my_addrs[n].address);
-                        }
-                        list_unspent(AddrAr, 'list_table');
-                        
-
-                    });
+                    for (n = 0; n < my_addrs.length; n++) {
+                        if ($('#dostake_' + my_addrs[n].address).is(':checked'))
+                            AddrAr.push(my_addrs[n].address);
+                    }
+                    list_unspent(AddrAr, 'list_table');
                 });
             });
         });
@@ -89,10 +87,20 @@
         </div>
     </div>
     <div class="container">
-    <div class="row">
-        <div class="col-sm-1"><label>Account</label></div>
-        <div class="col-md-2"><select id="my_account" name="my_account" style="max-width:120px;" onchange="  if (window.location.href.substr(window.location.href.lastIndexOf('/') + 1) == 'transaction') window.location.href = './transaction/' + this.options[this.selectedIndex].value; else window.location.href = './' + this.options[this.selectedIndex].value; "></select></div>
-    </div>
+        <div class="row">
+            <div class="col-md-2"><label>Account</label></div>
+            <div class="col-md-2">
+                <select id="my_account" name="my_account" style="max-width:120px;" onchange="var value = $(this).val(); if (value.length == 0) { $('#accnt_pw').css('display', 'none'); $('#account_name').val('');  $('#account_name').css('display', 'none'); my_addrs = null; update_my_addrs('address_list_table'); } else { $('#accnt_pw').css('display', 'block'); select_account(value); get_addrs(value, 'address_list_table'); }"></select>
+            </div>
+
+        </div>
+
+        <div id="accnt_pw">
+            <div class="row">
+                <div class="col-md-2"><label>password</label></div><div class="col-md-2"><input size="8" type="password" name="pw" id="pw" /><input type="button" id="signin" name="signin" /></div>
+            </div>
+        </div>
+
     </div>
 
     <div class="container">
