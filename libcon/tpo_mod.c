@@ -1102,14 +1102,14 @@ module_rproc_ptr  queue_verack_message, queue_getaddr_message, queue_version_mes
 module_rwproc_ptr make_genesis_block, node_add_block_header;
 module_proc_ptr	  node_load_block_indexes, node_load_last_blks, node_check_chain;
 
-module_rproc_ptr  queue_ping_message;
+module_rproc_ptr  queue_ping_message, node_has_service_module;
 module_rwproc_ptr queue_pong_message, queue_getdata_message, queue_inv_message;
 
 // set_block_hash add_money_supply node_truncate_chain_to sub_money_supply remove_stored_block store_block block_has_pow set_next_check 
 //node_add_block_header accept_block compute_last_pow_diff 
 
 //  
-OS_API_C_FUNC(int) set_dbg_ptr2(module_rwproc_ptr  a, module_rwproc_ptr b, module_rwproc_ptr  c, module_rwproc_ptr d, module_rwproc_ptr e, module_rproc_ptr f, module_rwproc_ptr g, module_rproc_ptr h, module_rproc_ptr i, module_rproc_ptr j, module_rproc_ptr k, module_rproc_ptr l, module_rproc_ptr m, module_rproc_ptr n, module_rproc_ptr o, module_rwproc_ptr p, module_rwproc_ptr q)
+OS_API_C_FUNC(int) set_dbg_ptr2(module_rwproc_ptr  a, module_rwproc_ptr b, module_rwproc_ptr  c, module_rwproc_ptr d, module_rwproc_ptr e, module_rproc_ptr f, module_rwproc_ptr g, module_rproc_ptr h, module_rproc_ptr i, module_rproc_ptr j, module_rproc_ptr k, module_rproc_ptr l, module_rproc_ptr m, module_rproc_ptr n, module_rproc_ptr o, module_rwproc_ptr p, module_rwproc_ptr q, module_rproc_ptr r)
 {
 	node_add_block_header = a;
 	accept_block = b;
@@ -1128,6 +1128,7 @@ OS_API_C_FUNC(int) set_dbg_ptr2(module_rwproc_ptr  a, module_rwproc_ptr b, modul
 	node_list_accounts = o;
 	node_list_addrs   = p;
 	get_sess_account = q;
+	node_has_service_module = r;
 	return 1;
 }
 
@@ -1314,6 +1315,8 @@ OS_API_C_FUNC(int) execute_script_mod_rcall(tpo_mod_file		*tpo_mod, const char *
 		return 	queue_mempool_message(input);
 	else if (!strcmp_c(method, "node_list_accounts"))
 		return 	node_list_accounts(input);
+	else if (!strcmp_c(method, "node_has_service_module"))
+		return 	node_has_service_module(input); 
 
 	
 	return -1;

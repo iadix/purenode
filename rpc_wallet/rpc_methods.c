@@ -1715,7 +1715,7 @@ OS_API_C_FUNC(int) importkeypair(mem_zone_ref_const_ptr params, unsigned int rpc
 		free_string(&label);
 		return 0;
 	}
-
+	uname_cleanup(&username);
 	if (xpubkey.len == 66)
 	{
 		int n = 33;
@@ -1843,6 +1843,8 @@ OS_API_C_FUNC(int) getprivaddr(mem_zone_ref_const_ptr params, unsigned int rpc_m
 	tree_manager_get_node_istr	(&pn, 0, &username, 0);
 	release_zone_ref			(&pn);
 
+	uname_cleanup(&username);
+
 	tree_manager_get_child_at	(params, 1, &pn);
 	tree_manager_get_node_istr	(&pn, 0, &pubaddr, 0);
 	release_zone_ref			(&pn);
@@ -1891,6 +1893,8 @@ OS_API_C_FUNC(int) setaccountpw(mem_zone_ref_const_ptr params, unsigned int rpc_
 
 	tree_manager_get_node_istr(&pn, 0, &username,0);
 	release_zone_ref(&pn);
+
+	uname_cleanup(&username);
 
 	if (!tree_manager_get_child_at(params, 1, &pn))
 	{

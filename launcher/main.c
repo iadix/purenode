@@ -56,7 +56,7 @@ C_IMPORT int C_API_FUNC	node_set_last_block(mem_zone_ref_ptr header);
 C_IMPORT int C_API_FUNC	node_init_service(mem_zone_ref_ptr in, mem_zone_ref_ptr out);
 C_IMPORT int C_API_FUNC	make_genesis_block(mem_zone_ref_ptr in, mem_zone_ref_ptr out);
 C_IMPORT int C_API_FUNC	get_sess_account(mem_zone_ref_ptr in, mem_zone_ref_ptr out);
-
+C_IMPORT int C_API_FUNC	node_has_service_module(mem_zone_ref_ptr module_name);
 
 			 
 C_IMPORT int C_API_FUNC	node_log_version_infos(mem_zone_ref_ptr in);
@@ -298,7 +298,7 @@ int main(int argc, const char **argv)
 
 	
 
-	set_dbg_ptr2(node_add_block_header, accept_block, compute_pow_diff, store_block, node_init_service, node_get_script_modules, get_pow_reward, node_get_script_msg_handlers, node_get_mem_pool, node_del_txs_from_mempool, node_add_tx_to_mempool, store_wallet_tx, store_wallet_txs, queue_mempool_message, node_list_accounts, node_list_addrs, get_sess_account);
+	set_dbg_ptr2(node_add_block_header, accept_block, compute_pow_diff, store_block, node_init_service, node_get_script_modules, get_pow_reward, node_get_script_msg_handlers, node_get_mem_pool, node_del_txs_from_mempool, node_add_tx_to_mempool, store_wallet_tx, store_wallet_txs, queue_mempool_message, node_list_accounts, node_list_addrs, get_sess_account, node_has_service_module);
 	set_pos_dbg_ptr	(init_pos, store_blk_staking, load_last_pos_blk, find_last_pos_block, compute_last_pos_diff, store_blk_tx_staking,stake_get_reward);
 #endif
 
@@ -315,7 +315,7 @@ int main(int argc, const char **argv)
 		return 0;
 	}
 
-	get_script_var_value_ptr(&script_vars, "nodix.mod_ptr"	, &nodix_mod);
+	get_script_var_value_ptr(&script_vars, "nodix.mod_ptr"	, (mem_ptr *)&nodix_mod);
 	
 	resolve_script_var		(&script_vars,PTR_NULL, "init_node"	, 0xFFFFFFFF	,&init_node_proc);
 

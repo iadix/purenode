@@ -1545,8 +1545,6 @@ OS_API_C_FUNC(int) new_message(const struct string *data, mem_zone_ref_ptr msg)
 	}
 	else if (!strncmp_c(&data->str[4], "tx", 2))
 	{
-		unsigned int    first, n;
-
 		make_string(&pack_str, "{(\"payload\",0x0B000010)  (0x0B008000)\"tx\":\"\"}");
 		cnt = 0;
 	}

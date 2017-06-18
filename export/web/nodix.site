@@ -35,6 +35,7 @@ let NODE_MODULE_DEF	node_adx = ` {"file" : "modz/node_adx.tpo"} `
 let NODE_MODULE_DEF	wallet = ` {"file" : "modz/wallet.tpo"} `
 
 let NODE_GFX_BINT logged = 0
+let NODE_GFX_BINT has_site_api = 0
 
 let NODE_JSON_ARRAY node_modules  = `[]`
 let NODE_JSON_ARRAY node_accounts = `[]`
@@ -272,14 +273,18 @@ page wallet(account_name) = `
 	node_adx.node_list_accounts	(node_accounts)
 
 	set logged = 0;
+	set has_site_api = 0;
 
 	if(cookies.sessionid ! "" )
 		wallet.get_sess_account(cookies.sessionid,account_name)? set logged = 1;  endor
 	endif
 
 	node_adx.node_list_addrs	(account_name,node_addrs)
+		
+	node_adx.node_has_service_module("site_cgi") ? 
+		set has_site_api = 1;
+	endor
 	
-
 	push stylesheets,"/assets/css/plugins/blocks.css"
 	push scripts,"/assets/js/blocks.js"
 	push scripts,"/assets/js/ecdsa_bundle.js"
@@ -295,6 +300,7 @@ page wallet(account_name) = `
 	html_var node_accounts;
 	html_var node_addrs;
 	html_var logged;
+	html_var has_site_api;
 	html_var cookies.sessionid;
 	html_js
     jQuery(document).ready(function() {
@@ -307,8 +313,9 @@ page wallet(account_name) = `
 
 		accountName		= '%account_name%';
 
-	
+		$('#account_name').val(accountName);  
 		$('#addrlabel').val('new address');
+
 		my_accounts		= node_accounts;
 		my_addrs		= node_addrs;
 
@@ -317,6 +324,16 @@ page wallet(account_name) = `
 		update_my_addrs ('my_address_list_table');
 
 		$('#account_name').val(accountName);  
+
+		if(has_site_api)
+		{
+			if(accountName == '')
+				$('#signin').css('display', 'none'); 
+		}
+		else
+		{
+			$('#signin').css('display', 'none'); 
+		}
 
 
     });
@@ -339,7 +356,11 @@ page staking(account_name) = `
 
 	node_adx.node_list_addrs	(account_name,node_addrs)
 
-	
+	set has_site_api = 0;
+
+	node_adx.node_has_service_module("site_cgi") ? 
+		set has_site_api = 1;
+	endor
 
 	
 	html_head "NodiX WALLET" 
@@ -348,6 +369,7 @@ page staking(account_name) = `
 	html_scripts
 	html_var node_accounts;
 	html_var node_addrs;
+	html_var has_site_api;
 	html_js
     jQuery(document).ready(function() {
 		

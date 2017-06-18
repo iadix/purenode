@@ -26,3 +26,5 @@ WALLET_API int C_API_FUNC list_staking_unspent(mem_zone_ref_ptr last_blk, btc_ad
 WALLET_API int C_API_FUNC wallet_list_addrs(mem_zone_ref_ptr account_name, mem_zone_ref_ptr addr_list);
 WALLET_API int C_API_FUNC setpassword(struct string *username, struct string *pw, struct string *newpw);
 WALLET_API int C_API_FUNC checkpassword(struct string *username, struct string *pw);
+WALLET_API int C_API_FUNC uname_cleanup(struct string *uname);
+

@@ -1652,6 +1652,8 @@ OS_API_C_FUNC(int) wallet_list_addrs(mem_zone_ref_ptr account_name, mem_zone_ref
 
 	tree_manager_get_node_istr	(account_name, 0, &username, 0);
 
+	uname_cleanup(&username);
+
 	of = strlpos_c(username.str, 0, ':');
 	if (of != INVALID_SIZE)
 	{
@@ -1761,6 +1763,25 @@ OS_API_C_FUNC(int) checkpassword(struct string *username, struct string *pw)
 	}
 	return ret;
 
+}
+
+OS_API_C_FUNC(int) uname_cleanup(struct string *uname)
+{
+	size_t n;
+
+	if (uname->len > 64)
+	{
+		uname->str[63] = 0;
+		uname->len = 64;
+	}
+
+	n = uname->len;
+
+	while (n--)
+	{
+		if ((uname->str[n] != '_')&&(!isdigit_c(uname->str[n])) && (!isalpha_c(uname->str[n])))
+			uname->str[n] = '-';
+	}
 }
 
 

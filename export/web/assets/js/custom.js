@@ -14,6 +14,7 @@ var currentAddr = null;
 var accountName = null;
 var my_accounts = null;
 var my_addrs = null;
+var sessionid = null;
 var addr_txs;
 var addr_tx_page_idx = 0;
 var addr_tx_total = 0;
@@ -1570,6 +1571,7 @@ function get_session(account, pw) {
 
 function clear_session() {
     deleteAllCookies();
+    if (sessionid == null) return;
     $.getJSON('/siteapi/clearsession/' + sessionid).done(function (data) { sessionid = null;location.reload(); });
 }
 
@@ -1599,14 +1601,19 @@ function select_account(account_name)
 
         if((logged)&&(accountName == account_name))
         {
-            $('#signin').val('logout');
             $('#pw').css('display', 'none');
+            $('#signin').val('logout');
             $('#signin').click(clear_session);
         }
-        else{
-            $('#signin').val('login');
+        else
+        {
             $('#pw').css('display', 'inline');
-            $('#signin').click(function () { get_session(account_name, $('#pw').val()); });
+            if (has_site_api) {
+                $('#signin').val('login');
+                $('#signin').click(function () { get_session(account_name, $('#pw').val()); });
+            }
+            else
+                $('#signin').css('display', 'none');
         }
         
     }
