@@ -327,7 +327,13 @@ function make_scripts_html(name, script_list)
             }
                 
             else {
-                var str = script_var.replace(/(?:\r\n|\r|\n)/g, '<br />');
+                var str='';
+
+                if (typeof script_var == 'string')
+                    str = script_var.replace(/(?:\r\n|\r|\n)/g, '<br />');
+                else if (typeof script_var == 'integer')
+                    str = script_var.toString();
+
                 html += '<div id="var_'+scriptk+'" class="script_proc">' + str + '</div>';
             }
             html += '</div>'
