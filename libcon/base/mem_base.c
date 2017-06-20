@@ -350,6 +350,7 @@ OS_API_C_FUNC(mem_ptr)	get_zone_ptr(mem_zone_ref_const_ptr ref, mem_size ofset)
 	if(ref==PTR_NULL) return PTR_INVALID;
 	if(ref->zone==PTR_NULL)return PTR_INVALID;
 	if (ref->zone == PTR_INVALID)return PTR_INVALID;
+	if (ref->zone == uint_to_mem(0xDEF0DEF0))return PTR_INVALID;
 	if((((mem_zone *)(ref->zone))->mem.size)==0)
 	{
 		return PTR_INVALID;

@@ -1769,6 +1769,9 @@ OS_API_C_FUNC(int) uname_cleanup(struct string *uname)
 {
 	size_t n;
 
+	if (uname->len < 3)
+		return 0;
+
 	if (uname->len > 64)
 	{
 		uname->str[63] = 0;
@@ -1782,6 +1785,8 @@ OS_API_C_FUNC(int) uname_cleanup(struct string *uname)
 		if ((uname->str[n] != '_')&&(!isdigit_c(uname->str[n])) && (!isalpha_c(uname->str[n])))
 			uname->str[n] = '-';
 	}
+
+	return 1;
 }
 
 

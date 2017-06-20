@@ -1308,7 +1308,6 @@ OS_API_C_FUNC(int) create_tx_message(mem_zone_ref_ptr node, mem_zone_ref_ptr tx,
 {
 	mem_zone_ref		payload = { PTR_NULL };
 	size_t				pl_size;
-	int					cnt;
 
 	if (!tree_manager_create_node("message", NODE_BITCORE_MSG, tx_pack))return 0;
 	tree_manager_set_child_value_str(tx_pack, "cmd", "tx");
