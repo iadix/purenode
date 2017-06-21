@@ -43,7 +43,7 @@ LIBC_API int			C_API_FUNC isdigit_c				(int _c);
 LIBC_API int			C_API_FUNC isdigit_c				(int _c);
 LIBC_API int			C_API_FUNC isxdigit_c				(int _c);
 LIBC_API int			C_API_FUNC isspace_c				(int _c);
-LIBC_API void			C_API_FUNC snooze					(unsigned int micro_sec);
+LIBC_API void			C_API_FUNC snooze_c					(unsigned int micro_sec);
 LIBC_API void			C_API_FUNC dtoa_c					(char *buff, char conv, int bsize, int dplace, double value);
 LIBC_API unsigned int	C_API_FUNC parseDate				(const char *date);
 LIBC_API void			C_API_FUNC store_bigendian			(unsigned char *x, uint64_t u);

@@ -644,7 +644,7 @@ OS_API_C_FUNC(void) init_mem_system()
 	sys_add_tpo_mod_func_name("libcon", "get_tpo_mod_exp_addr_name",(void_func_ptr)get_tpo_mod_exp_addr_name, 0);
 	sys_add_tpo_mod_func_name("libcon", "isRunning",(void_func_ptr)isRunning, 0);
 
-	sys_add_tpo_mod_func_name("libcon", "snooze", (void_func_ptr)snooze, 0);
+	sys_add_tpo_mod_func_name("libcon", "snooze_c", (void_func_ptr)snooze_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "find_mod_ptr", (void_func_ptr)find_mod_ptr, 0);
 
 	sys_add_tpo_mod_func_name("libcon", "get_exe_path", (void_func_ptr)get_exe_path, 0);

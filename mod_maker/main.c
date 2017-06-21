@@ -484,13 +484,9 @@ void WriteTPOFile(PEFile *PE,char *file_name)
 			{	
 				unsigned int *addr;
 				unsigned int value;
-				unsigned int *target_mem_addr;
 				unsigned int target_r_addr;
 
 				unsigned int target_sec_id;
-				unsigned int target_data_ptr;
-				unsigned int target_data_ofset;
-
 
 				unsigned int mem_ofset;
 				unsigned int total_ofset;
@@ -572,8 +568,6 @@ void WriteTPOFile(PEFile *PE,char *file_name)
 
 		for(n=0;n<sec->num_sec_exp_name;n++)
 		{	
-			int ofset;
-
 			if(!strcmp(sec->ExportsName[n].func_name,"mod_name_deco_type"))
 			{
 				mod_deco_type	=	*((unsigned int	*)(sec->Data+sec->ExportsName[n].addr_reloc));
@@ -598,7 +592,6 @@ void WriteTPOFile(PEFile *PE,char *file_name)
 		if((stricmp(sec->Name,".reloc"))&&(sec->SectionDataLen>0))
 		{
 			unsigned int	file_pos;
-			unsigned int	align;
 			unsigned int	crc32;
 			unsigned int	crc32_section;
 			unsigned int	section_flags;

@@ -773,6 +773,12 @@ OS_API_C_FUNC(unsigned int) isRunning()
 void init_exit()
 {
 }
+
+OS_API_C_FUNC(void) snooze_c(size_t n)
+{
+	usleep(n);
+}
+
 /*
 void exited(void)
 {
@@ -783,8 +789,3 @@ void init_exit()
 {
 	atexit(exited);
 }*/
-
-OS_API_C_FUNC(void) snooze(size_t n)
-{
-	usleep(n*1000);
-}
