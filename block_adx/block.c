@@ -907,7 +907,7 @@ OS_API_C_FUNC(int) hash_equal(hash_t hash, const char *shash)
 OS_API_C_FUNC(int) get_hash_list(mem_zone_ref_ptr hdr_list, mem_zone_ref_ptr hash_list)
 {
 	mem_zone_ref		my_list = { PTR_NULL };
-	mem_zone_ref_ptr	hdr;
+	mem_zone_ref_ptr	hdr = PTR_NULL;
 	int					n = 0;
 
 	tree_manager_create_node("hash list", NODE_BITCORE_HASH_LIST, hash_list);

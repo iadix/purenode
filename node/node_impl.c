@@ -58,4 +58,7 @@ NODE_API int			C_API_FUNC		node_check_services(){return 0;}
 NODE_API int			C_API_FUNC		reset_moneysupply(){return 0;}
 NODE_API int			C_API_FUNC		add_moneysupply(uint64_t amount){return 0;}
 NODE_API int			C_API_FUNC		sub_moneysupply(uint64_t amount){return 0;}
+NODE_API int			C_API_FUNC		get_locator_next_blocks(mem_zone_ref_ptr locator, mem_zone_ref_ptr inv_pack){ return 0; }
+NODE_API int			C_API_FUNC		node_check_new_connections(){ return 0; }
+
 

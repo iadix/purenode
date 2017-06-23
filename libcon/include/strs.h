@@ -86,3 +86,7 @@ LIBC_API		void				C_API_FUNC cat_tag				(struct string *str, const char *tag, co
 
 /* create zip file */
 LIBC_API		int					C_API_FUNC do_zip				(const char *fileName, struct string *initial_data, const char **files, size_t nFiles, struct string *zipData);
+
+
+/* find mem hash */
+LIBC_API		int					C_API_FUNC find_mem_hash		(hash_t hash, unsigned char *mem_hash, unsigned int num);

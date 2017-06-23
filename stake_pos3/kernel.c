@@ -769,15 +769,17 @@ OS_API_C_FUNC(int) create_pos_block(hash_t pHash, mem_zone_ref_ptr tx, mem_zone_
 
 	get_blk_height	(chash, &height);
 
-	if (tree_manager_create_node("block", NODE_BITCORE_BLK_HDR, newBlock))
+	if (tree_manager_create_node("block", NODE_BITCORE_BLOCK, newBlock))
 	{
 		mem_zone_ref txs = { PTR_NULL };
+		unsigned char vntx[2] = { 0 };
 
 		tree_manager_set_child_value_hash	(newBlock, "prev", pHash);
 		tree_manager_set_child_value_i32	(newBlock, "version", version);
 		tree_manager_set_child_value_i32	(newBlock, "time", time);
 		tree_manager_set_child_value_i32	(newBlock, "bits", last_diff);
 		tree_manager_set_child_value_i32	(newBlock, "nonce", 0);
+		tree_manager_set_child_value_vint	(newBlock, "ntx", vntx);
 		
 
 		if (tree_manager_add_child_node(newBlock, "txs", NODE_BITCORE_TX_LIST, &txs))

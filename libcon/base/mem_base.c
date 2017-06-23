@@ -617,6 +617,8 @@ OS_API_C_FUNC(void) init_mem_system()
 	/*sys_add_tpo_mod_func_name("libcon", "strcat_float",(void_func_ptr)strcat_float, 0);*/
 	sys_add_tpo_mod_func_name("libcon", "copy_host_def",(void_func_ptr)copy_host_def, 0);
 
+	sys_add_tpo_mod_func_name("libcon", "find_mem_hash",(void_func_ptr)find_mem_hash, 0);
+	
 
 	sys_add_tpo_mod_func_name("libcon", "mem_stream_init",(void_func_ptr)mem_stream_init, 0);
 	sys_add_tpo_mod_func_name("libcon", "mem_stream_decomp",(void_func_ptr)mem_stream_decomp, 0);

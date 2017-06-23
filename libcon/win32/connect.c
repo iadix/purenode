@@ -668,7 +668,8 @@ OS_API_C_FUNC(struct con *)do_get_incoming(struct con *listen_con, unsigned int 
 
 	if (FD_ISSET(listen_con->sock, &my_listen))
     {
-		int						clilen;
+		int			clilen;
+		char		*saddr;
 
 		newCon			=	init_con	();
 		clilen			=	sizeof(struct sockaddr_in);
@@ -681,6 +682,15 @@ OS_API_C_FUNC(struct con *)do_get_incoming(struct con *listen_con, unsigned int 
 			make_string		(&newCon->error,"invalid socket");
 			listen			(listen_con->sock,15);
 		}
+		else
+		{
+			newCon->host.port	= ntohs(newCon->peer.sin_port);
+			saddr				= inet_ntoa(newCon->peer.sin_addr);
+
+			make_string_from_uint(&newCon->host.port_str, newCon->host.port);
+			if (saddr != NULL)make_string(&newCon->host.host, saddr);
+		}
+
 		FD_SET(newCon->sock,&newCon->con_set);
 		return newCon;
 	}

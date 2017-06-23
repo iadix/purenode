@@ -91,7 +91,7 @@ let NODE_BITCORE_NODE SelfNode = `
 	(NODE_BITCORE_TX_LIST) "mempool" : [],
 	(NODE_BITCORE_TX_LIST) "tmp tx pool" : [],
 	(NODE_BITCORE_TX_LIST) "submitted txs" : [],
-	(NODE_BITCORE_BLK_HDR_LIST) "submitted blocks" : []
+	(NODE_BITCORE_BLOCK_LIST) "submitted blocks" : []
 }`
 
 
@@ -123,17 +123,20 @@ accumulator add_reward = `
 
 handler on_verack(node,payload) = ` node_adx.queue_ping_message(node) success`
 handler on_ping(node,payload)   = ` node_adx.queue_pong_message(node,payload.nonce) success`
-handler on_pong(node, payload)  = ` set node.synching = 1; success`
+handler on_pong(node, payload)  = ` set node.synching = 1; success `
 handler on_inv(node, payload)   = ` node_adx.queue_getdata_message(node, payload.hashes) success `
 handler on_addr(node, payload)  = ` foreach payload.addrs node_adx.node_log_addr_infos success `
 handler on_tx(node, payload)    = ` node_adx.node_add_tx_to_mempool(payload.tx) success`
 
 handler on_version(node,payload) = `
 
-	set node.p2p_addr = payload.their_addr;
+	if(node.entrant = 1)
+		set node.p2p_addr.port = payload.my_addr.port;
+	endif
+
 	set node.p2p_addr.services = payload.services;
 
-	set node.my_addr = payload.my_addr;
+	set node.my_addr = payload.their_addr;
 
 	set node.user_agent = payload.user_agent;
 	set node.version = payload.proto_ver;
@@ -224,7 +227,7 @@ proc init_node = `
 	
 	loadmod(configuration.staking.pos_kernel)
 	configuration.staking.pos_kernel.init_pos(configuration.staking)
-	node_adx.node_init_service(SelfNode.http_service, configuration.staking.pos_kernel)
+
 	
 	node_adx.node_load_block_indexes			()
 	
@@ -274,7 +277,7 @@ proc init_node = `
 	sethandler SelfNode.emitted_queue{ "cmd=tx" } = on_tx;
 	
 	
-	node_adx.new_peer_node(configuration.seed_node)
+	node_adx.connect_peer_node(configuration.seed_node)
 	node_adx.queue_version_message(SelfNode.peer_nodes[0])
 	node_adx.queue_getaddr_message(SelfNode.peer_nodes[0])
 	node_adx.queue_mempool_message(SelfNode.peer_nodes[0])

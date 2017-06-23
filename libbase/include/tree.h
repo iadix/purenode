@@ -94,7 +94,7 @@
 
 
 
-
+#define		NODE_BITCORE_BLOCK_LIST			0x0B003000
 #define		NODE_BITCORE_BLOCK				0x0B002000
 #define		NODE_BITCORE_TX_LIST			0x0B004000
 #define		NODE_BITCORE_TX					0x0B008000
@@ -154,6 +154,7 @@ LIBBASE_API  int  			C_API_FUNC	tree_manager_create_node				(const char *name,un
 LIBBASE_API  int			C_API_FUNC	tree_manager_create_node_childs			(const char *name,unsigned int type,mem_zone_ref_ptr ref_ptr,const char *params);
 LIBBASE_API  int			C_API_FUNC	tree_manager_create_node_params			(mem_zone_ref_ptr ref_ptr,const char *params);
 LIBBASE_API  int			C_API_FUNC	tree_manager_add_node_childs			(mem_zone_ref_ptr p_node_ref,const char *params,unsigned int merge);
+LIBBASE_API  int			C_API_FUNC	tree_manager_cat_node_childs			(mem_zone_ref_ptr parent_ref_ptr, mem_zone_ref_ptr new_childs, unsigned int merge);
 LIBBASE_API  void			C_API_FUNC	tree_manager_sort_childs				(mem_zone_ref_ptr parent_ref_ptr,const char *name,unsigned int dir);
 
 LIBBASE_API  int			C_API_FUNC	tree_manager_get_first_child			(mem_zone_ref_const_ptr p_node_ref,	mem_zone_ref_ptr child_list, mem_zone_ref_ptr *p_node_out_ref);

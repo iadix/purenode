@@ -568,6 +568,17 @@ OS_API_C_FUNC(struct con *)do_get_incoming(struct con *listen_con, unsigned int 
 			make_string		(&newCon->error,"invalid socket");
 			listen			(listen_con->sock,10);
 		}
+		else
+		{
+			char		*saddr;
+
+			newCon->host.port = ntohs(newCon->peer.sin_port);
+			saddr = inet_ntoa(newCon->peer.sin_addr);
+
+			make_string_from_uint(&newCon->host.port_str, newCon->host.port);
+			if (saddr != NULL)make_string(&newCon->host.host, saddr);
+		}
+
 		FD_SET(newCon->sock,&newCon->con_set);
 		return newCon;
 	}

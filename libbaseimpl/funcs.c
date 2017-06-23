@@ -181,7 +181,7 @@ OS_API_C_FUNC(void) mbedtls_sha256_update(mbedtls_sha256_context *ctx, const uns
 OS_API_C_FUNC(void) mbedtls_sha256_free(mbedtls_sha256_context *ctx){ return; }
 OS_API_C_FUNC(void) mbedtls_sha256_finish(mbedtls_sha256_context *ctx, unsigned char output[32]){ return; }
 OS_API_C_FUNC(void) mbedtls_sha256(const unsigned char *input, size_t ilen, unsigned char output[32], int is224){ return; }
-
+OS_API_C_FUNC(int) tree_manager_cat_node_childs(mem_zone_ref_ptr parent_ref_ptr, mem_zone_ref_ptr new_childs, unsigned int merge){ return 0; }
 OS_API_C_FUNC(int)	crypto_hash_sha512(unsigned char *out, const unsigned char *in, size_t inlen){ return 0; }
 OS_API_C_FUNC(int) resolve_script_var(mem_zone_ref_ptr global_vars, mem_zone_ref_ptr script_proc, const char *var_path, unsigned int var_type, mem_zone_ref_ptr out_var){ return 0; }
 OS_API_C_FUNC(int)	tree_remove_child_by_member_value_hash(mem_zone_ref_ptr p_node_ref, unsigned int child_type, const char *member_name, hash_t hash){ return 0; }

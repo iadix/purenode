@@ -149,6 +149,8 @@ OS_API_C_FUNC(int) load_blk_hdr(mem_zone_ref_ptr hdr, const char *blk_hash)
 
 	if (get_file(blk_path.str, &hdr_data, &hdr_data_len) > 0)
 	{
+		unsigned char vntx[16];
+		unsigned int ntx;
 		if ((hdr->zone != PTR_NULL) || (tree_manager_create_node("blk", NODE_BITCORE_BLK_HDR, hdr)))
 		{
 			hash_t hash;
@@ -165,9 +167,22 @@ OS_API_C_FUNC(int) load_blk_hdr(mem_zone_ref_ptr hdr, const char *blk_hash)
 				hash[n] = strtoul_c(hex, PTR_NULL, 16);
 			}
 			tree_manager_set_child_value_bhash(hdr, "blkHash", hash);
+			ntx = get_blk_ntxs(blk_hash);
+
+			if (ntx < 0xFD)
+				vntx[0] = ntx;
+			else
+			{
+				vntx[0] = 0xFD;
+				*((unsigned short *)(&vntx[1])) = (unsigned short)ntx;
+			}
+			tree_manager_set_child_value_vint(hdr, "ntx", vntx);
 			ret = 1;
 		}
 		free_c(hdr_data);
+
+	
+		
 	}
 	free_string(&blk_path);
 
@@ -1473,9 +1488,7 @@ OS_API_C_FUNC(int) store_block(mem_zone_ref_ptr header, mem_zone_ref_ptr tx_list
 
 	cat_cstring_p(&blk_path, chash);
 	create_dir(blk_path.str);
-
-
-
+	
 	length = compute_payload_size(header);
 	buffer = malloc_c(length);
 

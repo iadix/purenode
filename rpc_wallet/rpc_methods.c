@@ -1240,9 +1240,9 @@ OS_API_C_FUNC(int) signstakeblock(mem_zone_ref_const_ptr params, unsigned int rp
 	}
 	free_string(&vpubk);
 
-	if (tree_manager_find_child_node(&my_node, NODE_HASH("submitted blocks"), NODE_BITCORE_BLK_HDR_LIST, &node_blks))
+	if (tree_manager_find_child_node(&my_node, NODE_HASH("submitted blocks"), NODE_BITCORE_BLOCK_LIST, &node_blks))
 	{
-		if (tree_find_child_node_by_member_name_hash(&node_blks, NODE_BITCORE_BLK_HDR, "blkHash", blkHash, &blk))
+		if (tree_find_child_node_by_member_name_hash(&node_blks, NODE_BITCORE_BLOCK, "blkHash", blkHash, &blk))
 		{
 			mem_zone_ref	txs = { PTR_NULL };
 			mem_zone_ref	sig = { PTR_NULL };
@@ -1369,7 +1369,7 @@ OS_API_C_FUNC(int) signstaketx(mem_zone_ref_const_ptr params, unsigned int rpc_m
 
 						node_fill_block_from_mempool(&newBlock);
 
-						if (tree_manager_find_child_node(&my_node, NODE_HASH("submitted blocks"), NODE_BITCORE_BLK_HDR_LIST, &blk_list))
+						if (tree_manager_find_child_node(&my_node, NODE_HASH("submitted blocks"), NODE_BITCORE_BLOCK_LIST, &blk_list))
 						{
 							hash_t h,rblkh;
 							

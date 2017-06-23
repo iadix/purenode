@@ -1098,7 +1098,7 @@ module_rwproc_ptr accept_block, compute_pow_diff, store_block, node_init_service
 module_rwproc_ptr get_sess_account;
 
 
-module_rproc_ptr  queue_verack_message, queue_getaddr_message, queue_version_message, node_is_next_block, new_peer_node, node_get_script_modules, node_get_script_msg_handlers, node_get_mem_pool, node_del_txs_from_mempool, node_add_tx_to_mempool, queue_mempool_message;
+module_rproc_ptr  queue_verack_message, queue_getblock_hdrs_message, queue_getaddr_message, queue_version_message, node_is_next_block, connect_peer_node, node_get_script_modules, node_get_script_msg_handlers, node_get_mem_pool, node_del_txs_from_mempool, node_add_tx_to_mempool, queue_mempool_message;
 module_rwproc_ptr make_genesis_block, node_add_block_header;
 module_proc_ptr	  node_load_block_indexes, node_load_last_blks, node_check_chain;
 
@@ -1109,7 +1109,7 @@ module_rwproc_ptr queue_pong_message, queue_getdata_message, queue_inv_message;
 //node_add_block_header accept_block compute_last_pow_diff 
 
 //  
-OS_API_C_FUNC(int) set_dbg_ptr2(module_rwproc_ptr  a, module_rwproc_ptr b, module_rwproc_ptr  c, module_rwproc_ptr d, module_rwproc_ptr e, module_rproc_ptr f, module_rwproc_ptr g, module_rproc_ptr h, module_rproc_ptr i, module_rproc_ptr j, module_rproc_ptr k, module_rproc_ptr l, module_rproc_ptr m, module_rproc_ptr n, module_rproc_ptr o, module_rwproc_ptr p, module_rwproc_ptr q, module_rproc_ptr r)
+OS_API_C_FUNC(int) set_dbg_ptr2(module_rwproc_ptr  a, module_rwproc_ptr b, module_rwproc_ptr  c, module_rwproc_ptr d, module_rwproc_ptr e, module_rproc_ptr f, module_rwproc_ptr g, module_rproc_ptr h, module_rproc_ptr i, module_rproc_ptr j, module_rproc_ptr k, module_rproc_ptr l, module_rproc_ptr m, module_rproc_ptr n, module_rproc_ptr o, module_rwproc_ptr p, module_rwproc_ptr q, module_rproc_ptr r, module_rproc_ptr s)
 {
 	node_add_block_header = a;
 	accept_block = b;
@@ -1129,6 +1129,7 @@ OS_API_C_FUNC(int) set_dbg_ptr2(module_rwproc_ptr  a, module_rwproc_ptr b, modul
 	node_list_addrs   = p;
 	get_sess_account = q;
 	node_has_service_module = r;
+	queue_getblock_hdrs_message = s;
 	return 1;
 }
 
@@ -1140,7 +1141,7 @@ OS_API_C_FUNC(int) set_dbg_ptr(module_rproc_ptr a, module_rproc_ptr b, module_rp
 	node_load_block_indexes=d;
 	make_genesis_block = e;
 	node_load_last_blks = f;
-	new_peer_node = g;
+	connect_peer_node = g;
 	node_log_version_infos = h;
 	queue_verack_message = i;
 	queue_getaddr_message = j;
@@ -1295,8 +1296,8 @@ OS_API_C_FUNC(int) execute_script_mod_rcall(tpo_mod_file		*tpo_mod, const char *
 		return store_blk_tx_staking(input);
 	else if (!strcmp_c(method, "node_is_next_block"))
 		return node_is_next_block(input);
-	else if (!strcmp_c(method, "new_peer_node"))
-		return new_peer_node(input);
+	else if (!strcmp_c(method, "connect_peer_node"))
+		return connect_peer_node(input);
 	else if (!strcmp_c(method, "node_get_script_modules"))
 		return node_get_script_modules(input);
 	else if (!strcmp_c(method, "node_get_script_msg_handlers"))
@@ -1317,6 +1318,10 @@ OS_API_C_FUNC(int) execute_script_mod_rcall(tpo_mod_file		*tpo_mod, const char *
 		return 	node_list_accounts(input);
 	else if (!strcmp_c(method, "node_has_service_module"))
 		return 	node_has_service_module(input); 
+	else if (!strcmp_c(method, "queue_getblock_hdrs_message"))
+		return 	queue_getblock_hdrs_message(input);
+
+	
 
 	
 	return -1;

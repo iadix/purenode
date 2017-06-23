@@ -593,7 +593,7 @@ OS_API_C_FUNC(int) background_func(thread_func_ptr func,mem_zone_ref_ptr params)
 	threads[cur].func = func;
 	threads[cur].status = 0;
 
-	newThread	= CreateThread(NULL, 4096, thread_start, &threads[cur], 0, &threadid);
+	newThread	= CreateThread(NULL, 32*1024, thread_start, &threads[cur], 0, &threadid);
 
 	while (threads[cur].status == 0)
 	{
@@ -744,7 +744,7 @@ OS_API_C_FUNC(int) default_RNG(unsigned char *dest, size_t size)
 }
 
 
-OS_API_C_FUNC(void) snooze(size_t n)
+OS_API_C_FUNC(void) snooze_c(size_t n)
 {
-	SleepEx(n, 1);
+	SleepEx(n/1000, 1);
 }

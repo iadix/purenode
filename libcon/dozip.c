@@ -62,4 +62,6 @@ OS_API_C_FUNC(int) do_zip(const char *fileName, struct string *initial_data,cons
 	zipData->len = mem.size;
 	zipData->size = mem.limit;
 	
+
+	return 1;
 }

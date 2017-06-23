@@ -482,3 +482,17 @@ OS_API_C_FUNC(void) free_host_def(struct host_def *host)
 }
 
 
+
+OS_API_C_FUNC(int) find_mem_hash(hash_t hash, unsigned char *mem_hash, unsigned int num)
+{
+	unsigned int n = 0;
+	if (num == 0)return 0;
+	if (mem_hash == PTR_NULL)return 0;
+	while (n<(num * 32))
+	{
+		if (!memcmp_c(&mem_hash[n], hash, sizeof(hash_t)))
+			return 1;
+		n += 32;
+	}
+	return 0;
+}
