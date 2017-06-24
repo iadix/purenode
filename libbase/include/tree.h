@@ -191,8 +191,7 @@ LIBBASE_API  int			C_API_FUNC	tree_manager_list_child_type			(mem_zone_ref_ptr c
 LIBBASE_API  int			C_API_FUNC	tree_node_find_child_by_type_value		(mem_zone_ref_const_ptr node,unsigned int type,unsigned int value,mem_zone_ref_ptr p_node_out_ref);
 LIBBASE_API  int			C_API_FUNC	tree_node_find_child_by_type			(mem_zone_ref_const_ptr p_node_ref		,unsigned int node_type					,mem_zone_ref_ptr p_node_out_ref,unsigned int index);
 LIBBASE_API  int			C_API_FUNC	tree_node_find_child_by_id				(mem_zone_ref_const_ptr p_node_ref		,unsigned int node_id,mem_zone_ref_ptr p_node_out_ref);
-LIBBASE_API  int			C_API_FUNC	tree_node_eval_i64						(mem_zone_ref_const_ptr p_node_ref, const char *key, enum key_op op,int64_t ivalue);
-
+LIBBASE_API  int			C_API_FUNC	tree_node_eval_i64						(mem_zone_ref_const_ptr p_node_ref, const char *key, enum op_type op,int64_t ivalue);
 LIBBASE_API  int			C_API_FUNC	tree_node_keval_i64						(mem_zone_ref_const_ptr p_node_ref, const struct key_val *key);
 LIBBASE_API  int			C_API_FUNC	tree_node_keval_hash					(mem_zone_ref_const_ptr p_node_ref, const struct key_val *key);
 LIBBASE_API  int			C_API_FUNC	tree_node_keval_str						(mem_zone_ref_const_ptr p_node_ref, const struct key_val *key);
