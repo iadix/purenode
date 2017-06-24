@@ -467,7 +467,8 @@ function make_node_html(name,node)
     $('#' + name).append(make_var_html("address", node.p2p_addr.addr));
     $('#' + name).append(make_var_html("port", node.p2p_addr.port));
     $('#' + name).append(make_var_html("version", node.version));
-    $('#'+name).append(make_var_html("height",node.block_height));
+    $('#' + name).append(make_var_html("height", node.block_height));
+    $('#' + name).append(make_var_html("ping", node.ping_delay + ' ms'));
     $('#'+name).append('<hr/>');
 }
 

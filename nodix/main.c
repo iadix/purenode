@@ -873,7 +873,7 @@ int handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 	ret = accept_block(&header, &tx_list);
 	if (ret)ret=add_new_block(&header, &tx_list);
 	
-	tree_manager_set_child_value_i64	(node, "next_check", get_time_c() + 10);
+	tree_manager_set_child_value_i32	(&self_node, "next_check", get_time_c() + 10);
 	tree_manager_get_child_value_i64	(&self_node, NODE_HASH("block_height"), &nblks);
 
 	free_string							(&signature);
@@ -1032,54 +1032,77 @@ int process_node_elements(mem_zone_ref_ptr node)
 
 int process_nodes()
 {
+	unsigned int		next_check, curtime, last_block_time;
+	ctime_t				min_delay;
 	mem_zone_ref_ptr	node = PTR_NULL;
-	mem_zone_ref		my_list = { PTR_NULL }, peer_nodes = { PTR_NULL };
+	mem_zone_ref		my_list = { PTR_NULL }, peer_nodes = { PTR_NULL }, my_node = { PTR_NULL };
 
 	if (!tree_manager_find_child_node(&self_node, NODE_HASH("peer_nodes"), NODE_BITCORE_NODE_LIST, &peer_nodes))return 0;
 
+	curtime = get_time_c();
+	min_delay = 100000;
+
 	for (tree_manager_get_first_child(&peer_nodes, &my_list, &node); ((node != NULL) && (node->zone != NULL)); tree_manager_get_next_child(&my_list, &node))
 	{
-		unsigned int test,synching;
-		ctime_t next_check, curtime, last_block_time;
-		curtime = get_time_c();
+		unsigned int		test, synching;
+		ctime_t				ping_delay;
 
 		process_node_messages(node);
 		process_node_elements(node);
 
-		scan_addresses();
+
+		if (!tree_manager_get_child_value_i32(node, NODE_HASH("synching"), &synching))
+			synching = 0;
+
 		if (!tree_manager_get_child_value_i32(node, NODE_HASH("testing_chain"), &test))
 			test = 0;
 
-		if (!tree_manager_get_child_value_i32(node, NODE_HASH("synching"), &synching))
-			synching = 0;
+		if (!tree_manager_get_child_value_si64(node, NODE_HASH("ping_delay"), &ping_delay))
+			ping_delay = 0;
 
-		if (!node_get_last_block_time(&last_block_time))
-			last_block_time = 0;
 
-		if ((test == 0)&&(synching == 0))
+		if ((test == 0) && (synching == 1) && (ping_delay>0))
 		{
-			if ((last_block_time + 60) >= curtime)
+			if (ping_delay < min_delay)
 			{
-				tree_manager_set_child_value_i32(node, "synching", 1);
-				tree_manager_set_child_value_i32(node, "next_check", curtime);
-			}
-		}
-
-		if (!tree_manager_get_child_value_i32(node, NODE_HASH("synching"), &synching))
-			synching = 0;
-
-		if ((test==0)&&(synching == 1))
-		{
-			if (tree_manager_get_child_value_i64(node, NODE_HASH("next_check"), &next_check))
-			{
-				if (curtime >= next_check)
-				{
-					queue_getblocks_message(node);
-					tree_manager_set_child_value_i32(node, "next_check", curtime + 3600);
-				}
+				min_delay = ping_delay;
+				copy_zone_ref(&my_node, node);
 			}
 		}
 	}
+	
+
+	scan_addresses();
+
+
+	/*
+	if (!node_get_last_block_time(&last_block_time))
+	last_block_time = 0;
+
+	if ((test == 0) && (synching == 0))
+	{
+		if ((last_block_time + 60) >= curtime)
+		{
+			tree_manager_set_child_value_i32(node, "synching", 1);
+			tree_manager_set_child_value_i32(node, "next_check", curtime);
+		}
+	}
+	*/
+
+	if (my_node.zone != PTR_NULL)
+	{
+		if (tree_manager_get_child_value_i32(&self_node, NODE_HASH("next_check"), &next_check))
+		{
+			if (curtime >= next_check)
+			{
+				queue_getblocks_message				(&my_node);
+				tree_manager_set_child_value_i32	(&self_node, "next_check", curtime + 3600);
+			}
+		}
+	}
+	
+
+
 	release_zone_ref(&peer_nodes);
 	return 1;
 }
