@@ -5,6 +5,8 @@
 #include "base/std_str.h"
 #include "base/mem_base.h"
 
+#include "strs.h"
+
 #include "../node_adx/node_api.h"
 //node module
 NODE_API int			C_API_FUNC		node_init_self(mem_zone_ref_ptr self_node){return 0;}

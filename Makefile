@@ -12,7 +12,7 @@ export/launcher: launcher/main.c export/libcon.a
 export/raytrace: raytrace/main.c export/libcon.a
 	gcc $(CFLAGS) -lc -lm -pthread -Ilibcon  -Ilibcon/zlib-1.2.8/ -Ilibcon/include -Ilibbase/include raytrace/main.c export/libcon.a -o export/raytrace
 
-export/libnodix.so:export/libbase.so export/node_adx.so export/libcon.so nodix/main.c
+export/libnodix.so:export/libbase.so export/libnode_adx.so export/libcon.so nodix/main.c
 	gcc $(CFLAGS)  -Lexport -lcon -lblock_adx -lnode_adx -lbase -Ilibcon  -Ilibcon/zlib-1.2.8/ -Ilibcon/include -Ilibbase/include -Ilibcon/zlib-1.2.8 nodix/main.c  -nodefaultlibs -nostdlib -Wl,--export-dynamic,-soname,libnodix.so,-melf_i386 -shared -o export/libnodix.so
 
 export/libstake_pos2.so:export/libbase.so export/libcon.so stake_pos2/kernel.c
@@ -25,13 +25,13 @@ export/libblock_explorer.so:export/libblock_adx.so export/libbase.so export/libc
 	gcc $(CFLAGS)  -Lexport -lcon -lbase -lblock_adx -Ilibcon  -Ilibcon/zlib-1.2.8/ -lblock_adx -Ilibcon/include -Ilibbase/include -Ilibcon/zlib-1.2.8 block_explorer/block_explorer.c  -nodefaultlibs -nostdlib -Wl,--export-dynamic,-soname,libstake_pos3.so,-melf_i386 -shared -o export/libblock_explorer.so
 
 export/libblock_adx.so:block_adx/main.c block_adx/script.c block_adx/block.c block_adx/scrypt.c export/libprotocol_adx.so export/libbase.so export/libcon.so
-	gcc $(CFLAGS)  -Lexport -lcon -lbase -lprotocol_adx  -Ilibcon/zlib-1.2.8/ -Ilibcon -Ilibcon/include -Ilibbase/include block_adx/main.c block_adx/block.c block_adx/script.c block_adx/scrypt.c -nodefaultlibs -nostdlib  -Wl,--export-dynamic,-soname,libblock_adx.so,-melf_i386 -shared -o export/libblock_adx.so
+	gcc $(CFLAGS)  -Lexport -lcon -lbase -lprotocol_adx  -Ilibcon/zlib-1.2.8/ -Ilibcon -Ilibcon/include -Ilibbase/include block_adx/main.c block_adx/block.c  block_adx/store.c block_adx/script.c block_adx/scrypt.c -nodefaultlibs -nostdlib  -Wl,--export-dynamic,-soname,libblock_adx.so,-melf_i386 -shared -o export/libblock_adx.so
 
 export/libprotocol_adx.so:protocol_adx/main.c protocol_adx/protocol.c export/libbase.so export/libcon.so
 	gcc $(CFLAGS)  -Lexport -lcon -lbase -Ilibcon  -Ilibcon/zlib-1.2.8/ -Ilibcon/include -Ilibbase/include protocol_adx/main.c protocol_adx/protocol.c -nodefaultlibs -nostdlib -Wl,--export-dynamic,-soname,libprotocol_adx.so,-melf_i386 -shared -o export/libprotocol_adx.so
 
 export/libnode_adx.so: node/node_impl.c node_adx/node_api.h
-	gcc $(CFLAGS) -Ilibcon  -Ilibcon/zlib-1.2.8/ -Ilibcon/include -Ilibbase/include -lcon  -lprotocol_adx -lblock_adx -lnode_adx -lbase node/node_impl.c -shared -o export/libnode_adx.so
+	gcc $(CFLAGS) -Lexport -Ilibcon  -Ilibcon/zlib-1.2.8/ -Ilibcon/include -Ilibbase/include -lcon  -lprotocol_adx -lblock_adx  -lbase node/node_impl.c -shared -o export/libnode_adx.so
 
 
 export/libbase.so:libbaseimpl/funcs.c
