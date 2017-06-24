@@ -1580,6 +1580,7 @@ OS_API_C_FUNC(int) make_genesis_block(mem_zone_ref_ptr genesis_conf,mem_zone_ref
 	tree_manager_get_child_value_i32	(genesis_conf, NODE_HASH("time")	, &time);
 	tree_manager_get_child_value_i32	(genesis_conf, NODE_HASH("bits")	, &bits);
 	tree_manager_get_child_value_i32	(genesis_conf, NODE_HASH("nonce")	, &nonce);
+	tree_manager_get_child_value_i32	(genesis_conf, NODE_HASH("height")	, 0);
 
 
 
