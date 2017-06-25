@@ -1463,7 +1463,7 @@ OS_API_C_FUNC(int) store_block(mem_zone_ref_ptr header, mem_zone_ref_ptr tx_list
 	uint64_t			height;
 	mem_ptr				buffer;
 	hash_t				blk_hash, pow;
-
+	int					ret;
 	struct string		signature = { 0 }, blk_path = { 0 }, blk_data_path = { 0 };
 	unsigned int		n, n_tx, nc, block_time;
 	unsigned char		*blk_txs;
@@ -1496,7 +1496,7 @@ OS_API_C_FUNC(int) store_block(mem_zone_ref_ptr header, mem_zone_ref_ptr tx_list
 
 	clone_string(&blk_data_path, &blk_path);
 	cat_cstring_p(&blk_data_path, "header");
-	put_file(blk_data_path.str, buffer, length);
+	ret=put_file(blk_data_path.str, buffer, length);
 
 	if (tree_manager_get_child_value_i32(header, NODE_HASH("time"), &block_time))
 		set_ftime(blk_data_path.str, block_time);
@@ -1504,13 +1504,25 @@ OS_API_C_FUNC(int) store_block(mem_zone_ref_ptr header, mem_zone_ref_ptr tx_list
 	free_string(&blk_data_path);
 	free_c(buffer);
 
+	if (!ret)
+	{
+		free_string(&blk_path);
+		return 0;
+	}
+
+
 	height = get_last_block_height() + 1;
 
 	clone_string(&blk_data_path, &blk_path);
 	cat_cstring_p(&blk_data_path, "height");
-	put_file(blk_data_path.str, &height, sizeof(uint64_t));
+	ret=put_file(blk_data_path.str, &height, sizeof(uint64_t));
 	free_string(&blk_data_path);
 
+	if (!ret)
+	{
+		free_string(&blk_path);
+		return 0;
+	}
 
 	nc = tree_manager_get_node_num_children(tx_list);
 	if (nc > 0)

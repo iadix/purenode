@@ -1828,13 +1828,15 @@ OS_API_C_FUNC(int) new_message(const struct string *data, mem_zone_ref_ptr msg)
 		}
 	}
 
-	tree_manager_set_child_value_str(msg, "cmd"	, &data->str[4]);
-	tree_manager_set_child_value_i32(msg, "size", (*((unsigned int *)(&data->str[16]))));
-	tree_manager_set_child_value_i32(msg, "sum"	, *((unsigned int *)(&data->str[20])));
-	tree_manager_set_child_value_i32(msg, "cnt"	, cnt);
-	tree_manager_set_child_value_i32(msg, "elSz", elSz);
-	tree_manager_set_child_value_i32(msg, "elType", elType);
-	tree_manager_node_add_child		(msg, &payload_node);
+	tree_manager_set_child_value_str (msg, "cmd"	, &data->str[4]);
+	tree_manager_set_child_value_i32 (msg, "size", (*((unsigned int *)(&data->str[16]))));
+	tree_manager_set_child_value_i32 (msg, "sum"	, *((unsigned int *)(&data->str[20])));
+	tree_manager_set_child_value_i32 (msg, "cnt"	, cnt);
+	tree_manager_set_child_value_si32(msg, "handled", -1);
+	tree_manager_set_child_value_i32 (msg, "done"	, 0);
+	tree_manager_set_child_value_i32 (msg, "elSz"	, elSz);
+	tree_manager_set_child_value_i32 (msg, "elType"	, elType);
+	tree_manager_node_add_child		 (msg, &payload_node);
 	
 	if (elSz)
 		release_zone_ref(&list);

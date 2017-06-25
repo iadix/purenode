@@ -122,12 +122,12 @@ accumulator add_reward = `
 	success
 `
 
-handler on_verack(node,payload) = ` node_adx.queue_ping_message(node) success`
-handler on_ping(node,payload)   = ` gettime node.last_ping;  node_adx.queue_pong_message(node,payload.nonce) success`
+handler on_verack(node,payload) = ` node_adx.queue_ping_message(node) success `
+handler on_ping(node,payload)   = ` gettime node.last_ping;  node_adx.queue_pong_message(node,payload.nonce) success `
 handler on_pong(node, payload)  = ` gettime node.ping_delay; sub node.ping_delay, node.last_ping;  set node.synching = 1; success `
 handler on_inv(node, payload)   = ` node_adx.queue_getdata_message(node, payload.hashes) success `
 handler on_addr(node, payload)  = ` foreach payload.addrs node_adx.node_log_addr_infos success `
-handler on_tx(node, payload)    = ` node_adx.node_add_tx_to_mempool(payload.tx) success`
+handler on_tx(node, payload)    = ` node_adx.node_add_tx_to_mempool(payload.tx) success `
 
 handler on_version(node,payload) = `
 

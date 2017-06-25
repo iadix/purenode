@@ -20,6 +20,7 @@ static int64_t		TargetSpacing = 0xABCDABCD;
 static int64_t		nTargetTimespan = 0xABCDABCD;
 static int64_t		nStakeReward = 0xABCDABCD;
 static unsigned int	minStakeDepth = 10;
+static unsigned int	log_level = 1;
 
 
 #define ONE_COIN		100000000ULL
@@ -713,12 +714,15 @@ OS_API_C_FUNC(int) check_tx_pos(mem_zone_ref_ptr blk,mem_zone_ref_ptr tx)
 
 	if (ret)
 	{
-		tree_manager_create_node("log", NODE_LOG_PARAMS, &log);
-		tree_manager_set_child_value_hash(&log, "diff", rdiff);
-		tree_manager_set_child_value_hash(&log, "pos", rpos);
-		tree_manager_set_child_value_hash(&log, "hash", blk_hash);
-		log_message("----------------\nNEW POS BLOCK\n%diff%\n%pos%\n%hash%\n", &log);
-		release_zone_ref(&log);
+		if (log_level > 1)
+		{
+			tree_manager_create_node("log", NODE_LOG_PARAMS, &log);
+			tree_manager_set_child_value_hash(&log, "diff", rdiff);
+			tree_manager_set_child_value_hash(&log, "pos", rpos);
+			tree_manager_set_child_value_hash(&log, "hash", blk_hash);
+			log_message("----------------\nNEW POS BLOCK\n%diff%\n%pos%\n%hash%\n", &log);
+			release_zone_ref(&log);
+		}
 
 		get_tx_input_hash				 (tx, 0, StakeModKernel);
 		ret = compute_next_stake_modifier(blk, lastStakeModifier, StakeModKernel);
@@ -726,8 +730,10 @@ OS_API_C_FUNC(int) check_tx_pos(mem_zone_ref_ptr blk,mem_zone_ref_ptr tx)
 		tree_manager_set_child_value_hash(blk, "blk pos", pos_hash);
 		tree_manager_set_child_value_i64 (blk, "weight", weight);
 		
-
-		log_message						 ("new modifier=%StakeMod2% time=%time% hash=%blkHash%", blk);
+		if (log_level > 1)
+		{
+			log_message("new modifier=%StakeMod2% time=%time% hash=%blkHash%", blk);
+		}
 
 	}
 	else

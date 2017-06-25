@@ -676,15 +676,13 @@ int add_new_block(mem_zone_ref_ptr header, mem_zone_ref_ptr tx_list)
 		tree_manager_set_child_value_i64(&self_node, "pow_reward", block_reward);
 	}
 	
-	if (ret)
-	{
-		add_moneysupply				(block_reward);
-		node_set_last_block			(header);
-		node_del_txs_from_mempool	(tx_list);
-		store_wallet_txs			(tx_list);
-
+	if (ret)ret = add_moneysupply			(block_reward);
+	if (ret)ret = node_set_last_block		(header);
+	if (ret)ret = node_del_txs_from_mempool (tx_list);
+	if (ret)ret = store_wallet_txs			(tx_list);
+	
+	if(ret)
 		log_message("added new block: %blk hash% , %time% - %version% %merkle_root%\n", header);
-	}
 	else
 		log_message("error adding new block: %blk hash% , %time% - %version% %merkle_root%\n", header);
 
@@ -986,9 +984,11 @@ int process_node_messages(mem_zone_ref_ptr node)
 	{
 		char			cmd[16];
 		mem_zone_ref	payload_node = { PTR_NULL };
-		int				ret;
+		int				ret, hndl;
 		if (tree_mamanger_get_node_type(msg) != NODE_BITCORE_MSG) continue;
 		if (!tree_manager_get_child_value_str	(msg, NODE_HASH("cmd"), cmd, 12, 16))continue;
+		if (!tree_manager_get_child_value_si32	(msg, NODE_HASH("handled"), &hndl))hndl = -1;
+		if (hndl != -1)continue;
 
 		ret=node_process_event_handler		("emitted_queue", node, msg);
 		if (ret<0)
@@ -997,12 +997,10 @@ int process_node_messages(mem_zone_ref_ptr node)
 			ret = handle_message		(node, cmd, &payload_node);
 			release_zone_ref			(&payload_node);
 		}
-		tree_manager_set_child_value_i32(msg, "handled", ret);
-		
-		
+		tree_manager_set_child_value_si32(msg, "handled", ret);
 	}
-	tree_remove_child_by_member_value_dword		(&msg_list, NODE_BITCORE_MSG, "handled", 1);
-	tree_remove_child_by_member_value_lt_dword	(&msg_list, NODE_BITCORE_MSG, "recvtime", get_time_c()-100);
+	tree_remove_child_by_member_value_dword			(&msg_list, NODE_BITCORE_MSG, "handled" , 1);
+	tree_remove_child_by_member_value_lt_dword		(&msg_list, NODE_BITCORE_MSG, "recvtime", get_time_c()-300);
 
 	release_zone_ref(&msg_list);
 	return 1;
@@ -1033,7 +1031,7 @@ int process_node_elements(mem_zone_ref_ptr node)
 int process_nodes()
 {
 	unsigned int		next_check, curtime, last_block_time;
-	ctime_t				min_delay;
+	ctime_t				min_delay,cctime;
 	mem_zone_ref_ptr	node = PTR_NULL;
 	mem_zone_ref		my_list = { PTR_NULL }, peer_nodes = { PTR_NULL }, my_node = { PTR_NULL };
 
@@ -1045,10 +1043,12 @@ int process_nodes()
 	for (tree_manager_get_first_child(&peer_nodes, &my_list, &node); ((node != NULL) && (node->zone != NULL)); tree_manager_get_next_child(&my_list, &node))
 	{
 		unsigned int		test, synching;
-		ctime_t				ping_delay;
+		ctime_t				ping_delay, last_ping;
 
 		process_node_messages(node);
 		process_node_elements(node);
+
+		cctime = get_system_time_c();
 
 
 		if (!tree_manager_get_child_value_i32(node, NODE_HASH("synching"), &synching))
@@ -1056,6 +1056,12 @@ int process_nodes()
 
 		if (!tree_manager_get_child_value_i32(node, NODE_HASH("testing_chain"), &test))
 			test = 0;
+
+		if (!tree_manager_get_child_value_si64(node, NODE_HASH("last_ping"), &last_ping))
+			last_ping = 0;
+
+		if ((cctime - last_ping) > 60000)
+			queue_ping_message(node);
 
 		if (!tree_manager_get_child_value_si64(node, NODE_HASH("ping_delay"), &ping_delay))
 			ping_delay = 0;
@@ -1099,6 +1105,7 @@ int process_nodes()
 				tree_manager_set_child_value_i32	(&self_node, "next_check", curtime + 3600);
 			}
 		}
+		release_zone_ref(&my_node);
 	}
 	
 

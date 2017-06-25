@@ -1397,7 +1397,12 @@ OS_API_C_FUNC(int) check_tx_list(mem_zone_ref_ptr tx_list,uint64_t block_reward,
 			return 0;
 		}
 		
-		check_tx_outputs(tx, &total_out, &is_staking);
+		if (!check_tx_outputs(tx, &total_out, &is_staking))
+		{
+			dec_zone_ref(tx);
+			release_zone_ref(&my_list);
+			return 0;
+		}
 			
 		
 		if (is_staking)
