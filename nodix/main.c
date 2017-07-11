@@ -1031,11 +1031,15 @@ int process_node_elements(mem_zone_ref_ptr node)
 int process_nodes()
 {
 	unsigned int		next_check, curtime, last_block_time;
+	uint64_t			self_height;
 	ctime_t				min_delay,cctime;
 	mem_zone_ref_ptr	node = PTR_NULL;
 	mem_zone_ref		my_list = { PTR_NULL }, peer_nodes = { PTR_NULL }, my_node = { PTR_NULL };
 
 	if (!tree_manager_find_child_node(&self_node, NODE_HASH("peer_nodes"), NODE_BITCORE_NODE_LIST, &peer_nodes))return 0;
+	
+	if (!tree_manager_get_child_value_i64(&self_node, NODE_HASH("block_height"), &self_height))
+		self_height = 0;
 
 	curtime = get_time_c();
 	min_delay = 100000;
@@ -1043,6 +1047,7 @@ int process_nodes()
 	for (tree_manager_get_first_child(&peer_nodes, &my_list, &node); ((node != NULL) && (node->zone != NULL)); tree_manager_get_next_child(&my_list, &node))
 	{
 		unsigned int		test, synching;
+		uint64_t			block_height;
 		ctime_t				ping_delay, last_ping;
 
 		process_node_messages(node);
@@ -1050,15 +1055,10 @@ int process_nodes()
 
 		cctime = get_system_time_c();
 
-
-		if (!tree_manager_get_child_value_i32(node, NODE_HASH("synching"), &synching))
-			synching = 0;
-
-		if (!tree_manager_get_child_value_i32(node, NODE_HASH("testing_chain"), &test))
-			test = 0;
-
-		if (!tree_manager_get_child_value_si64(node, NODE_HASH("last_ping"), &last_ping))
-			last_ping = 0;
+		if (!tree_manager_get_child_value_i64 (node, NODE_HASH("block_height"), &block_height))block_height = 0;
+		if (!tree_manager_get_child_value_i32 (node, NODE_HASH("synching"), &synching))synching = 0;
+		if (!tree_manager_get_child_value_i32 (node, NODE_HASH("testing_chain"), &test))test = 0;
+		if (!tree_manager_get_child_value_si64(node, NODE_HASH("last_ping"), &last_ping))last_ping = 0;
 
 		if ((cctime - last_ping) > 60000)
 			queue_ping_message(node);
@@ -1067,7 +1067,7 @@ int process_nodes()
 			ping_delay = 0;
 
 
-		if ((test == 0) && (synching == 1) && (ping_delay>0))
+		if ((test == 0) && (synching == 1) && (ping_delay>0) && (block_height>self_height))
 		{
 			if (ping_delay < min_delay)
 			{
@@ -1079,21 +1079,6 @@ int process_nodes()
 	
 
 	scan_addresses();
-
-
-	/*
-	if (!node_get_last_block_time(&last_block_time))
-	last_block_time = 0;
-
-	if ((test == 0) && (synching == 0))
-	{
-		if ((last_block_time + 60) >= curtime)
-		{
-			tree_manager_set_child_value_i32(node, "synching", 1);
-			tree_manager_set_child_value_i32(node, "next_check", curtime);
-		}
-	}
-	*/
 
 	if (my_node.zone != PTR_NULL)
 	{
@@ -1107,8 +1092,6 @@ int process_nodes()
 		}
 		release_zone_ref(&my_node);
 	}
-	
-
 
 	release_zone_ref(&peer_nodes);
 	return 1;

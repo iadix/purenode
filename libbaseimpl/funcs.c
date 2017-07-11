@@ -123,6 +123,7 @@ OS_API_C_FUNC(int)				tree_remove_child_by_member_value_lt_dword(mem_zone_ref_pt
 OS_API_C_FUNC(  int	)			tree_manager_get_child_value_i16(mem_zone_ref_const_ptr parent_ref_ptr, unsigned int crc_name, unsigned short *value){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_get_child_value_i32(mem_zone_ref_const_ptr parent_ref_ptr, unsigned int crc_name, unsigned int *value){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_get_child_value_i64(const mem_zone_ref	*p_node_ref, unsigned int crc_name, uint64_t *value){return 0;}
+OS_API_C_FUNC(int)				tree_manager_get_child_value_si64(const mem_zone_ref	*p_node_ref, unsigned int crc_name, int64_t *value){ return 0; }
 OS_API_C_FUNC(  int	)			tree_manager_get_child_data_ptr(mem_zone_ref_const_ptr p_node_ref, unsigned int crc_name, mem_ptr *data_ptr){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_get_child_value_4uc(mem_zone_ref_const_ptr p_node_ref, unsigned int crc_name, vec_4uc_t value){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_get_child_value_rect(const mem_zone_ref	*p_node_ref, unsigned int crc_name, struct gfx_rect *rect){return 0;}

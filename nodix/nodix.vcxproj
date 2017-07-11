@@ -108,6 +108,7 @@
     <None Include="..\export\web\assets\js\keys.js" />
     <None Include="..\export\web\index.site" />
     <None Include="..\export\web\nodix.site" />
+    <None Include="..\export\web\site\articles\libcon_en.html" />
     <None Include="..\export\web\site\blockchain\block_explorer.html" />
     <None Include="..\export\web\site\blockchain\index.html" />
     <None Include="..\export\web\site\blockchain\menu.html" />

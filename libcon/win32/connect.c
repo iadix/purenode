@@ -183,6 +183,7 @@ OS_API_C_FUNC(int) con_move_data(struct con *Con, struct string *data, size_t mo
 
 OS_API_C_FUNC(void) con_close(struct con *Con)
 {
+	if (Con == PTR_NULL)return;
 	FD_ZERO			(&Con->con_set);
 	if (Con->sock > 0)
 	{

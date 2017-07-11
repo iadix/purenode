@@ -1629,7 +1629,6 @@ OS_API_C_FUNC(int) new_message(const struct string *data, mem_zone_ref_ptr msg)
 	}
 	else if (!strncmp_c(&data->str[4], "headers", 7))
 	{
-		unsigned int    first, n;
 		unsigned char	c;
 
 		switch ((c = *((unsigned char *)(data->str + 24))))

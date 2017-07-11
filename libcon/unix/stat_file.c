@@ -600,7 +600,7 @@ OS_API_C_FUNC(ctime_t) get_system_time_c()
 	ctime_t          s;  // Seconds
 	struct timespec spec;
 	clock_gettime(CLOCK_REALTIME, &spec);
-	ms = spec.tv_sec * 1000 + muldiv64(spec.tv_nsec, 1, 1000000); // Convert nanoseconds to milliseconds
+	ms = spec.tv_sec * 1000 + muldiv64(spec.tv_nsec, 1, 1000); // Convert nanoseconds to milliseconds
 	return ms;
 }
 
