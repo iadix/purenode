@@ -282,11 +282,10 @@ proc init_node = `
 	node_adx.queue_version_message(SelfNode.peer_nodes[0])
 	node_adx.queue_getaddr_message(SelfNode.peer_nodes[0])
 	node_adx.queue_mempool_message(SelfNode.peer_nodes[0])
+	node_adx.set_next_check(0)
 
 	success
 
 `
-
-
 
 
