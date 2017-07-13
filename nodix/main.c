@@ -1041,8 +1041,9 @@ int process_nodes()
 	if (!tree_manager_get_child_value_i64(&self_node, NODE_HASH("block_height"), &self_height))
 		self_height = 0;
 
-	curtime = get_time_c();
-	min_delay = 100000;
+	curtime		= get_time_c();
+	cctime		= get_system_time_c();
+	min_delay	= 10000000;
 
 	for (tree_manager_get_first_child(&peer_nodes, &my_list, &node); ((node != NULL) && (node->zone != NULL)); tree_manager_get_next_child(&my_list, &node))
 	{
@@ -1053,14 +1054,12 @@ int process_nodes()
 		process_node_messages(node);
 		process_node_elements(node);
 
-		cctime = get_system_time_c();
-
 		if (!tree_manager_get_child_value_i64 (node, NODE_HASH("block_height"), &block_height))block_height = 0;
 		if (!tree_manager_get_child_value_i32 (node, NODE_HASH("synching"), &synching))synching = 0;
 		if (!tree_manager_get_child_value_i32 (node, NODE_HASH("testing_chain"), &test))test = 0;
 		if (!tree_manager_get_child_value_si64(node, NODE_HASH("last_ping"), &last_ping))last_ping = 0;
 
-		if ((cctime - last_ping) > 60000)
+		if ((cctime - last_ping) > 600000)
 			queue_ping_message(node);
 
 		if (!tree_manager_get_child_value_si64(node, NODE_HASH("ping_delay"), &ping_delay))
@@ -1087,7 +1086,7 @@ int process_nodes()
 			if (curtime >= next_check)
 			{
 				queue_getblocks_message				(&my_node);
-				tree_manager_set_child_value_i32	(&self_node, "next_check", curtime + 3600);
+				set_next_check						(500);
 			}
 		}
 		release_zone_ref(&my_node);
