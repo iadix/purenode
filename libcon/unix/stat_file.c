@@ -598,7 +598,7 @@ OS_API_C_FUNC(void) get_system_time_c(ctime_t *ms)
 {
 	struct			timespec spec;
 	clock_gettime	(CLOCK_REALTIME, &spec);
-	*ms = spec.tv_sec * 1000 + spec.tv_nsec / 1000; // Convert nanoseconds to milliseconds
+	*ms = spec.tv_sec * 1000 + spec.tv_nsec / 1000000; // Convert nanoseconds to milliseconds
 }
 
 
