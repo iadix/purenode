@@ -25,7 +25,7 @@ NODE_API int			C_API_FUNC		node_set_script(mem_zone_ref_ptr script);
 NODE_API int			C_API_FUNC		remove_block(hash_t blk_hash);
 NODE_API int			C_API_FUNC		node_list_accounts(mem_zone_ref_ptr account_list);
 NODE_API int			C_API_FUNC		node_list_addrs(mem_zone_ref_ptr account_name, mem_zone_ref_ptr addr_list);
-
+NODE_API int			C_API_FUNC		set_next_check(mem_zone_ref_ptr nSecs);
 NODE_API int			C_API_FUNC		node_check_new_connections();
 
 NODE_API int			C_API_FUNC		node_dump_memory(unsigned int flags);

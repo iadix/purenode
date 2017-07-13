@@ -1086,7 +1086,7 @@ int process_nodes()
 			if (curtime >= next_check)
 			{
 				queue_getblocks_message				(&my_node);
-				set_next_check						(500);
+				tree_manager_set_child_value_i32	(&self_node, "next_check", get_time_c() + 500);
 			}
 		}
 		release_zone_ref(&my_node);

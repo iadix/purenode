@@ -1266,7 +1266,7 @@ OS_API_C_FUNC(int) execute_script_mod_rcall(tpo_mod_file		*tpo_mod, const char *
 		return load_last_pos_blk(input);
 	else if (!strcmp_c(method, "find_last_pos_block"))
 		return find_last_pos_block(input);
-	else if (!strcmp_c(method, "store_last_pos_hash"))
+	else if (!strcmp_c(method, "node_store_last_pos_hash"))
 		return node_store_last_pos_hash(input);
 	else if (!strcmp_c(method, "node_log_version_infos"))
 		return node_log_version_infos(input);
