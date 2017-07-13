@@ -1065,6 +1065,11 @@ int process_nodes()
 		if (!tree_manager_get_child_value_si64(node, NODE_HASH("ping_delay"), &ping_delay))
 			ping_delay = 0;
 
+		if (ping_delay < 0)
+		{
+			ping_delay = -ping_delay;
+			tree_manager_set_child_value_si64(node, "ping_delay", ping_delay);
+		}
 
 		if ((test == 0) && (synching == 1) && (ping_delay>0) && (block_height>self_height))
 		{
