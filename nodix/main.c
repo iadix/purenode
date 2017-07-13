@@ -1042,7 +1042,7 @@ int process_nodes()
 		self_height = 0;
 
 	curtime		= get_time_c();
-	cctime		= get_system_time_c();
+	get_system_time_c		(&cctime);
 	min_delay	= 10000000;
 
 	for (tree_manager_get_first_child(&peer_nodes, &my_list, &node); ((node != NULL) && (node->zone != NULL)); tree_manager_get_next_child(&my_list, &node))
