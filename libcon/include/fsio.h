@@ -19,7 +19,7 @@ LIBC_API int			C_API_FUNC set_exe_path();
 LIBC_API int			C_API_FUNC get_exe_path(struct string *outPath);
 LIBC_API int			C_API_FUNC daemonize(const char *name);
 LIBC_API ctime_t		C_API_FUNC get_time_c(void);
-LIBC_API ctime_t		C_API_FUNC get_system_time_c(void);
+LIBC_API void			C_API_FUNC get_system_time_c(ctime_t *time);
 LIBC_API void			C_API_FUNC console_print(const char *msg);
 LIBC_API int			C_API_FUNC log_output(const char *data);
 LIBC_API int			C_API_FUNC set_mem_exe(mem_zone_ref_ptr zone);

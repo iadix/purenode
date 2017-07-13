@@ -594,14 +594,11 @@ OS_API_C_FUNC(int) kernel_memory_free_c(mem_ptr ptr)
 }
 
 
-OS_API_C_FUNC(ctime_t) get_system_time_c()
+OS_API_C_FUNC(void) get_system_time_c(ctime_t *ms)
 {
 	struct			timespec spec;
-	ctime_t         ms; // Milliseconds
-	
 	clock_gettime	(CLOCK_REALTIME, &spec);
-	ms = spec.tv_sec * 1000 + spec.tv_nsec / 1000; // Convert nanoseconds to milliseconds
-	return ms;
+	*ms = spec.tv_sec * 1000 + spec.tv_nsec / 1000; // Convert nanoseconds to milliseconds
 }
 
 

@@ -623,14 +623,14 @@ OS_API_C_FUNC(int)kernel_memory_free_c(mem_ptr ptr)
 {
 	return HeapFree(GetProcessHeap(),0,ptr);
 }
-OS_API_C_FUNC(ctime_t) get_system_time_c()
+OS_API_C_FUNC(void) get_system_time_c(ctime_t *time)
 {
 	SYSTEMTIME st;
 	FILETIME   ft;
 
 	GetSystemTime(&st);
 	SystemTimeToFileTime(&st, &ft);
-	return FileTime_to_Milli(ft);
+	*time=FileTime_to_Milli(ft);
 }
 
 
