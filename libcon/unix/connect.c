@@ -733,9 +733,6 @@ OS_API_C_FUNC(struct con	*)do_connect(const struct host_def *host)
 =======
 
     log_output ("init con\n");
-<<<<<<< HEAD
->>>>>>> e8817700acbcd45370d626404355b9be2cfc4f7b
-=======
 >>>>>>> e8817700acbcd45370d626404355b9be2cfc4f7b
 	newCon				=	init_con	();
 	
@@ -788,9 +785,6 @@ OS_API_C_FUNC(struct con	*)do_connect(const struct host_def *host)
 		return newCon;
 	}
 	log_output ("setup addr\n");
-<<<<<<< HEAD
->>>>>>> e8817700acbcd45370d626404355b9be2cfc4f7b
-=======
 >>>>>>> e8817700acbcd45370d626404355b9be2cfc4f7b
 	newCon->peer.sin_addr	=((struct sockaddr_in *)res->ai_addr)->sin_addr;
 /*	
@@ -800,7 +794,6 @@ OS_API_C_FUNC(struct con	*)do_connect(const struct host_def *host)
 		return newCon;
 	}
 	newCon->peer.sin_addr.s_addr	= *((unsigned long*) iHost->h_addr);
-<<<<<<< HEAD
 <<<<<<< HEAD
 */	
 	freeaddrinfo				(res); 
@@ -822,17 +815,12 @@ OS_API_C_FUNC(struct con	*)do_connect(const struct host_def *host)
   	log_output("connecting host\n");
   	
 =======
-=======
->>>>>>> e8817700acbcd45370d626404355b9be2cfc4f7b
 */
   	newCon->peer.sin_family		= AF_INET;
   	freeaddrinfo				(res); 
   	
   	
   	log_output ("connect\n");
-<<<<<<< HEAD
->>>>>>> e8817700acbcd45370d626404355b9be2cfc4f7b
-=======
 >>>>>>> e8817700acbcd45370d626404355b9be2cfc4f7b
     newCon->peer.sin_port		    = htons		 (newCon->host.port);
 	iResult						    = connect	 (newCon->sock, (struct sockaddr *)&newCon->peer, sizeof(struct sockaddr_in));
@@ -842,24 +830,18 @@ OS_API_C_FUNC(struct con	*)do_connect(const struct host_def *host)
 		return newCon;
 	}
 <<<<<<< HEAD
-<<<<<<< HEAD
 	log_output("connected\n");
 	FD_ZERO(&newCon->con_set);
 	FD_SET(newCon->sock,&newCon->con_set);
 	
 
 =======
-=======
->>>>>>> e8817700acbcd45370d626404355b9be2cfc4f7b
 	
 	log_output ("connected\n");
 	FD_ZERO(&newCon->con_set);
 	FD_SET(newCon->sock,&newCon->con_set);
 	
 	log_output ("return \n");
-<<<<<<< HEAD
->>>>>>> e8817700acbcd45370d626404355b9be2cfc4f7b
-=======
 >>>>>>> e8817700acbcd45370d626404355b9be2cfc4f7b
 	return newCon;
 }
