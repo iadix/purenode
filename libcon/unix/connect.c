@@ -728,18 +728,12 @@ OS_API_C_FUNC(struct con	*)do_connect(const struct host_def *host)
 	struct addrinfo *res = NULL;
 	
 	int					iResult;
-<<<<<<< HEAD
 	
-=======
-
-    log_output ("init con\n");
->>>>>>> e8817700acbcd45370d626404355b9be2cfc4f7b
 	newCon				=	init_con	();
 	
 	newCon->host.port	=	host->port;
 	clone_string			(&newCon->host.port_str	,&host->port_str);
 	clone_string			(&newCon->host.host		,&host->host);
-<<<<<<< HEAD
 	
 	log_output("resolving host\n");
 	
@@ -757,35 +751,6 @@ OS_API_C_FUNC(struct con	*)do_connect(const struct host_def *host)
 		return newCon;
 	}
 	
-=======
-
-    log_output ("new sock\n");
-    /* Resolve the server address and port */
-	newCon->sock					= socket	 (AF_INET,SOCK_STREAM,IPPROTO_TCP);
-	if(newCon->sock<=0){
-		make_string(&newCon->error,"no socket");
-		return newCon;
-	}
-	
-	log_output ("resolve host\n");
-	log_output (newCon->host.host.str);
-	log_output ("\n");
-	
-	memset_c(&hints, 0, sizeof(struct addrinfo));
-    hints.ai_family = AF_INET;    /* Allow IPv4 or IPv6 */
-    hints.ai_socktype = SOCK_STREAM; /* Stream socket */
-    hints.ai_flags = 0;
-    hints.ai_protocol = IPPROTO_TCP;
-	
-	iResult = getaddrinfo (newCon->host.host.str,NULL,NULL,&res);
-	
-	if(iResult!=0){
-		make_string(&newCon->error,"host not found");
-		freeaddrinfo(res); 
-		return newCon;
-	}
-	log_output ("setup addr\n");
->>>>>>> e8817700acbcd45370d626404355b9be2cfc4f7b
 	newCon->peer.sin_addr	=((struct sockaddr_in *)res->ai_addr)->sin_addr;
 /*	
 	iHost							= gethostbyname	(newCon->host.host.str);
@@ -794,7 +759,6 @@ OS_API_C_FUNC(struct con	*)do_connect(const struct host_def *host)
 		return newCon;
 	}
 	newCon->peer.sin_addr.s_addr	= *((unsigned long*) iHost->h_addr);
-<<<<<<< HEAD
 */	
 	freeaddrinfo				(res); 
 	
@@ -814,14 +778,6 @@ OS_API_C_FUNC(struct con	*)do_connect(const struct host_def *host)
   	newCon->peer.sin_family		= AF_INET;
   	log_output("connecting host\n");
   	
-=======
-*/
-  	newCon->peer.sin_family		= AF_INET;
-  	freeaddrinfo				(res); 
-  	
-  	
-  	log_output ("connect\n");
->>>>>>> e8817700acbcd45370d626404355b9be2cfc4f7b
     newCon->peer.sin_port		    = htons		 (newCon->host.port);
 	iResult						    = connect	 (newCon->sock, (struct sockaddr *)&newCon->peer, sizeof(struct sockaddr_in));
 
@@ -829,20 +785,11 @@ OS_API_C_FUNC(struct con	*)do_connect(const struct host_def *host)
 		make_string(&newCon->error,"connection error");
 		return newCon;
 	}
-<<<<<<< HEAD
 	log_output("connected\n");
 	FD_ZERO(&newCon->con_set);
 	FD_SET(newCon->sock,&newCon->con_set);
 	
 
-=======
-	
-	log_output ("connected\n");
-	FD_ZERO(&newCon->con_set);
-	FD_SET(newCon->sock,&newCon->con_set);
-	
-	log_output ("return \n");
->>>>>>> e8817700acbcd45370d626404355b9be2cfc4f7b
 	return newCon;
 }
 
