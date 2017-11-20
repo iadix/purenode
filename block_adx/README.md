@@ -1,7 +1,9 @@
 Module to handle blocks and transactions.
 
 block.c : manipulation of block in memory
+
 store.c : loading and storing of blocks in the local storage
+
 script.c : manipulation of transaction script
 
 
