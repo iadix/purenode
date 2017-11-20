@@ -1982,7 +1982,7 @@ enum XML_Error doCdataSection(XML_Parser parser,
       return XML_ERROR_UNCLOSED_CDATA_SECTION;
     default:
 		return XML_ERROR_INVALID_TOKEN;
-      //abort();
+      /*abort();*/
     }
     *eventPP = s = next;
   }
@@ -3057,7 +3057,7 @@ enum XML_Error storeEntityValue(XML_Parser parser,
       return XML_ERROR_INVALID_TOKEN;
     default:
 	  return XML_ERROR_INVALID_TOKEN;
-      //abort();
+      /* abort(); */
     }
     entityTextPtr = next;
   }

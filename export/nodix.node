@@ -4,10 +4,10 @@ let NODE_GFX_OBJECT configuration = `
 		"name":"nodix",
 		"seed_node" : 
 		{
-			"host":"iadix.com",
-			"port" : 16714
+			"host":"nodix.eu",
+			"port" : 16819
 		},
-		"magic":0xD9BEFECA, 
+		"magic":0xD9BEFECA, 		
 		"pubKeyVersion":0x19,
 		(NODE_MODULE_DEF) "sign_mod" : {"file":"modz/ecdsa.tpo"},
 		"staking":
@@ -27,7 +27,7 @@ let NODE_GFX_OBJECT configuration = `
 			"targettimespan":960,
 			"limit":0x1E0FFFFF,
 			"reward":10000000000000,
-			"last_pow_block":200,
+			"last_pow_block":200000,
 			"txfee":10000
 		},
 		"genesis":
@@ -47,15 +47,18 @@ let NODE_BITCORE_NODE SelfNode = `
 	(NODE_GFX_BINT)"paytxfee" : 10000,
 	"block_height" : 0,
 	(NODE_GFX_INT)"version"  : 60018,
+	(NODE_GFX_BOOL)"uPnP":false,
 	(NODE_GFX_INT)"bestChainDepth":3,
 	(NODE_GFX_INT)"maxMsgSize":1024,
 	(NODE_GFX_INT)"checktxsign"  : 0,
 	(NODE_GFX_INT)"next_check"  : 0,
+	(NODE_BITCORE_WALLET_ADDR)"coinbaseAddr"  : "B8mPBEg2XbYSUwEh5a7yrfehvMNijpAm1P",
 	(NODE_GFX_INT)"scriptBlock" : 0,
 	(NODE_GFX_INT)"current_pos_diff" : 0,
 	(NODE_GFX_INT)"current_pow_diff" : 0,
 	(NODE_GFX_BINT)"pos_reward" : 0,
 	(NODE_GFX_BINT)"pow_reward" : 0,
+	(NODE_GFX_SIGNED_BINT)"ping_delay" : 0,
 	(NODE_GFX_INT)"last_block_time" : 0,
 	(NODE_BITCORE_BLK_HDR) "last_block" : {},
 	(NODE_BITCORE_BLK_HDR) "lastPOSBlk" : {},
@@ -71,9 +74,10 @@ let NODE_BITCORE_NODE SelfNode = `
 		"port"		: 16820,
 		(NODE_NET_IP)"addr" : "127.0.0.1",
 		"docroot"   : "web",
+		"apppath"   : "/app/",
 		"name"		: "Nodix webservice",
 		"indexpage" : "/nodix.site",
-		"mimes" : {"js":"text/javascript", "css" : "text/css", "png" : "image/png", "gif" : "image/gif", "svg" : "image/svg+xml", "html" : "text/html" },
+		"mimes" : {"js":"text/javascript", "css" : "text/css", "png" : "image/png", "pdf" : "application/pdf", "gif" : "image/gif", "svg" : "image/svg+xml", "html" : "text/html" },
 		"defaultmime" : "text/plain",
 		"cacheTime" : 0,
 		"nthreads"	: 4,
@@ -81,6 +85,7 @@ let NODE_BITCORE_NODE SelfNode = `
 		"modules"	: 
 		[
 			{"base" : "/jsonrpc"  , "type" : "rpc", (NODE_MODULE_DEF) "rpc_wallet"     : {"file":"modz/rpc_wallet.tpo"}},
+			{"base" : "/pubwal"   , "allowed_ip":["127.0.0.1"] , "type" : "rpc", (NODE_MODULE_DEF) "anon_wallet"     : {"file":"modz/anon_rpc.tpo"}},
 			{"base" : "/api/"     , "type" : "cgi", (NODE_MODULE_DEF) "block_explorer" : {"file":"modz/block_explorer.tpo"}},
 			{"base" : "/siteapi/" , "type" : "cgi", (NODE_MODULE_DEF) "site_cgi"	   : {"file":"modz/site_cgi.tpo"}}
 		]
@@ -92,16 +97,18 @@ let NODE_BITCORE_NODE SelfNode = `
 	(NODE_BITCORE_TX_LIST) "mempool" : [],
 	(NODE_BITCORE_TX_LIST) "tmp tx pool" : [],
 	(NODE_BITCORE_TX_LIST) "submitted txs" : [],
+	(NODE_BITCORE_HASH_LIST) "pending files" : [],
 	(NODE_BITCORE_BLOCK_LIST) "submitted blocks" : []
 }`
 
 
 
-let NODE_MODULE_DEF	protocol_adx = `{"order":0, "file" : "modz/protocol_adx.tpo"}`
-let NODE_MODULE_DEF	block_adx    = `{"order":1, "file" : "modz/block_adx.tpo"}`
-let NODE_MODULE_DEF	wallet	     = `{"order":2, "file" : "modz/wallet.tpo"}`
-let NODE_MODULE_DEF	node_adx     = `{"order":3, "file" : "modz/node_adx.tpo"}`
-let NODE_MODULE_DEF	nodix        = `{"order":4, "file" : "modz/nodix.tpo"}`
+let NODE_MODULE_DEF	vec			 = `{"order":0, "file" : "modz/vec3.tpo"}`
+let NODE_MODULE_DEF	protocol_adx = `{"order":1, "file" : "modz/protocol_adx.tpo"}`
+let NODE_MODULE_DEF	block_adx    = `{"order":2, "file" : "modz/block_adx.tpo"}`
+let NODE_MODULE_DEF	wallet	     = `{"order":3, "file" : "modz/wallet.tpo"}`
+let NODE_MODULE_DEF	node_adx     = `{"order":4, "file" : "modz/node_adx.tpo"}`
+let NODE_MODULE_DEF	nodix        = `{"order":5, "file" : "modz/nodix.tpo"}`
 
 
 let NODE_BITCORE_BLK_HDR	genesis_blk = `{}`
@@ -109,6 +116,8 @@ let NODE_GFX_INT			ping_nonce  = 1
 let NODE_GFX_BINT			block_reward = 0
 let NODE_GFX_BINT			lost_reward = 0
 let NODE_GFX_BINT			cur_len = 0
+
+let NODE_BITCORE_HASH_LIST  hash_list = `[]`
 
 
 accumulator add_reward = `
@@ -122,12 +131,14 @@ accumulator add_reward = `
 	success
 `
 
-handler on_verack(node,payload) = ` node_adx.queue_ping_message(node) success `
-handler on_ping(node,payload)   = ` node_adx.queue_pong_message(node,payload.nonce) success `
-handler on_pong(node, payload)  = ` gettime node.ping_delay; sub node.ping_delay, node.last_ping;  set node.synching = 1; success `
-handler on_inv(node, payload)   = ` node_adx.queue_getdata_message(node, payload.hashes) success `
-handler on_addr(node, payload)  = ` foreach payload.addrs node_adx.node_log_addr_infos success `
-handler on_tx(node, payload)    = ` node_adx.node_add_tx_to_mempool(payload.tx) success `
+handler on_verack(node,payload)		= ` node_adx.queue_ping_message(node) success `
+handler on_ping(node,payload)		= ` node_adx.queue_pong_message(node,payload.nonce) success `
+handler on_pong(node, payload)		= ` gettime node.ping_delay; gettime node.last_pong; sub node.ping_delay, node.last_ping;  set node.next_pong = 0; set node.synching = 1; success `
+handler on_inv(node, payload)		= ` node_adx.queue_getdata_message(node, payload.hashes) success `
+handler on_addr(node, payload)		= ` foreach payload.addrs node_adx.node_log_addr_infos node_adx.node_add_remote_peers(payload.addrs) success `
+handler on_tx(node, payload)		= ` node_adx.node_add_tx_to_mempool(payload.tx) ? node_adx.check_tx_files(node,payload.tx) endor success `
+handler on_mempool(node, payload)   = ` node_adx.node_get_mempool_hashes(hash_list) node_adx.queue_inv_message(node,hash_list) success `
+
 
 handler on_version(node,payload) = `
 
@@ -200,7 +211,7 @@ handler on_block(node, payload) = `
 	
 	block_adx.block_has_pow(payload.header.blkHash) ?
 		nodix.compute_pow_diff						(payload.header, SelfNode.current_pow_diff)
-		block_adx.get_pow_reward						(SelfNode.block_height, block_reward)
+		block_adx.get_pow_reward					(SelfNode.block_height, block_reward)
 		set SelfNode.pow_reward = block_reward;
 	endor
 
@@ -213,6 +224,7 @@ handler on_block(node, payload) = `
 	node_adx.add_money_supply			(block_reward)
 	node_adx.node_set_last_block		(payload.header)
 	node_adx.node_del_txs_from_mempool	(payload.txs)
+	node_adx.node_del_btree_from_mempool()
 	wallet.store_wallet_txs				(payload.txs)
 	node_adx.set_next_check				(30)
 
@@ -230,7 +242,7 @@ proc init_node = `
 	configuration.staking.pos_kernel.init_pos(configuration.staking)
 
 	
-	node_adx.node_load_block_indexes			()
+	node_adx.node_load_block_indexes		()
 	
 	block_adx.make_genesis_block(configuration.genesis, genesis_blk)
 	
@@ -242,6 +254,8 @@ proc init_node = `
 	
 	if (SelfNode.block_height > 1)
 		node_adx.node_load_last_blks()
+
+
 
 		block_adx.get_pow_reward(SelfNode.lastPOWBlk.height, block_reward)
 		set SelfNode.pow_reward = block_reward;
@@ -270,6 +284,7 @@ proc init_node = `
 	sethandler SelfNode.emitted_queue{ "cmd=pong" } = on_pong;
 	sethandler SelfNode.emitted_queue{ "cmd=inv" } = on_inv;
 	sethandler SelfNode.emitted_queue{ "cmd=addr" } = on_addr;
+	sethandler SelfNode.emitted_queue{ "cmd=mempool" } = on_mempool;
 	
 	if(SelfNode.scriptBlock ! 0)
 		sethandler SelfNode.emitted_queue{ "cmd=block" } = on_block;
@@ -283,6 +298,7 @@ proc init_node = `
 	node_adx.queue_getaddr_message(SelfNode.peer_nodes[0])
 	node_adx.queue_mempool_message(SelfNode.peer_nodes[0])
 	node_adx.set_next_check(0)
+
 
 	success
 

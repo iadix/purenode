@@ -16,9 +16,11 @@
 #include <connect.h>
 #include <sys_include.h>
 #include <iphlpapi.h>
-
+#include "upnp.h"
 
 WSADATA wsaData;
+
+
 
 struct read_con
 {
@@ -297,7 +299,7 @@ OS_API_C_FUNC(int) send_data(struct con *Con, unsigned char *data, size_t len)
 {
 	size_t b_sent;
 	int		s;
-
+	if (Con == PTR_NULL)return -1;
 	free_string	(&Con->error);
 	b_sent		=0;
 	while(b_sent<len)
@@ -390,6 +392,8 @@ OS_API_C_FUNC(int) send_upnpbroadcast(struct con *Con, struct string *data)
 	start_time		=  get_time_c	();
 	
 	
+	log_output("Broadcasting uPnp message\n");
+
 	while (((my_time = get_time_c()) - start_time)<5)
 	{
 		fd_set				fd_read,fd_err;
@@ -652,6 +656,18 @@ OS_API_C_FUNC(void) do_read_group()
 	}
 	*/
 }
+OS_API_C_FUNC(int)get_con_ip(struct con *Con, ipv4_t ip)
+{
+	if (Con == PTR_NULL)return 0;
+
+	ip[0] = Con->peer.sin_addr.S_un.S_un_b.s_b1;
+	ip[1] = Con->peer.sin_addr.S_un.S_un_b.s_b2;
+	ip[2] = Con->peer.sin_addr.S_un.S_un_b.s_b3;
+	ip[3] = Con->peer.sin_addr.S_un.S_un_b.s_b4;
+
+	return 1;
+}
+
 
 OS_API_C_FUNC(struct con *)do_get_incoming(struct con *listen_con, unsigned int time_out)
 {
@@ -847,6 +863,7 @@ OS_API_C_FUNC(int) network_init()
 	sys_add_tpo_mod_func_name("libcon", "con_move_data", (void_func_ptr)con_move_data, 0);
 	sys_add_tpo_mod_func_name("libcon", "con_consume_data", (void_func_ptr)con_consume_data, 0);
 	sys_add_tpo_mod_func_name("libcon", "get_con_hostd", (void_func_ptr)get_con_hostd, 0);
+	sys_add_tpo_mod_func_name("libcon", "get_con_ip", (void_func_ptr)get_con_ip, 0);
 	sys_add_tpo_mod_func_name("libcon", "do_connect", (void_func_ptr)do_connect, 0);
 	sys_add_tpo_mod_func_name("libcon", "reconnect", (void_func_ptr)reconnect, 0);
 	sys_add_tpo_mod_func_name("libcon", "open_port", (void_func_ptr)open_port, 0);
@@ -862,8 +879,13 @@ OS_API_C_FUNC(int) network_init()
 	sys_add_tpo_mod_func_name("libcon", "send_data_av", (void_func_ptr)send_data_av, 0);
 	sys_add_tpo_mod_func_name("libcon", "create_upnp_broadcast", (void_func_ptr)create_upnp_broadcast, 0);
 	sys_add_tpo_mod_func_name("libcon", "send_upnpbroadcast", (void_func_ptr)send_upnpbroadcast, 0);
+	
+
+	
 
 #endif
+	
+
 	FD_ZERO(&listenset);
 	return WSAStartup(MAKEWORD(2, 2), &wsaData);
 }

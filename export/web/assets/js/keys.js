@@ -3,6 +3,10 @@ var key = null;
 var my_tx = null;
 var paytxfee = 10000;
 var nSignedInput = 0;
+var nodeTypes = [];
+var anon_access = false;
+if (!Uint8Array.prototype.slice && 'subarray' in Uint8Array.prototype)
+     Uint8Array.prototype.slice = Uint8Array.prototype.subarray;
 
 function select_menu(id) {
     if (id == "tab_unspent")
@@ -66,6 +70,7 @@ function newkey() {
     privkey = hexk;
     pubkey_to_addr(pubkey);
 }
+
 
 function check_key(privKey, pubAddr)
 {
@@ -219,7 +224,20 @@ function sign_hash(username,addr,secret,sign_data) {
     });
 
 }
+function set_app_root(addr)
+{
+  rpc_call('create_root_app', [addr], function (data) {
 
+     if(!data.error)
+     {
+     		$('#app_root_new').css('display','none');
+			$('#app_root_infos').css('display','block');
+			$('#root_app_txh').html(data.result.appRootTxHash);
+            $('#root_app_addr').html(data.result.appRootAddr);
+     }
+  });
+
+}
 function import_keys(username, label,table_name) {
 
     var         arrKey;
@@ -279,9 +297,12 @@ function get_addrs_select(username, select_name) {
         update_my_addrs_select(select_name);
     });
 }
-function get_addrs_divs(username, parent_name) {
+function get_addrs_divs(username, parent_name,fn_click) {
 
     var acName = username.replace('@', '-');
+
+    if(typeof fn_click == 'undefined')
+      fn_click = null;
 
     rpc_call('getpubaddrs', [acName], function (data) {
 
@@ -292,11 +313,263 @@ function get_addrs_divs(username, parent_name) {
         else {
             my_addrs = data.result.addrs;
         }
-        update_my_addrs_divs(parent_name);
+        update_my_addrs_divs(parent_name,fn_click);
     });
 }
 
-function get_addrs(username,table_name) {
+function create_app(app_addr, app_name, tx_fee, addrs)
+{
+    var arAddr = [];
+    var addr=$('#app_addr').val();
+
+    
+    if ((addr == null)||(addr.length < 34)) {
+        $('#app_error').html('no address selected');
+        return;
+    }
+
+    if (app_name.length<3)
+    {
+        $('#app_error').html('application name 3 char min.');
+        return;
+    }
+    if (selected_balance < (tx_fee + root_app_fees))
+    {
+        $('#app_error').html('not enough balance selected');
+        return;
+    }
+
+    $('#app_error').empty();
+    for (var n = 0; n < my_addrs.length; n++) {
+        arAddr[n] = my_addrs[n].address;
+    }
+    rpc_call('makeapptx', [app_addr, app_name, arAddr, tx_fee], function (data) {
+        var html;
+
+        my_tx = data.result.transaction;
+
+        html = get_tx_html(my_tx);
+
+        $('#app_tx').html(html);
+    });
+}
+
+function create_app_type(app_name,type_name,type_id,type_keys, tx_fee, addrs) {
+
+    var arAddr = [];
+
+    $('#app_error').css('display', 'none');
+
+    for (var n = 0; n < my_addrs.length; n++) {
+        arAddr[n] = my_addrs[n].address;
+    }
+    
+    if (selected_balance < tx_fee) {
+        $('#app_error').css('display', 'block');
+        $('#app_error').html('not enough balance selected');
+        return;
+    }
+
+    rpc_call('makeapptypetx', [app_name, type_name,type_id,type_keys, arAddr, tx_fee], function (data) {
+        my_tx = data.result.transaction;
+        $('#type_tx').html(get_tx_html(my_tx));
+    });
+    
+}
+
+
+function create_app_file(app_name, fileHash, fileAddr, addrs, tx_fee) {
+
+    var arAddr = [];
+    var DecHexkey = $('#dostake_' + fileAddr).attr('privkey');
+
+    if (DecHexkey==null)
+    {
+        $('#app_error').css('display', 'select private key for addr ' + fileAddr);
+        return;
+    }
+    var mykey = ec.keyPair({ priv: DecHexkey, privEnc: 'hex' });
+    var pubKey = $('#dostake_' + fileAddr).attr('pubkey'); //mykey.getPublic().encodeCompressed('hex');
+    var dpkey=mykey.getPublic().encodeCompressed('hex');
+    var signature = mykey.sign(fileHash, 'hex');
+    var derSign = signature.toLowS();
+
+
+    $('#app_error').css('display', 'none');
+
+    for (var n = 0; n < my_addrs.length; n++) {
+        arAddr[n] = my_addrs[n].address;
+    }
+
+    if (selected_balance < tx_fee) {
+        $('#app_error').css('display', 'block');
+        $('#app_error').html('not enough balance selected');
+        return;
+    }
+
+    rpc_call('makeappfiletx', [app_name, fileHash, pubKey, derSign, arAddr, tx_fee], function (data) {
+        my_tx = data.result.transaction;
+        $('#type_tx').html(get_tx_html(my_tx));
+    });
+
+}
+function create_app_layout(app_name, fileHash, addrs, tx_fee) {
+
+    var arAddr = [];
+   
+
+    $('#app_error').css('display', 'none');
+
+    for (var n = 0; n < my_addrs.length; n++) {
+        arAddr[n] = my_addrs[n].address;
+    }
+
+    if (selected_balance < tx_fee) {
+        $('#app_error').css('display', 'block');
+        $('#app_error').html('not enough balance selected');
+        return;
+    }
+
+    rpc_call('makeapplayouttx', [app_name, fileHash, arAddr, tx_fee], function (data) {
+        my_tx = data.result.transaction;
+        $('#type_tx').html(get_tx_html(my_tx));
+    });
+
+}
+
+function create_app_module(app_name, fileHash, addrs, tx_fee) {
+
+    var arAddr = [];
+
+
+    $('#app_error').css('display', 'none');
+
+    for (var n = 0; n < my_addrs.length; n++) {
+        arAddr[n] = my_addrs[n].address;
+    }
+
+    if (selected_balance < tx_fee) {
+        $('#app_error').css('display', 'block');
+        $('#app_error').html('not enough balance selected');
+        return;
+    }
+
+    rpc_call('makeappmoduletx', [app_name, fileHash, arAddr, tx_fee], function (data) {
+        my_tx = data.result.transaction;
+        $('#type_tx').html(get_tx_html(my_tx));
+    });
+
+}
+
+function load_obj(app_name,objId,div_id)
+{
+    rpc_call('loadobj', [app_name, objId], function (data) {
+        $('#' + div_id).html(JSON.stringify(data.result.obj));
+    });
+
+}
+
+function create_app_obj(app_name, type_id, objAddr,newObj, tx_fee, addrs) {
+
+    var arAddr = [];
+    var pubKey = $('#dostake_' + objAddr).attr('pubkey');
+
+    $('#app_error').css('display', 'none');
+
+    for (var n = 0; n < my_addrs.length; n++) {
+        arAddr[n] = my_addrs[n].address;
+    }
+
+    if (selected_balance < tx_fee) {
+        $('#app_error').css('display', 'block');
+        $('#app_error').html('not enough balance selected');
+        return;
+    }
+
+    if (pubKey==null) {
+        $('#app_error').css('display', 'block');
+        $('#app_error').html('select the key for the obj addr ' + objAddr);
+        return;
+    }
+    
+    rpc_call('makeappobjtx', [app_name, type_id, pubKey, newObj, arAddr, tx_fee], function (data) {
+        my_tx = data.result.transaction;
+        $('#type_tx').html(get_tx_html(my_tx));
+    });
+
+}
+
+
+function add_app_obj_child(app_name, objHash, keyName, childHash, tx_fee, addrs) {
+
+    var arAddr = [];
+
+    $('#app_error').css('display', 'none');
+
+    for (var n = 0; n < my_addrs.length; n++) {
+        arAddr[n] = my_addrs[n].address;
+    }
+
+    if (selected_balance < tx_fee) {
+        $('#app_error').css('display', 'block');
+        $('#app_error').html('not enough balance selected');
+        return;
+    }
+
+    rpc_call('addchildobj', [app_name, objHash, keyName, childHash, arAddr, tx_fee], function (data) {
+        my_tx = data.result.transaction;
+        $('#type_tx').html(get_tx_html(my_tx));
+    });
+
+}
+
+function get_app_type_objs(app_name,type_id)
+{
+    rpc_call('get_type_obj_list', [app_name, type_id], function (data) {
+        
+        if (!data.error)
+        {
+            update_app_type_obj(data.result.typeId, data.result.objs);
+        }
+        else
+        {
+            var tstr = type_id.toString(16);
+            $('#objs_' + tstr).html('no objects');
+        }
+
+        
+    });
+}
+
+function get_app_file(file_hash) {
+    rpc_call('getappfile', [file_hash], function (data) {
+
+        if ((data.error == 0)) {
+            update_app_file(data.result.file,data.result.filePath);
+        }
+        else {
+            $('#files').html('no files');
+        }
+    });
+}
+
+
+
+function get_app_files(app_name) {
+    rpc_call('getappfiles', [app_name], function (data) {
+
+        if ((data.error == 0) && (data.result.total>0)) {
+            update_app_files(data.result.files,data.result.total);
+        }
+        else {
+            $('#files').html('no files');
+        }
+    });
+}
+
+
+
+function get_addrs(username, table_name, fn_click) {
 
     var acName = username.replace('@', '-');
     $('#uname').html(acName);
@@ -310,7 +583,7 @@ function get_addrs(username,table_name) {
         else {
             my_addrs = data.result.addrs;
         }
-        update_my_addrs(table_name);
+        update_my_addrs(table_name, fn_click);
     });
 }
 
@@ -429,7 +702,7 @@ function list_unspent(address,tbl_name) {
 function txinputsigned(txsign)
 {
     nSignedInput++;
-    if (nSignedInput >= my_tx.txsin.length)
+    if (nSignedInput >= nInputTosign)
     {
         var txid = txsign.result.txid;
         rpc_call('submittx', [txid], function (){});
@@ -442,15 +715,26 @@ function txinputsigned(txsign)
 function signtxinputs(txh,inputs)
 {
     nSignedInput = 0;
+    nInputTosign = inputs.length;
+
     for (var n = 0; n < inputs.length; n++) {
-        var DecHexkey = $('#dostake_' + inputs[n].srcaddr).attr('privkey');
-        var pubKey    = $('#dostake_' + inputs[n].srcaddr).attr('pubkey');
-        var mykey     = ec.keyPair({ priv: DecHexkey, privEnc: 'hex' });
-        var signature = mykey.sign(inputs[n].signHash, 'hex');
-        // Export DER encoded signature in Array
-        //var derSign = signature.toDER('hex');
-        var derSign   = signature.toLowS();
-        rpc_call('signtxinput', [txh, inputs[n].index, derSign, pubKey], txinputsigned);
+
+        if ((inputs[n].isApp == true) || ((inputs[n].srcapp) && (!inputs[n].isAppType) && (!inputs[n].isAppObj) && (!inputs[n].isAppLayout) && (!inputs[n].addChild) && (!inputs[n].isAppModule)))
+        {
+            nInputTosign--;
+        }
+        else
+        {
+            var DecHexkey = $('#dostake_' + inputs[n].srcaddr).attr('privkey');
+            var pubKey = $('#dostake_' + inputs[n].srcaddr).attr('pubkey');
+            var mykey = ec.keyPair({ priv: DecHexkey, privEnc: 'hex' });
+            var signature = mykey.sign(inputs[n].signHash, 'hex');
+            // Export DER encoded signature in Array
+            //var derSign = signature.toDER('hex');
+            var derSign = signature.toLowS();
+           
+            rpc_call('signtxinput', [txh, inputs[n].index, derSign, pubKey], txinputsigned);
+        }
     }
 }
 
@@ -521,7 +805,7 @@ function list_staking(addresses) {
         stake_unspents = data.result.unspents;
         block_target = data.result.block_target;
         now = data.result.now;
-        last_block_time = last_block_time;
+        last_block_time = data.result.last_block_time;
 
         update_staking();
 
@@ -577,4 +861,70 @@ function getMyAddrs()
     }
 
     return AddrAr;
+}
+
+
+function get_obj_type_name(type_id) {
+
+    var n;
+
+    if (type_id == 1)
+        type_id = 0x0B000100;
+
+    for(n=0;n<nodeTypes.length;n++)
+    {
+        if (nodeTypes[n].id == type_id)
+            return nodeTypes[n].name;
+    }
+
+    for (n = 0; n < app_types.length; n++) {
+        if (app_types[n].id == type_id)
+            return app_types[n].name;
+    }
+
+    return null;
+
+}
+
+function get_obj_types(select_id) {
+
+    rpc_call('gettypes', [], function (data) {
+        nodeTypes=data.result.types;
+        update_types_select(nodeTypes, select_id);
+    });
+    
+}
+
+function check_anon_access() {
+    anon_rpc_call('accesstest', [], function (data) {
+
+        if (data.error)
+            anon_access = false;
+        else {
+            anon_access = data.result;
+
+            if (anon_access)
+                $('#anon_wallet').css('display', 'block');
+        }
+
+    });
+}
+
+
+function set_anon_pw(pw,timeout)
+{
+
+    $('#anon_pw_error').empty();
+    $('#anon_pw_ok').empty();
+
+    anon_rpc_call('walletpassphrase', [pw,timeout], function (data) {
+        
+        if (data.error)
+            $('#anon_pw_error').html('wrong password');
+        else
+            $('#anon_pw_ok').html('OK');
+
+    });
+
+    
 }

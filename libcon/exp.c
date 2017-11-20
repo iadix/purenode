@@ -17,8 +17,7 @@
 
 extern int init_zfuncs();
 
-extern tpo_mod_file			*modz[64];
-extern size_t				n_modz;
+
 
 void init_funcs()
 {
@@ -39,6 +38,10 @@ void init_funcs()
 	sys_add_tpo_mod_func_name("libcon", "append_file", (void_func_ptr)append_file, 0);
 	sys_add_tpo_mod_func_name("libcon", "truncate_file", (void_func_ptr)truncate_file, 0);
 	sys_add_tpo_mod_func_name("libcon", "get_file", (void_func_ptr)get_file, 0);
+	sys_add_tpo_mod_func_name("libcon", "get_file_len", (void_func_ptr)get_file_len, 0);
+	sys_add_tpo_mod_func_name("libcon", "get_file_chunk", (void_func_ptr)get_file_chunk, 0);
+	
+
 	sys_add_tpo_mod_func_name("libcon", "get_file_to_memstream", (void_func_ptr)get_file_to_memstream, 0);
 	sys_add_tpo_mod_func_name("libcon", "del_file", (void_func_ptr)del_file, 0);
 	sys_add_tpo_mod_func_name("libcon", "move_file", (void_func_ptr)move_file, 0);

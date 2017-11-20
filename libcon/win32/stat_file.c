@@ -14,6 +14,7 @@
 #include <time.h>
 #include <direct.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <io.h>
 
 
@@ -272,7 +273,95 @@ OS_API_C_FUNC(int) get_file_to_memstream(const char *path, mem_stream *stream)
 
 	return (int)len;
 }
+
+
 OS_API_C_FUNC(int) get_file(const char *path, unsigned char **data, size_t *data_len)
+{
+	HANDLE hFile;
+	size_t len;
+
+	if (path == PTR_NULL)return 0;
+
+	if ((hFile = CreateFile(path, FILE_READ_DATA|FILE_READ_ATTRIBUTES, 0, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0)) == INVALID_HANDLE_VALUE)
+	{
+		struct string t;
+		clone_string		(&t, &exe_path);
+		cat_cstring_p		(&t, path);
+		hFile = CreateFile	(t.str, FILE_READ_DATA|FILE_READ_ATTRIBUTES, 0, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
+		free_string(&t);
+		if (hFile == INVALID_HANDLE_VALUE)
+		{
+			*data_len = 0;
+			return -1;
+		}
+	}
+	
+	(*data_len) = GetFileSize(hFile, NULL);
+
+	if ((*data_len)>0)
+	{
+		(*data) = malloc_c((*data_len) + 1);
+		if ((*data) != PTR_NULL)
+		{
+			SetFilePointer	(hFile, 0, 0, FILE_BEGIN);
+			ReadFile		(hFile, (*data), (*data_len), &len, PTR_NULL);
+			(*data)[*data_len] = 0;
+		}
+		else
+			len = 0;
+	}
+	else
+		len = 0;
+	CloseHandle	(hFile);
+
+	return (int)len;
+}
+
+
+OS_API_C_FUNC(int) get_file_chunk(const char *path, size_t ofset, unsigned char **data, size_t *data_len)
+{
+	HANDLE hFile;
+	size_t len,filesize;
+
+	if ((hFile = CreateFile(path, FILE_READ_DATA|FILE_READ_ATTRIBUTES, 0, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0)) == INVALID_HANDLE_VALUE)
+	{
+		struct string t;
+		clone_string		(&t, &exe_path);
+		cat_cstring_p		(&t, path);
+		hFile = CreateFile	(t.str, FILE_READ_DATA|FILE_READ_ATTRIBUTES, 0, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
+		free_string(&t);
+		if (hFile == INVALID_HANDLE_VALUE)
+		{
+			*data_len = 0;
+			return -1;
+		}
+	}
+	len		 = 0;
+	filesize = GetFileSize(hFile, NULL);
+
+	if (filesize>=(ofset+4))
+	{
+		unsigned int	chunk_size;
+		SetFilePointer	(hFile, ofset, 0, FILE_BEGIN);
+		ReadFile		(hFile, &chunk_size, 4, &len, PTR_NULL);
+
+		if (filesize>=(ofset+4+chunk_size))
+		{
+			(*data_len)	= chunk_size;
+			(*data)		= (unsigned char *)malloc_c( (*data_len) + 1);
+			if ((*data) != PTR_NULL)
+			{
+				ReadFile		(hFile, (*data), (*data_len), &len, PTR_NULL);
+				(*data)[*data_len] = 0;
+			}
+		}
+	}
+	CloseHandle	(hFile);
+	return (int)len;
+}
+
+
+OS_API_C_FUNC(int) get_file_len(const char *path, size_t size, unsigned char **data, size_t *data_len)
 {
 	HANDLE hFile;
 	size_t len;
@@ -295,6 +384,9 @@ OS_API_C_FUNC(int) get_file(const char *path, unsigned char **data, size_t *data
 
 	if ((*data_len)>0)
 	{
+		if((*data_len)>size)
+			(*data_len)=size;
+
 		(*data) = malloc_c((*data_len) + 1);
 		if ((*data) != PTR_NULL)
 		{
@@ -343,7 +435,7 @@ OS_API_C_FUNC(int) put_file(const char *path, void *data, size_t data_len)
 	HANDLE		hFile;
 	size_t		len;
 
-	if ((hFile = CreateFile(path, GENERIC_WRITE, 0, 0, CREATE_ALWAYS, FILE_FLAG_BACKUP_SEMANTICS, 0)) == INVALID_HANDLE_VALUE)
+	if ((hFile = CreateFile(path, GENERIC_WRITE, 0, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0)) == INVALID_HANDLE_VALUE)
 		return 0;
 
 	if (data_len > 0)
@@ -352,7 +444,7 @@ OS_API_C_FUNC(int) put_file(const char *path, void *data, size_t data_len)
 		len = 1;
 
 	CloseHandle(hFile);
-	return (len>0) ? 1 : 0;
+	return len;
 
 }
 OS_API_C_FUNC(int) append_file(const char *path, const void *data, size_t data_len)
@@ -361,11 +453,14 @@ OS_API_C_FUNC(int) append_file(const char *path, const void *data, size_t data_l
 	size_t		len;
 
 
-	if ((hFile = CreateFile(path, FILE_APPEND_DATA, 0, 0, OPEN_ALWAYS, FILE_FLAG_BACKUP_SEMANTICS, 0)) == INVALID_HANDLE_VALUE)
+	if ((hFile = CreateFile(path, FILE_APPEND_DATA, FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL)) == INVALID_HANDLE_VALUE)
 		return 0;
 
 	if (data_len > 0)
-		WriteFile(hFile, data, data_len, &len, PTR_NULL);
+	{
+		SetFilePointer		(hFile, 0, NULL, FILE_END);
+		WriteFile			(hFile, data, data_len, &len, PTR_NULL);
+	}
 	else
 		len = 1;
 
@@ -395,7 +490,7 @@ OS_API_C_FUNC(int) truncate_file(const char *path, size_t ofset, const void *dat
 		return 1;
 	}
 
-	if ((hFile = CreateFile(path, GENERIC_WRITE, 0, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0)) == INVALID_HANDLE_VALUE)
+	if ((hFile = CreateFile(path, GENERIC_WRITE, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0)) == INVALID_HANDLE_VALUE)
 		return 0;
 
 	if (SetFilePointer(hFile, ofset, 0, FILE_BEGIN) == INVALID_SET_FILE_POINTER)
@@ -404,13 +499,14 @@ OS_API_C_FUNC(int) truncate_file(const char *path, size_t ofset, const void *dat
 		return 0;
 	}
 
+	SetEndOfFile(hFile);
+
 	if ((data != PTR_NULL) && (data_len > 0))
 	{
 		WriteFile		(hFile, data, data_len, &len, PTR_NULL);
 	}
 	else
 	{
-		SetEndOfFile(hFile);
 		len = 1;
 	}
 
@@ -457,7 +553,14 @@ OS_API_C_FUNC(int) get_exe_path(struct string *outPath)
 	return 1;
 }
 
-
+OS_API_C_FUNC(int) set_data_dir(const struct string *path,const char *name)
+{
+	clone_string  (&home_path,path);	
+	cat_cstring_p (&home_path, name);
+	create_dir	  (home_path.str);
+	set_cwd		  (home_path.str);
+	return 1;
+}
 OS_API_C_FUNC(int) set_home_path(const char *name)
 {
 	init_string  (&home_path);
@@ -466,11 +569,11 @@ OS_API_C_FUNC(int) set_home_path(const char *name)
 	create_dir	 (home_path.str);
 	set_cwd		 (home_path.str);
 	return 1;
-
 }
+
 OS_API_C_FUNC(int) daemonize(const char *name)
 {
-	set_home_path(name);
+	/*set_home_path(name);*/
 	init_string (&log_file_name);
 	make_string	(&log_file_name,name);
 	cat_cstring	(&log_file_name,".log");
@@ -571,6 +674,7 @@ DWORD WINAPI thread_start(void *p)
 	func			= thread->func;
 
 	init_default_mem_area(4 * 1024 * 1024);
+	
 	ret = func			 (&thread->params, &thread->status);
 	free_mem_area		 (0);
 	
@@ -699,7 +803,7 @@ OS_API_C_FUNC(void) get_system_time_c(ctime_t *time)
 	 st.wDayOfWeek = 0;
 	 st.wHour = 0;
 	 st.wMinute = 0;
-	 st.wSecond = 0;
+	 st.wSecond = 1;
 	 st.wMilliseconds = 0;
 	 SystemTimeToFileTime(&st, &ft);
 	 return FileTime_to_POSIX(ft);
@@ -743,6 +847,11 @@ OS_API_C_FUNC(int) default_RNG(unsigned char *dest, size_t size)
 	  return 1;
 }
 
+
+OS_API_C_FUNC(void) strtod_c(const char *str,double *d)
+{
+	*d = strtod(str, NULL);
+}
 
 OS_API_C_FUNC(void) snooze_c(size_t n)
 {

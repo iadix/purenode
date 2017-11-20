@@ -1,10 +1,13 @@
-BITS 32]
+[BITS 32]
 section .text
 
 
 %ifdef ASM_EXPORT
 	export  _fetch_add_c
+	export  _mfence_c
+	export  _memset_asm
 	export  _memset
+	export  _memcpy_asm
 	export  _memcpy
 	export  _compare_z_exchange_c
 
@@ -21,8 +24,12 @@ section .text
 
 %ifdef PREFIX
 	global  _fetch_add_c
+	global  _mfence_c
+	global  _memset
 	global  _memset_asm
+	global  _memcpy
 	global  _memcpy_asm
+	
 	global  _compare_z_exchange_c
 
 	global _libc_sind
@@ -38,6 +45,7 @@ section .text
 
 %else
 	GLOBAL  fetch_add_c:function 
+	GLOBAL  mfence_c:function 
 	global  memset_asm:function
 	global  memcpy_asm:function
 	GLOBAL  compare_z_exchange_c:function
@@ -55,6 +63,7 @@ section .text
 
 
 %ifdef PREFIX
+_memcpy:
 _memcpy_asm:
 %else
 memcpy_asm:
@@ -70,15 +79,19 @@ memcpy_asm:
    mov esi, [ebp+12]   ; esi = src
    mov ecx, [ebp+16]   ; ecx = count
    rep movsb   ; for(i = 0; i < ecx; i++){edi[i]=esi[i]}
+
+   mov eax, [ebp+8]      ; eax = return value = dest
+  
    pop ecx
    pop edi
    pop esi
    pop ebp
-   mov eax, [ebp]      ; eax = return value = dest
+   
 ret
 
 
 %ifdef PREFIX
+_memset:
 _memset_asm:
 %else
 memset_asm:
@@ -99,6 +112,7 @@ memset_asm:
     mov [ebx], BYTE cl
     dec eax
     inc ebx
+  jmp .memset_loop
   .aftermemset_loop:
     mov eax, DWORD [ebp + 4]            ; Return destionation
     pop ecx ; Restore used registers
@@ -120,7 +134,7 @@ compare_z_exchange_c:
 	mov  edi,	[esp+12]
 	mov  ebx,	[esp+16]
 	
-	sfence
+	lfence
 	
 	;Compare EAX with r/m32. If equal, ZF is set and r32 is	 loaded into r/m32. Else, clear ZF and load r/m32 into AL
 	
@@ -133,6 +147,8 @@ compare_z_exchange_c:
 		xor eax,eax
 	 
 	_compare_z_exchange_c_done:
+
+	sfence
 	pop ebx
 	pop edi
 ret
@@ -142,15 +158,26 @@ _fetch_add_c:
 %else
 fetch_add_c:
 %endif
+    push ebp
+    mov  ebp, esp
 	push edi
-	mov  edi,	[esp+8]
-	mov  eax,	[esp+12]
-	lock xadd [edi]	, eax
+	mov  edi,	[ebp+8]
+	mov  eax,	[ebp+12]
+	lfence
+	lock xadd byte [edi]	, al
+	sfence
 	pop edi
+	pop ebp
 ret
 
 
-
+%ifdef PREFIX
+_mfence_c:
+%else
+mfence_c:
+%endif
+	;mfence
+ret
 
 ;----------------
 ;double

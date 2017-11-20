@@ -97,7 +97,6 @@ unsigned int tpo_mod_add_section		(tpo_mod_file *tpo_mod,mem_size img_ofset,mem_
 	size_t				new_size;
 	size_t				total_size;
 
-
 	n=0;
 	while(n<16)
 	{
@@ -105,49 +104,26 @@ unsigned int tpo_mod_add_section		(tpo_mod_file *tpo_mod,mem_size img_ofset,mem_
 		{
 			mem_ptr			new_sec_ptr;
 			
-			total_size				=	get_zone_size	(&tpo_mod->data_sections);
-			new_size				=	total_size+section_size;
-			
-			if(realloc_zone(&tpo_mod->data_sections,new_size)<0)
-			{
-				/*
-				log_message	(kernel_log_id,"could not realloc ");
-				writeptr	(get_zone_ptr(&tpo_mod->data_sections,0));
-				writestr	(" size : ");
-				writesz		(total_size,16);
-				writestr	(" newsize : ");
-				writesz		(new_size,16);
-				writestr	("\n");
-				*/
-				return 0xFFFFFFFF;
-				
-			}
-			else
-			{
+			total_size		=	get_zone_size	(&tpo_mod->data_sections);
 
-				/*
-				new_sec_ptr	=	get_zone_ptr(&tpo_mod->data_sections,0);
-				writestr("secion data realloc from ");
-				writeptr(cur_sec_ptr);
-				writestr("to ");
-				writeptr(new_sec_ptr);
-				writestr("(");
-				writeint(mem_sub(cur_sec_ptr,new_sec_ptr),16);
-				writestr(")");
-				writestr("\n");
-				*/
-			}
+			if(section_size > 0 )
+			{
+			  new_size		=	total_size+section_size;
 			
+			  if(realloc_zone(&tpo_mod->data_sections,new_size)<0)
+			  	return 0xFFFFFFFF;
+			}
+	
 			tpo_mod->sections[n].section_ptr		=	total_size;
 			tpo_mod->sections[n].section_img_ofset	=	img_ofset;
 			tpo_mod->sections[n].section_size		=	section_size;
 
-			new_sec_ptr								=  get_zone_ptr(&tpo_mod->data_sections,tpo_mod->sections[n].section_ptr);
-			memcpy_c								(new_sec_ptr,ptr,section_size);
-
-			
-			(*crc_data)=calc_crc32_c(new_sec_ptr,(unsigned int)section_size);
-
+			if(section_size > 0 )
+			{
+			  new_sec_ptr		=  get_zone_ptr(&tpo_mod->data_sections,tpo_mod->sections[n].section_ptr);
+			  memcpy_c			(new_sec_ptr,ptr,section_size);
+			  (*crc_data)=calc_crc32_c(new_sec_ptr,(unsigned int)section_size);
+			}
 			return n;
 		}
 		n++;
@@ -533,76 +509,48 @@ OS_API_C_FUNC(void) register_tpo_exports(tpo_mod_file *tpo_mod,const char *mod_n
 OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_file,unsigned int imp_func_addr)
 {
 	char			mod_name[128];
-
-	
+	char			modh[16];
 	unsigned int	nsecs;
-	mem_ptr			section_remaps[16];
-	unsigned int	section_remaps_n[16];
+	mem_ptr			section_remaps[16]={PTR_NULL};
+	unsigned int	section_remaps_n[16]= {0};
 	unsigned int	n;
 	size_t			file_start;
 	size_t			file_ofset;
 	
 	
-
 	file_start	=	file_stream->current_ptr;
 
 	mem_stream_read	(file_stream,mod_name,128);
 	
-
-	
-	if ((!strncmp_c(mod_name, "libblock", 8)) || (!strncmp_c(mod_name, "libprotocol", 11)))
+	if( (!strncmp_c(mod_name,"lib",3)) && (strncmp_c(mod_name, "libcon", 6)) && (strncmp_c(mod_name, "libbase", 7)) )
 		strcpy_cs(tpo_file->name, 64, &mod_name[3]);
 	else
 		strcpy_cs(tpo_file->name, 64, mod_name);
-
-	
+		
 	tpo_file->string_buffer_len			=	mem_stream_read_32(file_stream);
 	tpo_file->string_buffer_ref.zone	= PTR_NULL;
-
-	/*
-	kernel_log	(kernel_log_id,"loading tpo mod '");
-	writestr	(mod_name);
-	writestr	("' ");
-	writeptr	(get_zone_ptr(&file_stream->data,file_stream->current_ptr));
-	writestr	(" ");
-	writeint	(tpo_file->string_buffer_len,10);
-	writestr	("\n");
-	*/
-
 
 	allocate_new_zone		(0,tpo_file->string_buffer_len	,&tpo_file->string_buffer_ref);
 	mem_stream_read			(file_stream,get_zone_ptr(&tpo_file->string_buffer_ref,0),tpo_file->string_buffer_len);
 	debug=0;
-	
-	/*
-	if(!strcmp_c(mod_name,"hid"))
-		debug=3;
 
-
-	if(!strcmp_c(mod_name,"bus_manager"))
-		debug=4;	
-	*/		
-	
 	tpo_file->deco_type	=	mem_stream_read_32(file_stream);
+
 	
 
 	tpo_file->name_hash	=	MOD_HASH(tpo_file->name);
 	tpo_file->mod_idx	=	tpo_add_mod_c(tpo_file->name_hash,tpo_file->deco_type,mem_to_uint(get_zone_ptr(&tpo_file->string_buffer_ref,0)));
-	
-	/*
-	kernel_log	(kernel_log_id,"new mod added '");
-	writestr	(mod_name);
-	writestr	("' ");
-	writeint	(tpo_file->mod_idx,10);
-	writestr	(" ");
-	writeint	(tpo_file->name_hash,16);
-	writestr	(" ");
-	writeint	(tpo_file->deco_type,10);
-	writestr	("\n");
-	*/
-
-
 	nsecs				=	mem_stream_read_32(file_stream);
+
+
+	uitoa_s(tpo_file->name_hash, modh, 16, 16);
+
+	log_output("load mod name ");
+	log_output(tpo_file->name);
+	log_output("[");
+	log_output(modh);
+	log_output("]\n");
+
 
 	n=0;
 	while(n<nsecs)
@@ -616,7 +564,6 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 		unsigned int	num_remap;
 		unsigned int	sec_idx;
 		unsigned int	crc_data;
-		unsigned int	crc_ndis_sys,crc_hal_sys;
 		unsigned int	crc_file;
 		unsigned int	n_exps,n_imps;
 		size_t			file_pos;
@@ -636,41 +583,16 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 		
 		file_ofset		=	file_stream->current_ptr-file_start;
 		file_pos		=	file_ofset;
-
-		
 		
 		if((file_pos&0x0000000F)!=0)
 			file_stream->current_ptr+= (((file_pos&0xFFFFFFF0)+16)-file_pos);
-
+			
 		sec_data_ptr	=	get_zone_ptr		(&file_stream->data,file_stream->current_ptr+file_stream->buf_ofs);
+		
 		file_ofset		=	file_stream->current_ptr-file_start;
  		sec_idx			=	tpo_mod_add_section	(tpo_file,file_ofset,sec_data_ptr,sec_data_len,&crc_data);
 
-		
-		/*
-		if(crc_data!=crc_file)
-		{
-			kernel_log	(kernel_log_id,"crc do not match section data [");
-			writeint	(sec_idx,10);
-			writestr	("]");
-
-			writestr	("section start : ");
-			writesz		(file_ofset,16);
-			writestr	("section size : ");
-			writesz		(sec_data_len,16);
-			writestr	("\n");
-		}
-			
-		if(sec_idx==0xFFFFFFFF)	
-			kernel_log	(kernel_log_id,"could not load tpo section \n");
-
-		*/
-
-
 		mem_stream_skip			(file_stream,sec_data_len);
-
-		crc_ndis_sys	=	calc_crc32_c("NDIS",64);
-		crc_hal_sys		=	calc_crc32_c("HAL",64);
 
 		sec_imps_n		=	mem_stream_read_32(file_stream);
 		n_imps			=	0;
@@ -694,9 +616,18 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 			unsigned int			imp_ofs,str_n;
 			struct kern_mod_fn_t	*func_ptr;
 
+			if (n_imps == 47)
+			{
+				int bp = 1;
+
+				bp = 2;
+
+			}
+
+
 			memset_c(dll_name, 0, 64);
 			memset_c(dll_imp_name, 0, 64);
-			memset_c(sym_name, 0, 64);
+			memset_c(sym_name, 0, 256);
 
 			if(sec_flags&0x00000001)
 			{
@@ -711,19 +642,11 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 				ofset		=	mem_stream_read_32		(file_stream);
 				strcpy_cs(dll_name, 64, get_zone_ptr(&tpo_file->string_buffer_ref, ofset));
 
-				if (!strcmp_c(dll_name, "libcon_d"))
-					strcpy_cs(dll_name, 64, "libcon");
-
-				if (!strncmp_c(dll_name, "libbase", 7))
-					strcpy_cs(dll_name, 64, "libbase");
-
-
 				dll_crc		=	calc_crc32_c(dll_name,64);
 				ofset		=	mem_stream_read_32		(file_stream);
 
 				strcpy_cs		(sym_name,256,get_zone_ptr(&tpo_file->string_buffer_ref,ofset));
-				/*fn_crc		=	calc_crc32_c(sym_name,256);*/
-
+	
 				imp_ofs		=	0;
 				func_ptr	=	uint_to_mem(0xFFFFFFFF);
 
@@ -737,11 +660,6 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 						imp_ofs++;
 					}
 					dll_imp_name[str_n]	=	0;
-
-					if ((!strncmp_c(dll_imp_name, "libblock", 8)) || (!strncmp_c(dll_imp_name, "libprotocol", 11)))
-						strcpy_cs(dll_imp_name, 64, &dll_imp_name[3]);
-					else
-						strcpy_cs(dll_imp_name, 64, dll_imp_name);
 
 					dll_crc		=	calc_crc32_c(dll_imp_name,64);
 					func_ptr = tpo_get_fn_entry_name_c(tpo_file->mod_idx, dll_crc, ofset, tpo_file->deco_type);
@@ -848,6 +766,8 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 
 		n_rmp		=	0;
 		remap_ptr	=	(unsigned int *)section_remaps[n];
+	
+		if(remap_ptr == PTR_NULL){ n++; continue;}
 
 		while(n_rmp<section_remaps_n[n])
 		{
@@ -856,7 +776,7 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 				
 			baseAddr=uint_to_mem(remap_ptr[n_rmp*2+0]);
 			offset	=remap_ptr[n_rmp*2+1];
-
+			
 			if(!tpo_mod_write_reloc		(tpo_file,n,baseAddr,offset))
 			{
 				console_print("error in hard remap \n");
@@ -1076,6 +996,12 @@ OS_API_C_FUNC(int) load_module(const char *file, const char *mod_name, tpo_mod_f
 	register_tpo_exports(mod, mod_name);
 	release_zone_ref(&tpo_file_data);
 	free_c(data);
+	
+	log_output("register new mod ");
+	log_output(mod_name);
+	log_output("\n");
+	
+
 
 	if (n_modz<32)
 		modz[n_modz++] = mod;
@@ -1100,16 +1026,16 @@ module_rwproc_ptr get_sess_account;
 
 module_rproc_ptr  queue_verack_message, queue_getblock_hdrs_message, queue_getaddr_message, queue_version_message, node_is_next_block, connect_peer_node, node_get_script_modules, node_get_script_msg_handlers, node_get_mem_pool, node_del_txs_from_mempool, node_add_tx_to_mempool, queue_mempool_message;
 module_rwproc_ptr make_genesis_block, node_add_block_header;
-module_proc_ptr	  node_load_block_indexes, node_load_last_blks, node_check_chain;
+module_proc_ptr	  node_load_block_indexes, node_load_last_blks, node_check_chain, node_del_btree_from_mempool;
 
-module_rproc_ptr  queue_ping_message, node_has_service_module;
-module_rwproc_ptr queue_pong_message, queue_getdata_message, queue_inv_message;
+module_rproc_ptr  queue_ping_message, node_has_service_module, node_get_root_app, node_get_root_app_addr, node_get_root_app_fee, node_get_mempool_hashes, node_get_apps, node_get_types_def, node_add_tmp_file, get_nscene;
+module_rwproc_ptr queue_pong_message, queue_getdata_message, queue_inv_message, node_get_app, node_get_app_types_def, node_get_app_objs, check_tx_files, get_scene_list;
 
 // set_block_hash add_money_supply node_truncate_chain_to sub_money_supply remove_stored_block store_block block_has_pow set_next_check 
 //node_add_block_header accept_block compute_last_pow_diff 
 
 //  
-OS_API_C_FUNC(int) set_dbg_ptr2(module_rwproc_ptr  a, module_rwproc_ptr b, module_rwproc_ptr  c, module_rwproc_ptr d, module_rwproc_ptr e, module_rproc_ptr f, module_rwproc_ptr g, module_rproc_ptr h, module_rproc_ptr i, module_rproc_ptr j, module_rproc_ptr k, module_rproc_ptr l, module_rproc_ptr m, module_rproc_ptr n, module_rproc_ptr o, module_rwproc_ptr p, module_rwproc_ptr q, module_rproc_ptr r, module_rproc_ptr s)
+OS_API_C_FUNC(int) set_dbg_ptr2(module_rwproc_ptr  a, module_rwproc_ptr b, module_rwproc_ptr  c, module_rwproc_ptr d, module_rwproc_ptr e, module_rproc_ptr f, module_rwproc_ptr g, module_rproc_ptr h, module_rproc_ptr i, module_rproc_ptr j, module_rproc_ptr k, module_rproc_ptr l, module_rproc_ptr m, module_rproc_ptr n, module_rproc_ptr o, module_rwproc_ptr p, module_rwproc_ptr q, module_rproc_ptr r, module_rproc_ptr s, module_rproc_ptr t, module_rproc_ptr u, module_rproc_ptr v, module_rproc_ptr w, module_rproc_ptr x, module_rwproc_ptr y, module_rwproc_ptr z, module_rproc_ptr zz, module_rwproc_ptr zz2, module_rproc_ptr  zz3, module_rwproc_ptr  zz4, module_rwproc_ptr zz5, module_rproc_ptr zz6, module_proc_ptr zz7)
 {
 	node_add_block_header = a;
 	accept_block = b;
@@ -1130,6 +1056,21 @@ OS_API_C_FUNC(int) set_dbg_ptr2(module_rwproc_ptr  a, module_rwproc_ptr b, modul
 	get_sess_account = q;
 	node_has_service_module = r;
 	queue_getblock_hdrs_message = s;
+
+	node_get_root_app = t;
+	node_get_root_app_addr=u;
+	node_get_mempool_hashes = v;
+	node_get_root_app_fee = w;
+	node_get_apps = x;
+	node_get_app = y;
+	node_get_app_types_def = z;
+	node_get_types_def = zz;
+	node_get_app_objs = zz2;
+	node_add_tmp_file = zz3;
+	check_tx_files = zz4;
+	get_scene_list = zz5;
+	get_nscene = zz6;
+	node_del_btree_from_mempool = zz7;
 	return 1;
 }
 
@@ -1223,11 +1164,19 @@ OS_API_C_FUNC(int) execute_script_mod_rwcall(tpo_mod_file		*tpo_mod, const char 
 		return node_list_addrs(input, output);
 	else if (!strcmp_c(method, "get_sess_account"))
 		return get_sess_account(input, output);
+	else if (!strcmp_c(method, "queue_inv_message"))
+		return 	queue_inv_message(input, output);
+	else if (!strcmp_c(method, "node_get_app"))
+		return 	node_get_app(input, output);
+	else if (!strcmp_c(method, "node_get_app_types_def"))
+		return 	node_get_app_types_def(input, output);
+	else if (!strcmp_c(method, "node_get_app_objs"))
+		return 	node_get_app_objs(input, output);
+	else if (!strcmp_c(method, "check_tx_files"))
+		return 	check_tx_files(input, output);
+	else if (!strcmp_c(method, "get_scene_list"))
+		return 	get_scene_list(input, output);
 
-	
-
-	
-		
 
 	return -1;
 #endif
@@ -1320,9 +1269,22 @@ OS_API_C_FUNC(int) execute_script_mod_rcall(tpo_mod_file		*tpo_mod, const char *
 		return 	node_has_service_module(input); 
 	else if (!strcmp_c(method, "queue_getblock_hdrs_message"))
 		return 	queue_getblock_hdrs_message(input);
-
-	
-
+	else if (!strcmp_c(method, "node_get_root_app"))
+		return 	node_get_root_app(input);
+	else if (!strcmp_c(method, "node_get_root_app_addr"))
+		return 	node_get_root_app_addr(input);
+	else if (!strcmp_c(method, "node_get_mempool_hashes"))
+		return 	node_get_mempool_hashes(input);
+	else if (!strcmp_c(method, "node_get_root_app_fee"))
+		return 	node_get_root_app_fee(input);
+	else if (!strcmp_c(method, "node_get_apps"))
+		return 	node_get_apps(input);
+	else if (!strcmp_c(method, "node_get_types_def"))
+		return 	node_get_types_def(input);
+	else if (!strcmp_c(method, "node_add_tmp_file"))
+		return 	node_add_tmp_file(input);
+	else if (!strcmp_c(method, "get_nscene"))
+		return 	get_nscene(input);
 	
 	return -1;
 
@@ -1353,6 +1315,11 @@ OS_API_C_FUNC(int) execute_script_mod_call(tpo_mod_file		*tpo_mod, const char *m
 
 	if (!strcmp_c(method, "node_load_last_blks"))
 		return node_load_last_blks();
+
+	if (!strcmp_c(method, "node_del_btree_from_mempool"))
+		return node_del_btree_from_mempool();
+
+	
 
 	return -1;
 #else

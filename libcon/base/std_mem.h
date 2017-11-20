@@ -53,9 +53,14 @@ LIBC_API double			C_API_FUNC exp_c(double a);
 LIBC_API void			C_API_FUNC big128_mul(unsigned int x, struct big64 y, struct big128 *out);
 
 
-LIBC_API unsigned int	ASM_API_FUNC		compare_z_exchange_c(unsigned int *data, unsigned int new_value);
-LIBC_API unsigned int	ASM_API_FUNC		fetch_add_c(unsigned int *data, int new_value);
+LIBC_API unsigned int	ASM_API_FUNC		compare_z_exchange_c(volatile unsigned int *data, unsigned int new_value);
+LIBC_API char			ASM_API_FUNC		fetch_add_c(volatile unsigned int *data, volatile char new_value);
+LIBC_API char			ASM_API_FUNC		mfence_c();
+
+LIBC_API unsigned int * ASM_API_FUNC		get_CRC_table();
+
 LIBC_API unsigned int	ASM_API_FUNC		calc_crc32_c(const char *, size_t);
+
 
 
 #ifdef __cplusplus

@@ -2,11 +2,9 @@
 
 [BITS 32]
 
-section .data
 
-addr_crc_str: dd 0
-len_crc_str	: dd 0
-crc_res		: dd 0
+
+section .data
 
 CRC32_Table:
 dd 0x00000000,0x77073096,0xee0e612c,0x990951ba,0x076dc419,0x706af48f,0xe963a535,
@@ -58,10 +56,10 @@ sys_num_tpo_mod_func_loaded		:dd 0
 ret_val:dd 0
 
 align 16
-sys_tpo_mod_loaded				:times 16 dd 0
-sys_tpo_mod_exp_funcs			:times 16*256*16 db 00
+sys_tpo_mod_loaded				:times 64 dd 0
+sys_tpo_mod_exp_funcs			:times 64*256*16 db 00
 sys_tpo_mod_exp_funcs_ptr		:dd sys_tpo_mod_exp_funcs
-sys_tpo_mod_sections			:times (64*16) dq 0      ; enough room for 64 modules (64 * 16 sections/modules * 8 bytes per section)
+sys_tpo_mod_sections			:times (256*16) dq 0      ; enough room for 64 modules (64 * 16 sections/modules * 8 bytes per section)
 
 ;general functions api
 
@@ -165,6 +163,7 @@ section .text
 	export  _tpo_get_fn_entry_name_c
 	export  _tpo_get_fn_entry_hash_c
 	export  _tpo_get_fn_entry_idx_c
+	export  _get_CRC_table
 %endif
 
 %ifdef PREFIX
@@ -184,6 +183,7 @@ section .text
 	global  _tpo_calc_imp_func_hash_name_c
 	global  _calc_crc32_c
 	global  _sys_add_tpo_mod_func_name
+	global  _get_CRC_table
 
 %else
 	GLOBAL tpo_mod_imp_func_addr:function
@@ -204,16 +204,15 @@ section .text
 	global sys_add_tpo_mod_func_name:function
 %endif
 
-
+_get_CRC_table:
+	lea eax, [CRC32_Table]
+ret
 
 calc_crc32:
 	; load arguments into registers
     
     lea ebx, [CRC32_Table]	; CRC-table
     
-    ;mov esi, [esp+04]		string
-    ;mov ecx, [esp+8]		string length
-		
 	; initialize
 	mov eax, 0xFFFFFFFF
 	xor edx, edx
@@ -230,11 +229,35 @@ calc_crc32:
 			inc esi
 		no_crc_incr:
 	
-	loop calcbyte
+	dec ecx
+	jnz calcbyte
 	; clean up and return
 ret
 
 
+%ifdef PREFIX
+_calc_crc32_c:
+%else
+calc_crc32_c:
+%endif
+  
+  push ebp
+  mov  ebp,esp
+
+  pushad
+
+  mov esi							,	[ebp+8]
+  mov ecx							,	[ebp+12]
+  
+  call calc_crc32
+  mov [esp+28]						,	eax
+  
+  popad
+
+  mov esp,ebp
+  pop ebp
+  
+ret
 
 ;-------------------------------------------------------
 ;in  :[sys_tpo_mod_hash] mod hash to find
@@ -971,29 +994,6 @@ sys_get_tpo_mod_func_name:
   mov		eax,[esi+4]						;return function address in eax
 ret
 
-%ifdef PREFIX
-_calc_crc32_c:
-%else
-calc_crc32_c:
-%endif
-
-  mov eax							,	[esp+4]
-  mov [addr_crc_str]				,	eax
-  mov eax							,	[esp+8]
-  mov [len_crc_str]					,   eax
-  
-  pusha
-  
-  mov esi							,	[addr_crc_str]
-  mov ecx							,	[len_crc_str]
-  call calc_crc32
-  mov [crc_res]						,	eax
-  
-  popa
-  
-  mov eax							,[crc_res]
-
-ret
 
 
 ;------------------------------------------------------------------------------------------------------------------------------------------------

@@ -1,12 +1,13 @@
-#define MAX_MEM_AREAS 4
-#define MAX_MEM_ZONES 1024*32
+#define MAX_MEM_AREAS  16
+#define MAX_MEM_ZONES  1024*64
+#define MAX_FREE_ZONES 1024*8
 #define PTR_NULL	(void *)0x00000000L
 #define PTR_INVALID (void *)0xDEADBEEFLL
 #define PTR_FF		(void *)0xFFFFFFFFLL
 
 typedef struct
 {
-	mem_ptr		 zone;
+	volatile mem_ptr zone;
 }mem_zone_ref;
 
 typedef struct
@@ -48,7 +49,7 @@ LIBC_API unsigned int	C_API_FUNC allocate_new_zone		(unsigned int area_id,	mem_s
 LIBC_API unsigned int	C_API_FUNC allocate_new_empty_zone	(unsigned int area_id,mem_zone_ref *zone_ref);
 LIBC_API int			C_API_FUNC expand_zone				(mem_zone_ref *ref,mem_size new_size);
 LIBC_API int 			C_API_FUNC realloc_zone				(mem_zone_ref *zone_ref,mem_size new_size);
-
+LIBC_API void 			C_API_FUNC empty_trash				();
 		
 LIBC_API void			C_API_FUNC copy_zone_ref			(mem_zone_ref_ptr dest_zone_ref,mem_zone_ref_const_ptr zone_ref);
 LIBC_API void			C_API_FUNC copy_zone_const_ref		(mem_zone_const_ref_ptr dest_zone_ref,mem_zone_const_ref_ptr zone_ref);
@@ -66,7 +67,7 @@ LIBC_API unsigned int	C_API_FUNC get_zone_numref			(mem_zone_ref *zone_ref);
 
 
 LIBC_API void			C_API_FUNC swap_zone_ref					(mem_zone_ref_ptr dest_zone_ref, mem_zone_ref_ptr src_zone_ref);
-LIBC_API int			C_API_FUNC align_zone_memory				(mem_zone_ref *zone_ref, mem_size align);
+//LIBC_API int			C_API_FUNC align_zone_memory				(mem_zone_ref *zone_ref, mem_size align);
 
 
 LIBC_API int			C_API_FUNC set_mem_area_id					(unsigned int area_id);

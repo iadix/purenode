@@ -20,7 +20,7 @@ LIBC_API struct string		*	C_API_FUNC get_con_lastline(struct con *Con);
 LIBC_API const struct host_def*	C_API_FUNC get_con_hostd(struct con *Con);
 LIBC_API int					C_API_FUNC get_con_addr(struct con *mycon, char *addr, size_t len);
 LIBC_API int					C_API_FUNC get_con_saddr(struct con *mycon, ipv4_t saddr);
-
+LIBC_API int					C_API_FUNC get_con_ip(struct con *Con, ipv4_t ip);
 
 LIBC_API int					C_API_FUNC con_move_data(struct con *Con, struct string *data, size_t mov_len);
 LIBC_API int					C_API_FUNC con_consume_data(struct con *Con, size_t mov_len);

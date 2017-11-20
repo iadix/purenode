@@ -79,13 +79,14 @@
                         var pubkey = $('#dostake_' + staking.dstaddr).attr('pubkey');
                         rpc_call('getstaketx', [staking.txid, staking.vout, txtime, pubkey], function (staketx) {
                             var txh, txa, secret;
-                            if (staketx.error == 0) {
+                            if (!staketx.error) {
                                 txh = staketx.result.txhash;
+                                bh = staketx.result.newblockhash;
                                 txa = staketx.result.addr;
 
                                 rpc_call('getprivaddr', [accountName, txa], function (keyData) {
 
-                                    if (keyData.error == 0) {
+                                    if (!keyData.error) {
                                         secret = $('#secret_' + txa).val();
                                         var DecHexkey = strtoHexString(un_enc(secret, keyData.result.privkey.slice(0, 64)));
                                         var keys = ec.keyPair({ priv: DecHexkey, privEnc: 'hex' });
@@ -95,7 +96,7 @@
                                         // Export DER encoded signature in Array
                                         //var derSign = signature.toDER('hex');
                                         var derSign = signature.toLowS();
-                                        rpc_call('signstaketx', [txh, derSign, pubk], function (txsign) {
+                                        rpc_call('signstaketx', [bh, derSign, pubk], function (txsign) {
                                             var hash = txsign.result.newblockhash;
                                             var blocksignature = keys.sign(hash, 'hex');
                                             //var derSign = blocksignature.toDER('hex');

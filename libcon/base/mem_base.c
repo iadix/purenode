@@ -5,6 +5,7 @@
 #include "mem_base.h"
 #include "std_str.h"
 #include "strs.h"
+#include <bin_tree.h>
 
 #define KERNEL_API C_EXPORT
 #include "mem_stream.h"
@@ -17,9 +18,13 @@
 #include <stdlib.h>
 
 
+
+
  LIBC_API void	*	C_API_FUNC kernel_memory_map_c				(unsigned int size);
  LIBC_API void		C_API_FUNC kernel_memory_free_c				(mem_ptr ptr);
   extern void init_exit();
+
+  extern unsigned int *CRC32_Table;
 			
 typedef struct
 {
@@ -29,11 +34,11 @@ typedef struct
 
 typedef struct
 {
-	mem_zone_desc		mem;
-	unsigned int		area_id;
-	unsigned int		n_refs;
-	unsigned int		time;
-	zone_free_func_ptr  free_func;
+	mem_zone_desc			mem;
+	unsigned int			area_id;
+	volatile unsigned int	n_refs;
+	unsigned int			time;
+	zone_free_func_ptr		free_func;
 }mem_zone;
 
 typedef			mem_zone			*mem_zone_ptr;
@@ -47,9 +52,9 @@ typedef struct
 	mem_ptr					lock_sema;
 	mem_ptr					area_start;
 	mem_ptr					area_end;
-	mem_zone_desc			zones_free[MAX_MEM_ZONES];
+	mem_zone_desc			zones_free[MAX_FREE_ZONES];
 	mem_zone_ptr			zones_buffer;
-	
+	mem_zone_ptr			trash[256];
 
 }mem_area;
 
@@ -85,6 +90,8 @@ C_EXPORT mem_ptr __cdecl memcpy(mem_ptr dst_ptr,const_mem_ptr src_ptr,mem_size s
 	
 }
 */
+
+
 OS_API_C_FUNC(mem_ptr) memset_c(mem_ptr ptr,unsigned char v,mem_size size)
 {
 	unsigned char *cptr=ptr;
@@ -347,17 +354,21 @@ int check_zone	(const mem_zone *zone)
 
 OS_API_C_FUNC(mem_ptr)	get_zone_ptr(mem_zone_ref_const_ptr ref, mem_size ofset)
 {
-	if(ref==PTR_NULL) return PTR_INVALID;
-	if(ref->zone==PTR_NULL)return PTR_INVALID;
-	if (ref->zone == PTR_INVALID)return PTR_INVALID;
-	if (ref->zone == uint_to_mem(0xDEF0DEF0))return PTR_INVALID;
-	if((((mem_zone *)(ref->zone))->mem.size)==0)
+	
+	if (ref == PTR_NULL)
+		return PTR_INVALID;
+	if (ref->zone == PTR_INVALID)
+		return PTR_INVALID;
+	if (ref->zone == uint_to_mem(0xDEF0DEF0))
+		return PTR_INVALID;
+
+	if ((ref->zone == PTR_NULL) || (((mem_zone *)(ref->zone))->mem.size) == 0)
 	{
 		return PTR_INVALID;
 	}
 
-	if(ofset==0xFFFFFFFF)return mem_add( ((mem_zone *)(ref->zone))->mem.ptr,((mem_zone *)(ref->zone))->mem.size);
-	if (ofset >= ((mem_zone *)(ref->zone))->mem.size)
+	if (ofset == 0xFFFFFFFF)return mem_add(((mem_zone *)(ref->zone))->mem.ptr, ((mem_zone *)(ref->zone))->mem.size);
+	if ((ref->zone == PTR_NULL) || (ofset >= ((mem_zone *)(ref->zone))->mem.size))
 	{
 		return PTR_INVALID;
 	}
@@ -365,11 +376,11 @@ OS_API_C_FUNC(mem_ptr)	get_zone_ptr(mem_zone_ref_const_ptr ref, mem_size ofset)
 	/*
 	if(!check_zone(ref->zone))
 	{
-		return PTR_INVALID;
+	return PTR_INVALID;
 	}
 	*/
 
-	return mem_add( ((mem_zone *)(ref->zone))->mem.ptr,ofset);
+	return mem_add(((mem_zone *)(ref->zone))->mem.ptr, ofset);
 }
 
 /*
@@ -422,8 +433,10 @@ OS_API_C_FUNC(mem_size) get_zone_const_size(mem_zone_const_ref_ptr ref)
 */
 OS_API_C_FUNC(mem_size) get_zone_size(mem_zone_ref_const_ptr ref)
 {
-	if(ref==PTR_NULL) return 0;
-	if(ref->zone==PTR_NULL) return 0;
+	if(ref==PTR_NULL) 
+		return 0;
+	if(ref->zone==PTR_NULL) 
+		return 0;
 
 	return ((mem_zone *)(ref->zone))->mem.size;
 }
@@ -520,6 +533,12 @@ OS_API_C_FUNC(void) init_mem_system()
 	sys_add_tpo_mod_func_name("libcon", "memmove_c",(void_func_ptr)memmove_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "memchr_c",(void_func_ptr)memchr_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "memchr_32_c",(void_func_ptr)memchr_32_c, 0);
+
+	sys_add_tpo_mod_func_name("libcon", "empty_trash", (void_func_ptr)empty_trash, 0);
+	
+
+	
+
 	sys_add_tpo_mod_func_name("libcon", "store_bigendian",(void_func_ptr)store_bigendian, 0);
 	sys_add_tpo_mod_func_name("libcon", "load_bigendian",(void_func_ptr)load_bigendian, 0);
 
@@ -567,6 +586,8 @@ OS_API_C_FUNC(void) init_mem_system()
 	sys_add_tpo_mod_func_name("libcon", "strrpos_c", (void_func_ptr)strrpos_c, 0);
 	
 	sys_add_tpo_mod_func_name("libcon", "strtol_c",(void_func_ptr)strtol_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "strtod_c",(void_func_ptr)strtod_c, 0);
+	
 
 
 	sys_add_tpo_mod_func_name("libcon", "strtoll_c",(void_func_ptr)strtoll_c, 0);
@@ -577,8 +598,13 @@ OS_API_C_FUNC(void) init_mem_system()
 	sys_add_tpo_mod_func_name("libcon", "uitoa_s",(void_func_ptr)uitoa_s, 0);
 	sys_add_tpo_mod_func_name("libcon", "luitoa_s",(void_func_ptr)luitoa_s, 0);
 	sys_add_tpo_mod_func_name("libcon", "itoa_s",(void_func_ptr)itoa_s, 0);
+	sys_add_tpo_mod_func_name("libcon", "litoa_s", (void_func_ptr)litoa_s, 0);
+	
 	sys_add_tpo_mod_func_name("libcon", "isalpha_c",(void_func_ptr)isalpha_c, 0);
 	sys_add_tpo_mod_func_name("libcon", "isdigit_c",(void_func_ptr)isdigit_c, 0);
+	sys_add_tpo_mod_func_name("libcon", "isxdigit_c", (void_func_ptr)isxdigit_c, 0);
+
+	
 	sys_add_tpo_mod_func_name("libcon", "dtoa_c",(void_func_ptr)dtoa_c, 0);
 
 	sys_add_tpo_mod_func_name("libcon", "muldiv64",(void_func_ptr)muldiv64, 0);
@@ -651,6 +677,10 @@ OS_API_C_FUNC(void) init_mem_system()
 
 	sys_add_tpo_mod_func_name("libcon", "get_exe_path", (void_func_ptr)get_exe_path, 0);
 
+	sys_add_tpo_mod_func_name("libcon", "bt_insert", (void_func_ptr)bt_insert, 0);
+	sys_add_tpo_mod_func_name("libcon", "bt_search", (void_func_ptr)bt_search, 0);
+	sys_add_tpo_mod_func_name("libcon", "bt_deltree", (void_func_ptr)bt_deltree, 0);
+
 	
 
 	
@@ -658,7 +688,7 @@ OS_API_C_FUNC(void) init_mem_system()
 	
 #endif
 
-	//init_exit();
+	/*init_exit();*/
 	
 	init_funcs();
 
@@ -723,7 +753,9 @@ OS_API_C_FUNC(unsigned int) init_new_mem_area(mem_ptr phys_start,mem_ptr phys_en
 			__global_mem_areas[n].type				=type;
 			__global_mem_areas[n].zones_buffer		=&__global_mem_zones[MAX_MEM_ZONES*n];
 			__global_mem_areas[n].lock_sema			=PTR_NULL;
-			memset_c	(__global_mem_areas[n].zones_free		,0,MAX_MEM_ZONES*sizeof(mem_zone_desc));
+			memset_c	(__global_mem_areas[n].zones_free		,0,MAX_FREE_ZONES*sizeof(mem_zone_desc));
+
+			memset_c(__global_mem_areas[n].trash, 0, sizeof(mem_zone_ptr) * 256);
 
 			__global_mem_areas[n].zones_free[0].ptr		=	get_next_aligned_ptr(__global_mem_areas[n].area_start);
 			__global_mem_areas[n].zones_free[0].size	=	get_aligned_size	( __global_mem_areas[n].area_start, __global_mem_areas[n].area_end);
@@ -779,7 +811,7 @@ OS_API_C_FUNC(unsigned int) free_mem_area(unsigned int area_id)
 
 	kernel_memory_free_c(area_ptr->area_start);
 	memset_c	(area_ptr ->zones_buffer,0,MAX_MEM_ZONES*sizeof(mem_zone_desc));
-	memset_c	(area_ptr ->zones_free,0, MAX_MEM_ZONES*sizeof(mem_zone_desc));
+	memset_c(area_ptr->zones_free, 0, MAX_FREE_ZONES*sizeof(mem_zone_desc));
 	memset_c	(area_ptr, 0, sizeof(mem_area));
 
 	area_lock = 0;
@@ -980,7 +1012,7 @@ int find_free_zone		(const mem_area *area,mem_size size,mem_zone_desc	*desc)
 			}
 		}
 		n++;
-		if(n>=MAX_MEM_ZONES)return 0;
+		if (n >= MAX_FREE_ZONES)return 0;
 	}
 	desc->ptr	=	PTR_NULL;
 	desc->size	=	0;
@@ -1023,7 +1055,7 @@ int allocate_zone(mem_area *area,const mem_zone_desc *desc)
 			}
 			else
 			{
-				while(area->zones_free[n].ptr	!=	PTR_NULL)
+				while(area->zones_free[n+1].ptr	!=	PTR_NULL)
 				{
 					area->zones_free[n].ptr		=area->zones_free[n+1].ptr;
 					area->zones_free[n].size	=area->zones_free[n+1].size;
@@ -1040,24 +1072,61 @@ int allocate_zone(mem_area *area,const mem_zone_desc *desc)
 
 	return 0;
 }
-
-
-void	free_zone_area		(unsigned int area_id,mem_zone_desc *mem)
+void add_trashed_zone(mem_zone_ptr zone)
 {
+	unsigned int n = 0;
+	mem_area *area;
+
+	area = get_area(zone->area_id);
+	if (area == PTR_NULL)return;
+
+	while ((n < 256) && (!compare_z_exchange_c((unsigned int *)(&area->trash[n]), mem_to_uint(zone))))
+	{
+		n++;
+	}
+}
+
+int	free_zone_area		(unsigned int area_id,mem_zone *src_zone)
+{
+	unsigned int cmem, ctree;
 	unsigned int			n,cnt;
 	mem_ptr					start_zone,end_zone;
-	mem_ptr					start_free_zone,end_free_zone;
 	mem_zone_desc			new_free_zone;
 	mem_area				*area_ptr;
+	mem_zone_desc			*mem = &src_zone->mem;
 
-	if(area_id	==0xFFFF)return;
-	if(mem->ptr	==PTR_INVALID)return;
+
+	if(area_id	==0xFFFF)return 1;
+	if(mem->ptr	==PTR_INVALID)return 1;
+
+
+
+
+	cmem = get_mem_area_id();
+	ctree = get_tree_mem_area_id();
+
+	if ((area_id != cmem) && (area_id != ctree))
+	{
+//		log_output("free zone from bad area \n");
+
+		add_trashed_zone(src_zone);
+		return 0;
+	}
 	
+	if ((src_zone->mem.ptr!=PTR_FF)&&(src_zone->free_func != PTR_NULL))
+	{
+		mem_zone_ref tmp;
+		tmp.zone = src_zone;
+		src_zone->free_func(&tmp);
+	}
+
 	area_ptr			=	get_area(area_id);
 	if(area_ptr==PTR_NULL)
 	{
-		return ;
+		return 1;
 	}
+
+	mem = &src_zone->mem;
 
 	if(mem->size>0)
 	{
@@ -1070,6 +1139,8 @@ void	free_zone_area		(unsigned int area_id,mem_zone_desc *mem)
 		n					=  0;
 		while(area_ptr->zones_free[n].ptr!=PTR_NULL)
 		{
+			mem_ptr	start_free_zone, end_free_zone;
+
 			start_free_zone	=	area_ptr->zones_free[n].ptr;
 			end_free_zone	=	mem_add(start_free_zone,area_ptr->zones_free[n].size);
 
@@ -1081,13 +1152,13 @@ void	free_zone_area		(unsigned int area_id,mem_zone_desc *mem)
 				end_zone			=end_free_zone;
 
 				cnt=n;
-				while(area_ptr->zones_free[cnt].ptr!=PTR_NULL)
+				while(area_ptr->zones_free[cnt+1].ptr!=PTR_NULL)
 				{
 					area_ptr->zones_free[cnt]=area_ptr->zones_free[cnt+1];
 					cnt++;
 				}
 				area_ptr->zones_free[cnt].ptr=PTR_NULL;
-				area_ptr->zones_free[cnt].size=0;
+				area_ptr->zones_free[cnt].size = 0;
 				
 			}
 			else if(start_zone==end_free_zone)
@@ -1097,13 +1168,13 @@ void	free_zone_area		(unsigned int area_id,mem_zone_desc *mem)
 				start_zone			=start_free_zone;
 
 				cnt=n;
-				while(area_ptr->zones_free[cnt].ptr!=PTR_NULL)
+				while(area_ptr->zones_free[cnt+1].ptr!=PTR_NULL)
 				{
 					area_ptr->zones_free[cnt]=area_ptr->zones_free[cnt+1];
 					cnt++;
 				}
-				area_ptr->zones_free[cnt].ptr	=PTR_NULL;
-				area_ptr->zones_free[cnt].size	=0;
+				area_ptr->zones_free[cnt].ptr = PTR_NULL;
+				area_ptr->zones_free[cnt].size = 0;
 			}
 			else
 			{
@@ -1113,7 +1184,7 @@ void	free_zone_area		(unsigned int area_id,mem_zone_desc *mem)
 		memset_32_c			(new_free_zone.ptr,0xDEF0DEF0,new_free_zone.size);
 
 		n	=  0;
-		while(n<MAX_MEM_ZONES)
+		while (n<MAX_FREE_ZONES)
 		{
 			if(area_ptr->zones_free[n].ptr==PTR_NULL)
 			{
@@ -1128,52 +1199,82 @@ void	free_zone_area		(unsigned int area_id,mem_zone_desc *mem)
 	mem->ptr	=PTR_NULL;
 	mem->size	=0;
 
-
-	
-	
+	return 1;
 }
+
+
+
+
 
 void	free_zone		(mem_zone_ref_ptr zone_ref)
 {
 	mem_zone *src_zone=zone_ref->zone;
 
 	if(src_zone==PTR_NULL)return;
+	/*
 	if(src_zone->n_refs>0)
 		return;
-
-	free_zone_area			(src_zone->area_id,&src_zone->mem);
-
-	src_zone->n_refs		=0;
-	src_zone->free_func		=PTR_NULL;
-	src_zone->area_id		=0;
+		*/
+	if (free_zone_area(src_zone->area_id, src_zone))
+	{
+		src_zone->n_refs = 0;
+		src_zone->free_func = PTR_NULL;
+		src_zone->area_id = 0;
+	}
 }
+
+
+OS_API_C_FUNC(void) empty_trash()
+{
+	unsigned int	n = 0;
+	mem_area		*area;
+
+	area = get_area(get_mem_area_id());
+	if (area != PTR_NULL)
+	{
+		for (n = 0; n < 256; n++)
+		{
+			mem_zone_ptr src_zone = area->trash[n];
+			if (src_zone == PTR_NULL)continue;
+			free_zone_area(area->area_id, src_zone);
+			area->trash[n] = PTR_NULL;
+		}
+	}
+
+	area = get_area(get_tree_mem_area_id());
+	if (area != PTR_NULL)
+	{
+		for (n = 0; n < 256; n++)
+		{
+			mem_zone_ptr src_zone = area->trash[n];
+			if (src_zone == PTR_NULL)continue;
+			free_zone_area(area->area_id, src_zone);
+			area->trash[n] = PTR_NULL;
+		}
+	}
+}
+
+
 OS_API_C_FUNC(unsigned int) get_zone_numref(mem_zone_ref *zone_ref)
 {
 	if(zone_ref==PTR_NULL)return 0;
 	if(zone_ref->	zone==PTR_NULL)return 0;
 	return ((mem_zone *)(zone_ref->	zone))->n_refs;
 }
+
+
 OS_API_C_FUNC(void) dec_zone_ref(mem_zone_ref *zone_ref)
 {
-	mem_zone			*zone_ptr;
 	if(zone_ref			==PTR_NULL)return;
 	if(zone_ref			==uint_to_mem(0xDEF0DEF0))return;
 	if(zone_ref->zone	==PTR_NULL)return;
 	if(zone_ref->zone	==uint_to_mem(0xDEF0DEF0))return;
-	zone_ptr=	zone_ref->	zone;
-	if(zone_ptr->area_id==0xFFFF)return;
-
-
-	if(fetch_add_c(&zone_ptr->n_refs,-1)==1)
+	if (((mem_zone *)(zone_ref->zone))->area_id == 0xFFFF)return;
+	if (fetch_add_c(&((mem_zone *)(zone_ref->zone))->n_refs, -1) == 1)
 	{
-		if(zone_ptr->mem.ptr!=PTR_NULL)
-		{
-			if(zone_ptr->free_func!=PTR_NULL)
-				zone_ptr->free_func(zone_ref);
+		if (((mem_zone *)(zone_ref->zone))->mem.ptr != PTR_NULL)
 			free_zone(zone_ref);
-		}
 	}
-
 }
 
 OS_API_C_FUNC(void) release_zone_ref(mem_zone_ref *zone_ref)
@@ -1186,14 +1287,24 @@ OS_API_C_FUNC(void) release_zone_ref(mem_zone_ref *zone_ref)
 
 OS_API_C_FUNC(void) copy_zone_ref(mem_zone_ref_ptr dest_zone_ref,const mem_zone_ref *zone_ref)
 {
+	mem_zone *zone = dest_zone_ref->zone;
+
 	if(zone_ref->zone==PTR_NULL)return;
+	//if (((mem_zone *)(zone_ref->zone))->n_refs == 0)return;
 	
-	if(fetch_add_c				(&((mem_zone *)(zone_ref->zone))->n_refs,1)>=1)
+	if (fetch_add_c(&((mem_zone *)(zone_ref->zone))->n_refs, 1) > 0)
+		dest_zone_ref->zone = zone_ref->zone;
+	else
+		dest_zone_ref->zone = PTR_NULL;
+
+	if (zone != PTR_NULL)
 	{
-		release_zone_ref		(dest_zone_ref);
-		dest_zone_ref->zone		=zone_ref->zone;
+		if (fetch_add_c(&zone->n_refs, -1) == 1)
+		{
+			if (zone->mem.ptr != PTR_NULL)
+				free_zone_area(zone->area_id,zone);
+		}
 	}
-	
 }
 
 
@@ -1281,6 +1392,7 @@ extern unsigned int tree_output;
 
 OS_API_C_FUNC(unsigned int) allocate_new_zone(unsigned int area_id,mem_size zone_size,mem_zone_ref *zone_ref)
 {
+	mem_zone_ref ezone;
 	unsigned int n;
 	mem_area	*area_ptr;
 
@@ -1292,7 +1404,7 @@ OS_API_C_FUNC(unsigned int) allocate_new_zone(unsigned int area_id,mem_size zone
 
 	/* task_manager_aquire_semaphore(area_ptr->lock_sema,0); */
 
-	release_zone_ref	(zone_ref);
+	ezone.zone = zone_ref->zone;
 
 
 	zone_size		=	((zone_size&0xFFFFFFF0)+16);
@@ -1314,6 +1426,8 @@ OS_API_C_FUNC(unsigned int) allocate_new_zone(unsigned int area_id,mem_size zone
 					nzone->free_func=	PTR_NULL;
 					memset_c			(nzone->mem.ptr,0x00,nzone->mem.size);
 					zone_ref->	zone	=	nzone;	
+
+					release_zone_ref(&ezone);
 
 					/* task_manager_release_semaphore(area_ptr->lock_sema,0); */
 					return 1;
@@ -1352,7 +1466,7 @@ OS_API_C_FUNC(unsigned int) allocate_new_zone(unsigned int area_id,mem_size zone
 	
 	return 0;
 }
-
+/*
 OS_API_C_FUNC(int) 	align_zone_memory(mem_zone_ref *zone_ref, mem_size align)
 {
 	mem_area				*area_ptr;
@@ -1381,7 +1495,7 @@ OS_API_C_FUNC(int) 	align_zone_memory(mem_zone_ref *zone_ref, mem_size align)
 	
 	if (find_free_zone(area_ptr, new_size, &new_zone) == 0)
 	{
-		/*task_manager_release_semaphore(area_ptr->lock_sema,0);*/
+		//task_manager_release_semaphore(area_ptr->lock_sema,0);
 		return -1;
 	}
 
@@ -1404,10 +1518,9 @@ OS_API_C_FUNC(int) 	align_zone_memory(mem_zone_ref *zone_ref, mem_size align)
 	src_zone->mem.size = new_zone.size;
 
 	return 1;
-
-	
-
 }
+*/
+
 
 
 
@@ -1426,6 +1539,33 @@ OS_API_C_FUNC(int) 	realloc_zone	(mem_zone_ref *zone_ref,mem_size new_size)
 	if(area_ptr==PTR_NULL)
 	{
 		return 0;
+	}
+
+	if ((area_ptr->area_id != get_tree_mem_area_id()) && (area_ptr->area_id != get_mem_area_id()))
+	{
+		mem_area				*new_area_ptr;
+		unsigned char			*src_ptr;;
+
+		if (area_ptr->type == MEM_TYPE_DATA)
+			new_area_ptr = get_area(get_mem_area_id());
+		else
+			new_area_ptr = get_area(get_tree_mem_area_id());
+
+		if (src_zone->mem.size > 0)
+			src_ptr = get_zone_ptr(zone_ref, 0);
+		
+		if (!allocate_new_zone(new_area_ptr->area_id, new_size, zone_ref))
+		{
+			return 0;
+		}
+
+		if (src_zone->mem.size > 0)
+		{
+			memcpy_c(get_zone_ptr(zone_ref, 0), src_ptr, src_zone->mem.size);
+		}
+
+		add_trashed_zone (src_zone);
+		return 1;
 	}
 
 	/*task_manager_aquire_semaphore(area_ptr->lock_sema,0);*/
@@ -1456,7 +1596,7 @@ OS_API_C_FUNC(int) 	realloc_zone	(mem_zone_ref *zone_ref,mem_size new_size)
 		{
 			mem_ptr		start_free_zone,end_free_zone;
 
-			if(n>=MAX_MEM_ZONES)
+			if (n >= MAX_FREE_ZONES)
 			{
 				/*task_manager_release_semaphore(area_ptr->lock_sema,0);*/
 				return -1;
@@ -1477,11 +1617,12 @@ OS_API_C_FUNC(int) 	realloc_zone	(mem_zone_ref *zone_ref,mem_size new_size)
 				{
 					/*contigous free zone entirely consumed by the new alloc, remove it*/
 					cnt=n;
-					while(area_ptr->zones_free[cnt].ptr!=PTR_NULL)
+					while(area_ptr->zones_free[cnt+1].ptr!=PTR_NULL)
 					{
 						area_ptr->zones_free[cnt]=area_ptr->zones_free[cnt+1];
 						cnt++;
 					}
+					area_ptr->zones_free[cnt].ptr = PTR_NULL;
 				}
 				else
 				{
@@ -1500,6 +1641,7 @@ OS_API_C_FUNC(int) 	realloc_zone	(mem_zone_ref *zone_ref,mem_size new_size)
 			n++;
 		}
 	}
+
 
 
 	if(find_free_zone		(area_ptr,new_size,&new_zone)==0)
@@ -1527,7 +1669,7 @@ OS_API_C_FUNC(int) 	realloc_zone	(mem_zone_ref *zone_ref,mem_size new_size)
 	if(src_zone->mem.size>0)
 		memcpy_c				(new_zone.ptr,get_zone_ptr(zone_ref,0),src_zone->mem.size);
 	
-	free_zone_area			(src_zone->area_id,&src_zone->mem);
+	free_zone_area			(src_zone->area_id,src_zone);
 
 	src_zone->time			=get_time_c();
 	src_zone->mem.ptr		=new_zone.ptr;
@@ -1566,7 +1708,7 @@ OS_API_C_FUNC(mem_ptr) malloc_c(mem_size sz)
 
 	ref.zone=PTR_NULL;
 	
-	if(allocate_new_zone(0x00,sz+16,&ref)!=1)
+	if(allocate_new_zone(get_mem_area_id(),sz+16,&ref)!=1)
 	{
 		return PTR_NULL;
 	}

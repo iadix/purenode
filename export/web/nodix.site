@@ -1,5 +1,3 @@
-
-
 let NODE_JSON_ARRAY stylesheets = `[
 	"//fonts.googleapis.com/css?family=Open+Sans:400,300,600&amp;subset=cyrillic,latin",
 	"/assets/plugins/bootstrap/css/bootstrap.min.css",
@@ -9,9 +7,11 @@ let NODE_JSON_ARRAY stylesheets = `[
 	"/assets/css/footers/footer-v7.css",
 	"/assets/plugins/animate.css",
 	"/assets/css/theme-skins/dark.css",
+	"/assets/css/font-awesome.min.css",
 	"/assets/plugins/sky-forms-pro/skyforms/css/sky-forms.css",
 	"/assets/css/custom.css"
 ]`
+
 
 let NODE_JSON_ARRAY scripts = `[
 	"/assets/plugins/jquery/jquery.min.js",
@@ -23,100 +23,144 @@ let NODE_JSON_ARRAY scripts = `[
 	"/assets/js/custom.js"
 ]`
 
+	
 let NODE_JSON_ARRAY metas = `[
+	
 	{"viewport":"width=device-width, initial-scale=1.0"},
 	{"description":""},
+	
 	{"author":""}
 ]`
 
 
 
-let NODE_MODULE_DEF	node_adx = ` {"file" : "modz/node_adx.tpo"} `
-let NODE_MODULE_DEF	wallet = ` {"file" : "modz/wallet.tpo"} `
-
+	
+let NODE_MODULE_DEF node_adx = ` {"file" : "modz/node_adx.tpo"} `
+let NODE_MODULE_DEF wallet = ` {"file" : "modz/wallet.tpo"} `
 let NODE_GFX_BINT logged = 0
+
 let NODE_GFX_BINT has_site_api = 0
 
 let NODE_JSON_ARRAY node_modules  = `[]`
+
 let NODE_JSON_ARRAY node_accounts = `[]`
+
 let NODE_JSON_ARRAY node_addrs = `[]`
 
+let NODE_JSON_ARRAY nodeTypes = `[]`
 
+let NODE_BITCORE_TX_LIST node_apps = `[]`
+
+let NODE_GFX_BINT has_app_root = 0
+
+let NODE_GFX_BINT root_app_fees = 0
+
+let NODE_GFX_BINT app_found = 0
+
+let NODE_BITCORE_HASH root_app_hash = 0
+
+let NODE_BITCORE_WALLET_ADDR root_app_addr = 0
+
+let NODE_GFX_OBJECT my_app = `{}`
+let NODE_JSON_ARRAY app_types = `[]`
+
+
+
+	 
 page index = `
-	push scripts,"/assets/js/blocks.js"
-
-	node_adx.node_get_script_modules(node_modules);
-	node_adx.node_get_mem_pool		(SelfNode.mempool);
 	
-	html_head "NodiX INFOS" 
+	 push scripts,"/assets/js/blocks.js"
+
+	
+	 node_adx.node_get_script_modules(node_modules);
+	
+	 node_adx.node_get_mem_pool		(SelfNode.mempool);
+	
+	
+	 html_head "NodiX INFOS" 
 	html_block "templates/menu.html"
-	html_block "templates/node.html"
-	html_scripts
-	html_var SelfNode;
-	html_var node_modules;
-	html_var SelfNode.mempool;
-	html_js
-		$(document).ready(function () 
+	
+	 html_block "templates/node.html"
+	
+	 html_scripts
+	
+	 html_var SelfNode;
+	
+	 html_var node_modules;
+	
+	 html_var SelfNode.mempool;
+	
+	 html_js
+		
+	 $(document).ready(function () 
+	 {
+		site_base_url = '/nodix.site';
+		api_base_url ='';
+		lang		= 'en';
+
+		$('#node_name').html(SelfNode.user_agent);
+		$('#node_version').html(SelfNode.version);
+		$('#node_bheight').html(SelfNode.block_height);
+
+		$('#node_port').html(SelfNode.p2p_addr.port);
+		$('#node_addr').html(SelfNode.p2p_addr.addr);
+
+		$('#lastblock').html(SelfNode.last_block);
+		$('#lastblock').attr('href','nodix.site/block/'+SelfNode.last_block);
+		$('#lastblock').attr('data-target','#blockmodal');
+		$('#lastblock').attr('data-toggle','modal');
+
+		$('#lastpowblock').html(SelfNode.lastPOWBlk);
+		$('#lastpowblock').attr('href','nodix.site/block/'+SelfNode.lastPOWBlk);
+		$('#lastpowblock').attr('data-target','#blockmodal');
+		$('#lastpowblock').attr('data-toggle','modal');
+
+		$('#lastposblock').html(SelfNode.lastPOSBlk);
+		$('#lastposblock').attr('href','nodix.site/block/'+SelfNode.lastPOSBlk);
+		$('#lastposblock').attr('data-target','#blockmodal');
+		$('#lastposblock').attr('data-toggle','modal');
+
+		$('#currentpowdiff').html(SelfNode.current_pow_diff);
+		$('#currentposdiff').html(SelfNode.current_pos_diff);
+
+		$('#powreward').html(SelfNode.pow_reward);
+		$('#posreward').html(SelfNode.pos_reward);
+
+		make_node_html		('node_div',SelfNode);
+
+		for(var n=0;n<SelfNode.peer_nodes.length;n++)
 		{
-			site_base_url = '/nodix.site';
-			api_base_url ='';
-			lang		= 'en';
+			make_node_html		('peer_nodes_div',SelfNode.peer_nodes[n]);
+		}
 
-			$('#node_name').html(SelfNode.user_agent);
-			$('#node_version').html(SelfNode.version);
-			$('#node_bheight').html(SelfNode.block_height);
-
-			$('#node_port').html(SelfNode.p2p_addr.port);
-			$('#node_addr').html(SelfNode.p2p_addr.addr);
-
-			$('#lastblock').html(SelfNode.last_block);
-			$('#lastblock').attr('href','nodix.site/block/'+SelfNode.last_block);
-			$('#lastblock').attr('data-target','#blockmodal');
-			$('#lastblock').attr('data-toggle','modal');
-
-			$('#lastpowblock').html(SelfNode.lastPOWBlk);
-			$('#lastpowblock').attr('href','nodix.site/block/'+SelfNode.lastPOWBlk);
-			$('#lastpowblock').attr('data-target','#blockmodal');
-			$('#lastpowblock').attr('data-toggle','modal');
-
-			$('#lastposblock').html(SelfNode.lastPOSBlk);
-			$('#lastposblock').attr('href','nodix.site/block/'+SelfNode.lastPOSBlk);
-			$('#lastposblock').attr('data-target','#blockmodal');
-			$('#lastposblock').attr('data-toggle','modal');
-
-			$('#currentpowdiff').html(SelfNode.current_pow_diff);
-			$('#currentposdiff').html(SelfNode.current_pos_diff);
-
-			$('#powreward').html(SelfNode.pow_reward);
-			$('#posreward').html(SelfNode.pos_reward);
-
-			make_node_html		('node_div',SelfNode);
-
-			for(var n=0;n<SelfNode.peer_nodes.length;n++)
-			{
-				make_node_html		('peer_nodes_div',SelfNode.peer_nodes[n]);
-			}
-
-			make_modules_html("node_modules",node_modules);
-
-			update_mempool_txs(mempool,'mempool');
-			get_node_lag(SelfNode)
+		make_modules_html("node_modules",node_modules);
+		update_mempool_txs(mempool,'mempool');
+		get_node_lag(SelfNode)
 			
-		});
+	});
 	end_js
 
+	
 	html_block "templates/footer.html"
+	
 	success
 
 `
 
+
+	
 page services = `
+	
 	html_head "NodiX SERVICE INFO ( SERVICES )" 
+	
 	html_block "templates/menu.html"
+	
 	html_block "templates/services.html"
+	
 	html_scripts
 	html_var SelfNode.http_service;
 
+	
 	html_js
 		$(document).ready(function () 
 		{
@@ -143,23 +187,35 @@ page services = `
 		});
 	end_js
 
+	
 	html_block "templates/footer.html"
 
 `
 
+
+	
 page blocks = `
 
+	
 	push stylesheets,"/assets/css/plugins/blocks.css"
+	
 	push scripts,"/assets/js/plugins/datepicker.js"
+	
 	push scripts,"/assets/js/blocks.js"
 	
+	
 	html_head "NodiX BLOCK EXPLORER" 
+	
 	html_block "templates/menu.html"
+	
 	html_block "templates/blocks.html"
+	
 	html_scripts
 
+	
 	html_js
-	 jQuery(document).ready(function () 
+	 
+	jQuery(document).ready(function () 
 	 {
         
         
@@ -178,23 +234,36 @@ page blocks = `
         list_txs(selectedDate, tx_page_idx);
 
     });
-	end_js
 	
-	html_block "templates/footer.html"
+    end_js
+	
+	
+    html_block "templates/footer.html"
 
 `
 
+
+    
 page address(addr,page_idx) = `
 
-	push stylesheets,"/assets/css/plugins/blocks.css"
-	push scripts,"/assets/js/blocks.js"
+
+    
+    push stylesheets,"/assets/css/plugins/blocks.css"
 	
-	html_head "NodiX BLOCK EXPLORER ( ADDRESS )" 
-	html_block "templates/menu.html"
-	html_block "templates/address.html"
-	html_scripts
-	html_js
-		$(document).ready(function () 
+    push scripts,"/assets/js/blocks.js"
+	
+	
+    html_head "NodiX BLOCK EXPLORER ( ADDRESS )" 
+	
+    html_block "templates/menu.html"
+	
+    html_block "templates/address.html"
+	
+    html_scripts
+	
+    html_js
+		
+    $(document).ready(function () 
 		{
 			site_base_url = '/nodix.site';
 			api_base_url ='';
@@ -207,21 +276,32 @@ page address(addr,page_idx) = `
 		});
 	end_js
 
+	
 	html_block "templates/footer.html"
 
 `
 
+
+	
 page tx(txid) = `
 
+	
 	push stylesheets,"/assets/css/plugins/blocks.css"
+	
 	push scripts,"/assets/js/blocks.js"
 	
+	
 	html_head "NodiX BLOCK EXPLORER ( TRANSACTION )" 
+	
 	html_block "templates/menu.html"
+	
 	html_block "templates/tx.html"
+	
 	html_scripts
+	
 	html_js
-		$(document).ready(function () 
+		
+	$(document).ready(function () 
 		{
 			lang			= 'en';
 			site_base_url = '/nodix.site';
@@ -234,219 +314,592 @@ page tx(txid) = `
 		});
 	end_js
 
+	
 	html_block "templates/footer.html"
 
 `
 
+
+	
 page block(block_hash) = `
+
+	
 
 	push stylesheets,"/assets/css/plugins/blocks.css"
 	push scripts,"/assets/js/blocks.js"
 	
 	html_head "NodiX BLOCK EXPLORER ( BLOCK )" 
+	
 	html_block "templates/menu.html"
+	
 	html_block "templates/block.html"
+	
 	html_scripts
+	
+	
 	html_js
-        $(document).ready(function () {
-			lang			= 'en';
-			site_base_url = '/nodix.site';
-			api_base_url	= '';
+        
+	$(document).ready(function () 
+	{
+		lang			= 'en';
+		site_base_url = '/nodix.site';
+		api_base_url	= '';
          
-			var hash = '%block_hash%';
-			if (hash.length >= 64)
-			{
-				$('#imp_hash').val(hash);
-				selectBlockTxs(hash);
-			}
-			else
-				get_lastblock();
-        });
-	end_js
-
-	html_block "templates/footer.html"
-
-`
-
-page wallet(account_name) = `
-
-	node_adx.node_list_accounts	(node_accounts)
-
-	set logged = 0;
-	set has_site_api = 0;
-
-	if(cookies.sessionid ! "" )
-		wallet.get_sess_account(cookies.sessionid,account_name)? set logged = 1;  endor
-	endif
-
-	node_adx.node_list_addrs	(account_name,node_addrs)
-		
-	node_adx.node_has_service_module("site_cgi") ? 
-		set has_site_api = 1;
-	endor
-	
-	push stylesheets,"/assets/css/plugins/blocks.css"
-	push scripts,"/assets/js/blocks.js"
-	push scripts,"/assets/js/ecdsa_bundle.js"
-    push scripts,"/assets/js/jsSHA-2.2.0/src/sha_dev.js"
-    push scripts,"/assets/js/keys.js"
-    push scripts,"/assets/js/md5.min.js"
-
-
-	html_head "NodiX WALLET" 
-	html_block "templates/menu.html"
-	html_block "templates/wallet.html"
-	html_scripts
-	html_var node_accounts;
-	html_var node_addrs;
-	html_var logged;
-	html_var has_site_api;
-	html_var cookies.sessionid;
-	html_js
-    jQuery(document).ready(function() {
-		
-	
-		lang			='en';
-		api_base_url	='';
-		site_base_url	='/nodix.site';
-		ec				= new EC('secp256k1');
-
-		accountName		= '%account_name%';
-
-		$('#account_name').val(accountName);  
-		$('#addrlabel').val('new address');
-
-		my_accounts		= node_accounts;
-		my_addrs		= node_addrs;
-
-		update_accounts ('new account');
-		select_account  (accountName);
-		update_my_addrs ('my_address_list_table');
-
-		$('#account_name').val(accountName);  
-
-		if(has_site_api)
+		var hash = '%block_hash%';
+		if (hash.length >= 64)
 		{
-			if(accountName == '')
-				$('#signin').css('display', 'none'); 
+			$('#imp_hash').val(hash);
+			selectBlockTxs(hash);
 		}
 		else
-		{
-			$('#signin').css('display', 'none'); 
-		}
-
-
+			get_lastblock();
     });
 	end_js
 
+	
 	html_block "templates/footer.html"
+
 `
 
 
-page staking(account_name) = `
+	
+page wallet(account_name) = `
 
-	push stylesheets,"/assets/css/plugins/blocks.css"
-	push scripts,"/assets/js/blocks.js"
-	push scripts,"/assets/js/ecdsa_bundle.js"
-    push scripts,"/assets/js/jsSHA-2.2.0/src/sha_dev.js"
-    push scripts,"/assets/js/keys.js"
-    push scripts,"/assets/js/md5.min.js"
-
+	
 	node_adx.node_list_accounts	(node_accounts)
 
-	node_adx.node_list_addrs	(account_name,node_addrs)
-
+	
+	set logged = 0;
+	
 	set has_site_api = 0;
 
+	
+	if(cookies.sessionid ! "" )
+		
+		wallet.get_sess_account(cookies.sessionid,account_name)? set logged = 1;  endor
+	
+	endif
+
+	
+	
+	node_adx.node_list_addrs	(account_name,node_addrs)
+		
+	
 	node_adx.node_has_service_module("site_cgi") ? 
 		set has_site_api = 1;
 	endor
+	
+	
+	push stylesheets,"/assets/css/plugins/blocks.css"
+	
+	push scripts,"/assets/js/blocks.js"
+	
+	push scripts,"/assets/js/ecdsa_bundle.js"
+    
+	push scripts,"/assets/js/jsSHA-2.2.0/src/sha_dev.js"
+    
+	push scripts,"/assets/js/keys.js"
+    
+	push scripts,"/assets/js/md5.min.js"
+
 
 	
 	html_head "NodiX WALLET" 
+	
 	html_block "templates/menu.html"
-	html_block "templates/staking.html"
+	
+	html_block "templates/wallet.html"
+	
 	html_scripts
 	html_var node_accounts;
+	
 	html_var node_addrs;
+	
+	html_var logged;
+	
 	html_var has_site_api;
+	
+	html_var cookies.sessionid;
+	
 	html_js
-    jQuery(document).ready(function() {
+    
+	
+	jQuery(document).ready(function() {
 		
 	
-		lang			='en';
-		api_base_url	='';
-		site_base_url	='/nodix.site';
-		ec				= new EC('secp256k1');
-		accountName		= '%account_name%';
+		
+	lang			='en';
+		
+	api_base_url	='';
+		
+	site_base_url	='/nodix.site';
+		
+	ec				= new EC('secp256k1');
 
-		my_accounts		= node_accounts;
+		
+	accountName		= '%account_name%';
 
-		update_accounts		('select an account');
-		get_staking_addrs	('%account_name%',node_addrs);
-    });
+		
+	$('#account_name').val(accountName);  
+		
+	$('#addrlabel').val('new address');
+
+		
+	my_accounts		= node_accounts;
+		
+	my_addrs		= node_addrs;
+
+		
+	update_accounts ('new account');
+		
+	select_account  (accountName);
+		
+	update_my_addrs ('my_address_list_table');
+
+		
+	$('#account_name').val(accountName);  
+
+		
+	if(has_site_api)
+		
+	{
+			
+		if(accountName == '')
+$('#signin').css('display', 'none'); 
+		
+	}
+		
+	else
+		
+	{
+			
+		$('#signin').css('display', 'none'); 
+		
+	}
+
+	check_anon_access	();
+   
+	});
 	end_js
 
 	html_block "templates/footer.html"
 `
 
 
-page transaction(account_name) = `
 
+	
+	
+page staking(account_name) = `	
 	push stylesheets,"/assets/css/plugins/blocks.css"
+	
+	push scripts,"/assets/js/blocks.js"
+	
+	push scripts,"/assets/js/ecdsa_bundle.js"
+    
+	push scripts,"/assets/js/jsSHA-2.2.0/src/sha_dev.js"
+    
+	push scripts,"/assets/js/keys.js"
+    
+	push scripts,"/assets/js/md5.min.js"
+
+	
+	node_adx.node_list_accounts	(node_accounts)
+	node_adx.node_list_addrs	(account_name,node_addrs)
+
+	set has_site_api = 0;
+	
+	node_adx.node_has_service_module("site_cgi") ? 
+		set has_site_api = 1;
+	endor
+	
+	html_head "NodiX WALLET" 
+	
+	html_block "templates/menu.html"
+	
+	html_block "templates/staking.html"
+	
+	html_scripts
+	
+	html_var node_accounts;
+	
+	html_var node_addrs;
+	
+	html_var has_site_api;
+	
+	html_js
+    
+	jQuery(document).ready(function() {
+		
+	lang			='en';
+	api_base_url	='';
+	site_base_url	='/nodix.site';
+		
+	ec				= new EC('secp256k1');
+	accountName		= '%account_name%';
+	my_accounts		= node_accounts;
+		
+	update_accounts		('select an account');
+		
+	get_staking_addrs	('%account_name%',node_addrs);
+
+	
+
+    
+	});
+	end_js
+
+	
+	html_block "templates/footer.html"
+`
+
+page application(app_name,account_name) = `
+	
+	push stylesheets,"/assets/css/plugins/blocks.css"
+	
 	push scripts,"/assets/js/blocks.js"
 	push scripts,"/assets/js/ecdsa_bundle.js"
-    push scripts,"/assets/js/jsSHA-2.2.0/src/sha_dev.js"
-    push scripts,"/assets/js/keys.js"
-    push scripts,"/assets/js/md5.min.js"
-
-	node_adx.node_list_accounts	(node_accounts)
+	push scripts,"/assets/js/jsSHA-2.2.0/src/sha_dev.js"
+	push scripts,"/assets/js/keys.js"
 
 	set logged = 0;
+	set has_app_root = 0;
+
+	node_adx.node_list_accounts	(node_accounts)
 
 	if(cookies.sessionid ! "" )
 		wallet.get_sess_account(cookies.sessionid,account_name)? set logged = 1;  endor
 	endif
 
 	node_adx.node_list_addrs	(account_name,node_addrs)
+	node_adx.node_get_types_def (nodeTypes)
 
+	node_adx.node_get_root_app	(root_app_hash) ? set has_app_root = 1; endor
+
+	if(has_app_root = 1)
+		node_adx.node_get_root_app_addr(root_app_addr)
+		node_adx.node_get_root_app_fee(root_app_fees)
+	endif
+
+	set has_site_api = 0;
 	
+	node_adx.node_has_service_module("site_cgi") ? 
+		set has_site_api = 1;
+	endor
+
+	set app_found = 0;
+
+	node_adx.node_get_app(app_name,my_app) ? 
 	
-	html_head "NodiX WALLET transaction" 
+		set app_found = 1; 
+		node_adx.node_get_app_types_def(app_name,app_types)
+
+		if(formvars.myfile.size > 0)
+			node_adx.node_add_tmp_file(formvars.myfile)
+		endif
+
+		if(formvars.mylayout.size > 0)
+			node_adx.node_add_tmp_file(formvars.mylayout)
+		endif
+
+		if(formvars.mymod.size > 0)
+			node_adx.node_add_tmp_file(formvars.mymod)
+		endif
+
+	endor
+
+
+
+	html_head "NodiX Applications" 
 	html_block "templates/menu.html"
-	html_block "templates/transaction.html"
+	html_block "templates/application.html"
 	html_scripts
+
+
+	html_var formvars.myfile;
+	html_var formvars.mylayout;
+	html_var formvars.mymod;
 	html_var node_accounts;
 	html_var node_addrs;
+	html_var has_site_api;
 	html_var logged;
 	html_var cookies.sessionid;
+
+	html_var has_app_root;
+	html_var root_app_hash;
+	html_var root_app_addr;
+	html_var root_app_fees;
+	html_var app_found;
+	html_var my_app;
+	html_var app_name;
+	html_var app_types;
+	html_var nodeTypes;
+	
+
+
 	html_js
-    jQuery(document).ready(function() {
+	jQuery(document).ready(function() 
+	{
+		
 		lang			='en';
 		api_base_url	='';
 		site_base_url	='/nodix.site';
+		
 		ec				= new EC('secp256k1');
 		accountName		= '%account_name%';
 		paytxfee		=  %SelfNode.paytxfee%;
 		my_accounts		= node_accounts;
 
-		$('#paytxfee').val(paytxfee);
+		
+		$('#paytxfee').val(paytxfee / unit);
+
+		update_accounts		('select an account');
+		select_account		(accountName);
+
+		
+
+		if(accountName == '')
+		{
+			$('#accnt_pw').css('display', 'none');
+			$('#account_name').val('');  
+			$('#account_name').css('display', 'none');
+		}
+
+		if(has_app_root == 1)
+		{
+			$('#app_root_error').css('display','none');
+			$('#app_root_infos').css('display','block');
+			$('#root_app_txh').html(root_app_hash);
+			$('#root_app_addr').html(root_app_addr);
+
+			if(app_found == 1)
+			{
+				var n;
+				$('#app_infos').css('display','block');
+				$('#app_error').css('display','none');
+				$('#app').html(get_app_html(my_app));
+
+				update_types_select	(nodeTypes,app_types,'new_type_key');
+				update_app_types	(my_app.txid,app_types);
+				
+				
+				for(n=0;n<app_types.length;n++)
+				{
+					get_app_type_objs(app_name,app_types[n].id);
+				}
+				
+				get_app_files(app_name);
+				
+
+				if(myfile)
+				  update_app_upl(myfile);
+
+				if(mylayout)
+				  update_app_upl_layout(mylayout);
+
+				if(mymod)
+				  update_app_upl_module(mymod);
+				
+			}
+			else
+			{
+				$('#app_infos').css('display','none');
+				$('#app_error').css('display','block');
+				$('#app_name').html(app_name);
+			}
+		}
+		else
+		{
+			$('#app_root_error').css('display','block');
+			$('#app_root_infos').css('display','none');
+		}
+
+
+	});
+	end_js
+
+	html_block "templates/footer.html"
+
+`
+
+page applications(account_name) = `
+	push stylesheets,"/assets/css/plugins/blocks.css"
+	
+	push scripts,"/assets/js/blocks.js"
+	push scripts,"/assets/js/ecdsa_bundle.js"
+	push scripts,"/assets/js/jsSHA-2.2.0/src/sha_dev.js"
+	push scripts,"/assets/js/keys.js"
+
+	set logged = 0;
+	set has_app_root = 0;
+
+	node_adx.node_list_accounts	(node_accounts)
+	node_adx.node_get_apps		(node_apps)
+	
+
+	if(cookies.sessionid ! "" )
+		wallet.get_sess_account(cookies.sessionid,account_name)? set logged = 1;  endor
+	endif
+
+	node_adx.node_list_addrs	(account_name,node_addrs)
+
+
+	node_adx.node_get_root_app	(root_app_hash) ? set has_app_root = 1; endor
+
+	if(has_app_root = 1)
+		node_adx.node_get_root_app_addr(root_app_addr)
+		node_adx.node_get_root_app_fee(root_app_fees)
+	endif
+
+	set has_site_api = 0;
+	
+	node_adx.node_has_service_module("site_cgi") ? 
+		set has_site_api = 1;
+	endor
+
+	
+
+	html_head "NodiX Applications" 
+	html_block "templates/menu.html"
+	html_block "templates/applications.html"
+	html_scripts
+
+	html_var node_accounts;
+	html_var node_addrs;
+	html_var has_site_api;
+	html_var logged;
+	html_var cookies.sessionid;
+
+	html_var has_app_root;
+	html_var root_app_hash;
+	html_var root_app_addr;
+	html_var root_app_fees;
+	html_var node_apps;
+
+	html_js
+	jQuery(document).ready(function() 
+	{
+		
+		lang			='en';
+		api_base_url	='';
+		site_base_url	='/nodix.site';
+		
+		ec				= new EC('secp256k1');
+		accountName		= '%account_name%';
+		paytxfee		=  %SelfNode.paytxfee%;
+		my_accounts		= node_accounts;
+
+		
+		$('#paytxfee').val(paytxfee / unit);
 
 		update_accounts		('select an account');
 		select_account		(accountName);
 
 		if(accountName == '')
 		{
-			$('#accnt_pw').css('display', 'none'); 
+			$('#accnt_pw').css('display', 'none');
 			$('#account_name').val('');  
 			$('#account_name').css('display', 'none');
 		}
-			
 
-		get_source_addrs	('%account_name%',node_addrs);
-    });
+		if(has_app_root == 1)
+		{
+			$('#app_root_new').css('display','none');
+			$('#app_root_infos').css('display','block');
+			$('#root_app_txh').html(root_app_hash);
+			$('#root_app_addr').html(root_app_addr);
+			$('#root_app_fees').html(root_app_fees / unit);
+			$('#totalfee').html((paytxfee+root_app_fees ) / unit);
+
+			$('#apps').html(get_apps_html(node_apps));
+		}
+		else
+		{
+			$('#app_root_new').css('display','block');
+			$('#app_root_infos').css('display','none');
+		}
+
+	});
 	end_js
 
+	html_block "templates/footer.html"
+`
+
+	
+page transaction(account_name) = `
+	
+	push stylesheets,"/assets/css/plugins/blocks.css"
+	push scripts,"/assets/js/blocks.js"
+	push scripts,"/assets/js/ecdsa_bundle.js"
+	push scripts,"/assets/js/jsSHA-2.2.0/src/sha_dev.js"
+	push scripts,"/assets/js/keys.js"
+	push scripts,"/assets/js/md5.min.js"
+
+	node_adx.node_list_accounts	(node_accounts)
+	set logged = 0;
+	
+	if(cookies.sessionid ! "" )
+		wallet.get_sess_account(cookies.sessionid,account_name)? set logged = 1;  endor
+	endif
+
+	node_adx.node_list_addrs	(account_name,node_addrs)
+	
+	html_head "NodiX WALLET transaction" 
+	
+	html_block "templates/menu.html"
+	
+	html_block "templates/transaction.html"
+	
+	
+	html_scripts
+	
+	html_var node_accounts;
+	html_var node_addrs;
+	html_var logged;
+	html_var cookies.sessionid;
+	
+	html_js
+	jQuery(document).ready(function() 
+	{
+		
+		lang			='en';
+		
+		api_base_url	='';
+		
+		site_base_url	='/nodix.site';
+		
+		ec				= new EC('secp256k1');
+		
+		accountName		= '%account_name%';
+		
+		paytxfee		=  %SelfNode.paytxfee%;
+	
+		my_accounts		= node_accounts;
+
+		
+		$('#paytxfee').val(paytxfee);
+
+		
+		update_accounts		('select an account');
+	
+		select_account		(accountName);
+
+		
+		if(accountName == '')
+		{
+	
+			$('#accnt_pw').css('display', 'none');
+			$('#account_name').val('');  
+			
+			$('#account_name').css('display', 'none');
+		
+		}
+
+		get_source_addrs	('%account_name%',node_addrs);
+
+	});
+	end_js
+
+	
 	html_block "templates/footer.html"
 `
 

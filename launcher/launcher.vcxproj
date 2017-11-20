@@ -62,7 +62,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)export\</AdditionalLibraryDirectories>
-      <AdditionalDependencies>protocol_adx_d.lib;block_adx_d.lib;node_adx_d.lib;libcon_d.lib;libbase_d.lib;node_adx_d.lib;kernel32.lib;nodix_d.lib;stake_pos3_d.lib;wallet_d.lib;</AdditionalDependencies>
+      <AdditionalDependencies>protocol_adx_d.lib;block_adx_d.lib;node_adx_d.lib;libcon_d.lib;libbase_d.lib;kernel32.lib;nodix_d.lib;stake_pos3_d.lib;wallet_d.lib;tracer_d.lib</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>

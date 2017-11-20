@@ -47,7 +47,7 @@ OS_API_C_FUNC(int) set_mem_exe(mem_zone_ref_ptr zone)
 	size = (get_zone_size(zone)&(~0xFFF)) + 4096;
 	ret = mprotect(ptr,size , PROT_READ | PROT_EXEC | PROT_WRITE);
 	
-	//printf("mprotect %X %d, ret %d\n", ptr, size,ret);
+	/*printf("mprotect %X %d, ret %d\n", ptr, size,ret);*/
 
 	return ret;
 }
@@ -296,6 +296,20 @@ OS_API_C_FUNC(int) get_home_dir(struct string *path)
 	make_string(path, homedir);
 	return 1;
 }
+
+OS_API_C_FUNC(int) set_data_dir(const struct string *path,const char *name)
+{
+	clone_string  (&home_path,path);	
+	cat_cstring_p (&home_path, name);
+	create_dir	  (home_path.str);
+	set_cwd		  (home_path.str);
+
+	log_output		("set data path : '");
+	log_output		(home_path.str);
+	log_output		("'\n");
+	return 1;
+}
+
 OS_API_C_FUNC(int) set_home_path(const char *name)
 {
 	init_string	(&home_path);
@@ -304,6 +318,10 @@ OS_API_C_FUNC(int) set_home_path(const char *name)
 	cat_cstring_p	(&home_path, name);
 	create_dir		(home_path.str);
 	set_cwd			(home_path.str);
+
+	log_output		("set home path : '");
+	log_output		(home_path.str);
+	log_output		("'\n");
 	return 1;
 
 }
@@ -354,6 +372,11 @@ OS_API_C_FUNC(int) get_sub_dirs(const char *path, struct string *dir_list)
 
 	while ((direntp = readdir(dirp)) != NULL)
 	{
+	    /*
+		struct stat s; 
+		stat(direntp->d_name, &s);
+		if (!(s.st_mode & S_IFDIR))continue;
+		*/
 		if(direntp->d_type!=DT_DIR)continue;
 		if (direntp->d_name[0] == '.')continue;
 		
@@ -430,10 +453,10 @@ OS_API_C_FUNC(int) put_file(const char *path, void *data, size_t data_len)
 	f	=	fopen	(path,"wb");
 	if(f==NULL)return 0;
 	if (data_len > 0)
-		len = fwrite(data, data_len, 1, f);
+		len = fwrite(data, 1, data_len, f);
 
 	fclose(f);
-	return 1;
+	return len;
 
 }
 
@@ -539,7 +562,12 @@ OS_API_C_FUNC(int) get_file(const char *path, unsigned char **data, size_t *data
 		(*data) = malloc_c((*data_len) + 1);
 		if ((*data) != PTR_NULL)
 		{
-			len = fread((*data), *data_len, 1, f);
+			ret = fread((*data),  1,*data_len, f);
+			if(ret>0)
+				len = *data_len;
+			else
+				len = 0;
+
 			(*data)[*data_len] = 0;
 		}
 		else
@@ -550,6 +578,113 @@ OS_API_C_FUNC(int) get_file(const char *path, unsigned char **data, size_t *data
 
 }
 
+OS_API_C_FUNC(int) get_file_chunk(const char *path, size_t ofset, unsigned char **data, size_t *data_len)
+{
+	struct string	cpath = { PTR_NULL };
+	FILE			*f;
+	size_t			filesize,len = 0;
+	int				ret;
+		
+	f = fopen(path, "rb");
+	if (f == NULL)
+	{
+		init_string		(&cpath);
+		if (!make_string(&cpath, exe_path.str))
+			return -1;
+
+		cat_cstring_p	(&cpath, path);
+		f = fopen		(cpath.str, "rb");
+		free_string		(&cpath);
+
+		if (f == NULL)
+		{
+			*data_len = 0;
+			return -1;
+		}
+	}
+
+	fseek(f, 0, SEEK_END);
+	filesize = ftell(f);
+
+	if((ofset+4)<=filesize)
+	{
+		unsigned int chunk_size;
+
+		fseek	(f, ofset, SEEK_SET);
+		fread	(&chunk_size,1,4,f);
+		if (filesize>=(ofset+4+chunk_size))
+		{
+			(*data_len)	= chunk_size;
+			(*data)		= malloc_c( (*data_len) + 1);
+			if ((*data) != PTR_NULL)
+			{
+				ret = fread	((*data), 1,(*data_len), f);
+				if(ret>0)
+					len = (*data_len);
+				else
+					len = 0;
+
+				(*data)[*data_len] = 0;
+			}
+		}
+	}
+
+	fclose(f);
+
+	return len;
+}
+
+OS_API_C_FUNC(int) get_file_len(const char *path, size_t size, unsigned char **data, size_t *data_len)
+{
+		struct string	cpath = { PTR_NULL };
+	FILE			*f;
+	size_t			len = 0;
+	int				ret;
+		
+	f = fopen(path, "rb");
+	if (f == NULL)
+	{
+		init_string		(&cpath);
+		if (!make_string(&cpath, exe_path.str))
+			return -1;
+
+		cat_cstring_p	(&cpath, path);
+		f = fopen		(cpath.str, "rb");
+		free_string		(&cpath);
+
+		if (f == NULL)
+		{
+			*data_len = 0;
+			return -1;
+		}
+	}
+	
+	fseek(f, 0, SEEK_END);
+	(*data_len) = ftell(f);
+	rewind(f);
+	if ((*data_len)>0)
+	{
+		if((*data_len)>size)
+			(*data_len)=size;
+
+		(*data) = malloc_c((*data_len) + 1);
+		if ((*data) != PTR_NULL)
+		{
+			ret = fread((*data), 1, *data_len, f);
+
+			if(ret>0)
+				len = *data_len;
+			else
+				len = 0;
+
+			(*data)[*data_len] = 0;
+		}
+		else
+			len = 0;
+	}
+	fclose(f);
+	return (int)len;
+}
 
 
 OS_API_C_FUNC(int) truncate_file(const char *path, size_t ofset, const void *data, size_t data_len)
@@ -565,20 +700,19 @@ OS_API_C_FUNC(int) truncate_file(const char *path, size_t ofset, const void *dat
 		return 1;
 	}
 
+	ret=truncate(path, ofset);
 
 	if (data != PTR_NULL)
 	{
 		f = fopen(path, "ab+");
 		if (f != NULL)
 		{
-			fseek(f, ofset, SEEK_SET);
+			fseek(f, 0, SEEK_END);
 			len = fwrite(data, data_len, 1, f);
 			ret = (len > 0) ? 1 : 0;
 		}
 		fclose(f);
 	}
-	else
-		ret=truncate(path, ofset);
 		
 	return ret;
 }
@@ -598,7 +732,7 @@ OS_API_C_FUNC(void) get_system_time_c(ctime_t *ms)
 {
 	struct			timespec spec;
 	clock_gettime	(CLOCK_REALTIME, &spec);
-	*ms = spec.tv_sec * 1000 + spec.tv_nsec / 1000000; // Convert nanoseconds to milliseconds
+	*ms = spec.tv_sec * 1000 + spec.tv_nsec / 1000000; /* Convert nanoseconds to milliseconds */
 }
 
 
@@ -752,7 +886,7 @@ OS_API_C_FUNC(int) default_RNG(uint8_t *dest, unsigned size)
 	size_t left = size;
 	while (left > 0) {
 		ssize_t bytes_read = read(fd, ptr, left);
-		if (bytes_read <= 0) { // read failed
+		if (bytes_read <= 0) { /* read failed */
 			close(fd);
 			return 0;
 		}
@@ -770,7 +904,10 @@ OS_API_C_FUNC(unsigned int) isRunning()
 void init_exit()
 {
 }
-
+OS_API_C_FUNC(void) strtod_c(const char *str, double *d)
+{
+	*d = strtod(str, NULL);
+}
 OS_API_C_FUNC(void) snooze_c(size_t n)
 {
 	usleep(n);

@@ -320,6 +320,39 @@ local unsigned long crc32_big(crc, buf, len)
     return (unsigned long)(ZSWAP32(c));
 }
 
+OS_API_C_FUNC(unsigned long) do_crc32_big(buf, len)
+const unsigned char FAR *buf;
+unsigned len;
+{
+	register z_crc_t c;
+	register const z_crc_t FAR *buf4;
+
+	c = 0;
+	while (len && ((ptrdiff_t)buf & 3)) {
+		c = crc_table[4][(c >> 24) ^ *buf++] ^ (c << 8);
+		len--;
+	}
+
+	buf4 = (const z_crc_t FAR *)(const void FAR *)buf;
+	buf4--;
+	while (len >= 32) {
+		DOBIG32;
+		len -= 32;
+	}
+	while (len >= 4) {
+		DOBIG4;
+		len -= 4;
+	}
+	buf4++;
+	buf = (const unsigned char FAR *)buf4;
+
+	if (len) do {
+		c = crc_table[4][(c >> 24) ^ *buf++] ^ (c << 8);
+	} while (--len);
+
+	return (unsigned long)(ZSWAP32(c));
+}
+
 #endif /* BYFOUR */
 
 #define GF2_DIM 32      /* dimension of GF(2) vectors (length of CRC) */

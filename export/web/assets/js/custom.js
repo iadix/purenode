@@ -20,14 +20,27 @@ var addr_tx_page_idx = 0;
 var addr_tx_total = 0;
 var cgi_base = '/api/'
 var rpc_base = '/jsonrpc'
+var anon_rpc_base = '/pubwal'
 var mods = null;
 var handlers = null;
-
+var selected_balance = 0;
 var modules_definitions = {};
 
 function rpc_call(in_method, in_params, in_success) {
     $.ajax({
         url: api_base_url + rpc_base,
+        data: JSON.stringify({ jsonrpc: '2.0', method: in_method, params: in_params, id: 1 }),  // id is needed !!
+        contentType: "application/json; charset=utf-8",
+        type: "POST",
+        dataType: "json",
+        success: in_success,
+        error: function (err) { /*alert("Error");*/ }
+    });
+}
+
+function anon_rpc_call(in_method, in_params, in_success) {
+    $.ajax({
+        url: api_base_url + anon_rpc_base,
         data: JSON.stringify({ jsonrpc: '2.0', method: in_method, params: in_params, id: 1 }),  // id is needed !!
         contentType: "application/json; charset=utf-8",
         type: "POST",
@@ -514,7 +527,12 @@ function get_tx_html(tx, n) {
         new_html += '<div class="col-md-6" >' + '<h2>inputs</h2>' + '#0 null&nbsp;' + '</div>';
         new_html += '<div class="col-md-6" >' + '<h2>outputs</h2>' + '#0 null&nbsp;' + '</div>';
     }
-    else {
+    else if (tx.is_app_root == 1)
+	{
+		new_html += '<div class="col-md-6" >' + '<h2>inputs</h2>' + '#0&nbsp;approot&nbsp;' + '</div>';
+        new_html += '<div class="col-md-6" >' + '<h2>outputs</h2>' + '#0&nbsp;' + vout[0].value + ' ' + tx.dstaddr + '</div>';
+        
+    } else {
         new_html += '<div class="col-md-6" >';
         new_html += '<h2>inputs</h2>';
         if ((tx.isCoinBase == true)) {
@@ -522,7 +540,7 @@ function get_tx_html(tx, n) {
             if ((vin) && (vin.length > 0))
                 new_html += vin[0].coinbase;
         }
-        else{
+        else {
             var nins, nouts;
             nins = vin.length;
             for (nn = 0; nn < nins; nn++) {
@@ -530,17 +548,36 @@ function get_tx_html(tx, n) {
                 new_html += '<div class="col-md-8" >';
                 new_html += '#' + nn + '&nbsp;';
 
-                if (vin[nn].addresses) {
-
-                    if (vin[nn].addresses.indexOf(currentAddr) >= 0)sent += vin[nn].value;
-
-                    new_html += '<a href= "' + site_base_url + '/address/' + vin[nn].addresses[0] + '" class="tx_address">' + vin[nn].addresses[0] + '</a>';
+                if ((vin[nn].isApp == true)) {
+                    new_html += '<span class="app_name" >' + vin[nn].appName+ '</span>';
                 }
-                else if (vin[nn].srcaddr) {
-                    if (vin[nn].srcaddr==currentAddr)sent += vin[nn].value;
-                    new_html += '<a href= "' + site_base_url + '/address/' + vin[nn].srcaddr + '" class="tx_address">' + vin[nn].srcaddr + '</a>';
+                else
+                {
+                    if (vin[nn].srcapp) {
+                        new_html += 'App&nbsp; : ' + vin[nn].srcapp;
+
+                        if (tx.appChildOf) new_html += '&nbsp; child';
+                        if (tx.app_item == 1) new_html += '&nbsp; type';
+                        if (tx.app_item == 2) new_html += '&nbsp; obj';
+                        if (tx.app_item == 3) new_html += '&nbsp; file';
+                        
+                    }
+                    else {
+                        if (vin[nn].addresses) {
+                            if (vin[nn].addresses.indexOf(currentAddr) >= 0) sent += vin[nn].value;
+                            new_html += '<a href= "' + site_base_url + '/address/' + vin[nn].addresses[0] + '" class="tx_address">' + vin[nn].addresses[0] + '</a>';
+                        }
+                        else if (vin[nn].srcaddr) {
+                            if (vin[nn].srcaddr == currentAddr) sent += vin[nn].value;
+                            new_html += '<a href= "' + site_base_url + '/address/' + vin[nn].srcaddr + '" class="tx_address">' + vin[nn].srcaddr + '</a>';
+                        }
+                        new_html += '<span class="tx_amnt" >' + vin[nn].value / unit + '</span>';
+                    }
+                    
+                    
+                    
                 }
-                new_html += '<span class="tx_amnt" >' + vin[nn].value / unit + '</span>';
+              
                 new_html += '</div>';
                 new_html += '</div>';
             }
@@ -561,16 +598,24 @@ function get_tx_html(tx, n) {
                 if (vout[nn].isNull == true)
                     new_html += '#0 null &nbsp;';
                 else {
+                    var val;
+                    var xval = vout[nn].value.toString(16).substring(0,8);
+
+                    if ((xval.toLowerCase() == 'ffffffff') || (vout[nn].value == 0xFFFFFFFFFFFFFFFF))
+                        val = 0;
+                    else
+                        val = vout[nn].value;
+
                     new_html += '#' + nn + '&nbsp;';
 
                     if (vout[nn].addresses) {
-                        if (vout[nn].addresses.indexOf(currentAddr) >= 0) recv += vout[nn].value;
+                        if (vout[nn].addresses.indexOf(currentAddr) >= 0) recv += val;
                         new_html += '<a href="' + site_base_url + '/address/' + vout[nn].addresses[0] + '" class="tx_address" >' + vout[nn].addresses[0] + '</a>';
                     } else if (vout[nn].dstaddr) {
-                        if (vout[nn].dstaddr==currentAddr)recv += vout[nn].value;
+                        if (vout[nn].dstaddr == currentAddr) recv += val;
                         new_html += '<a href="' + site_base_url + '/address/' + vout[nn].dstaddr + '" class="tx_address" >' + vout[nn].dstaddr + '</a>';
                     }
-                    new_html += '<span class="tx_amnt" >' + vout[nn].value / unit + '</span>';
+                    new_html += '<span class="tx_amnt" >' + val / unit + '</span>';
                 }
                 new_html += '</div>';
                 new_html += '</div>';
@@ -618,8 +663,17 @@ function get_tmp_tx_html(tx) {
 
             new_html += '<div class="col-md-8" >';
             new_html += '#' + vin[nn].index + '&nbsp;';
-            new_html += '<a href= "' + site_base_url + '/address/' + vin[nn].srcaddr + '" class="tx_address">' + vin[nn].srcaddr + '</a>';
-            new_html += '<span class="tx_amnt" >' + vin[nn].value / unit + '</span>';
+            if ((vin[nn].isApp == true)) {
+                new_html += '<span class="app_name" >' + vin[nn].appName + '</span>';
+            }
+            else if (vin[nn].srcapp) {
+                new_html += 'App&nbsp; : ' + vin[nn].srcapp;
+                
+            }
+            else {
+                new_html += '<a href= "' + site_base_url + '/address/' + vin[nn].srcaddr + '" class="tx_address">' + vin[nn].srcaddr + '</a>';
+                new_html += '<span class="tx_amnt" >' + vin[nn].value / unit + '</span>';
+            }
             new_html += '</div>';
             new_html += '</div>';
         }
@@ -631,11 +685,19 @@ function get_tmp_tx_html(tx) {
     if (vout) {
         nouts = vout.length;
         for (nn = 0; nn < nouts; nn++) {
+            var xval = vout[nn].value.toString(16).substring(0, 8);
+            var val;
             new_html += '<div class="row">';
             new_html += '<div class="col-md-8" >';
             new_html += '#' + nn + '&nbsp;';
-            new_html += '<a href="' + site_base_url + '/address/' + vout[nn].addr + '" class="tx_address" >' + vout[nn].addr + '</a>&nbsp;';
-            new_html += '<span class="tx_amnt" >' + vout[nn].value / unit + '</span>';
+            new_html += '<a href="' + site_base_url + '/address/' + vout[nn].dstaddr + '" class="tx_address" >' + vout[nn].dstaddr + '</a>&nbsp;';
+
+            if ((xval.toLowerCase() == 'ffffffff') || (val == 0xFFFFFFFFFFFFFFFF))
+                val = 0;
+            else
+                val = vout[nn].value;
+
+            new_html += '<span class="tx_amnt" >' + val / unit + '</span>';
             new_html += '</div>';
             new_html += '</div>';
         }
@@ -645,6 +707,342 @@ function get_tmp_tx_html(tx) {
 
     return new_html;
 }
+
+function get_apps_item_root(apps, type) {
+    var n = 0;
+
+    for(n=0;n<apps.txsout.length;n++)
+    {
+        if (apps.txsout[n].app_item == type)
+            return n;
+    }
+    return 0;
+}
+
+function get_type_input(typeid, key) {
+
+    var id = typeid + '_' + key.name;
+
+    if ((key.id >> 24) == 0x1E) {
+        return '<input size="64" type="text" id="' + id + '" name="' + id + '" />';
+    }
+    else if ((key.id == 1024) || (key.id == 0x0A000040)) {
+        return '<input size="64" type="text" id="' + id + '" name="' + id + '" />';
+    }
+    else if ((key.id == 1) || (key.id == 0x0B000100)) {
+        return '<input size="16" type="text" id="' + id + '" name="' + id + '" />';
+    }
+    else if ((key.id == 2) || (key.id == 8) || (key.id == 256)) {
+        return '<input size="4" type="number" step="1" id="' + id + '" name="' + id + '">';
+    }
+    else if ((key.id == 4096) || (key.id == 16384)) {
+        return '<input size="4" type="number"  id="' + id + '" name="' + id + '">';
+    }
+    else if (key.id == 218103810) {
+        return '<input size="4" type="number" id="' + id + '_0" name="' + id + '_0"><input size="4" type="number" id="' + id + '_1" name="' + id + '_1"><input size="4"  type="number" id="' + id + '_2" name="' + id + '_2">';
+    }
+    else if (key.id == 0x00000080) {
+        return '<input size="4" type="number" id="' + id + '_0" name="' + id + '_0"><input size="4" type="number" id="' + id + '_1" name="' + id + '_1"><input size="4"  type="number" id="' + id + '_2" name="' + id + '_2"><input size="4"  type="number" id="' + id + '_3" name="' + id + '_3">';
+    }
+}
+
+function update_app_types(app_txid, app_types)
+{
+    var n,nn;
+    var html = 'new obj address <select name="obj_addr" id="obj_addr" onchange="$(\'.sel_obj_addr\').html($(this).val());"></select>';
+
+
+    for (n=0;n<app_types.length;n++)
+    {
+        html += '<div class="type_div">';
+        html += '<h3>' + app_types[n].name + '</h3>'
+        html += 'id :' + app_types[n].id.toString(16);
+        html += '<h4>keys</h4>'
+
+        html += '<div class="container">';
+        for (nn = 0; nn < app_types[n].keys.length; nn++) {
+            
+            html += '<div class="row">';
+            html += '<div class="col-md-1">#' +nn + '</div>';
+            html += '<div class="col-md-2">'+app_types[n].keys[nn].name+'</div>';
+            html += '<div class="col-md-2">' + get_obj_type_name(app_types[n].keys[nn].id) + '</div>';
+            html += '<div class="col-md-4">' + get_type_input(app_types[n].id,app_types[n].keys[nn]) + '</div>';
+            html += '</div>';
+        }
+       
+
+        html += '<div class="row">';
+        html += '<div class="col-md-1"></div>';
+        html += '<div class="col-md-4"><span class="sel_obj_addr"></span></div>';
+        html += '<div class="col-md-4"><input type="button" onclick="var obj = new_obj(' + app_types[n].id + '); create_app_obj(\'' + app_name + '\',' + app_types[n].id + ', $(\'#obj_addr\').val(), obj, my_addrs ,$(\'#paytxfee\').val());" value="new obj" /></div>';
+        html += '</div>';
+        html += '</div>';
+
+        html += '<h4>objects</h4>'
+        html += '<div class="container">';
+        html += '<div id = "objs_' + app_types[n].id.toString(16) + '"></div>';
+        html += '<div class="row"><div class="col-md-4"><div id="objData_' + app_types[n].id.toString(16) + '"></div></div></div>';
+        html += '</div>';
+        
+
+        html += '<div id="childDiv_' + app_types[n].id.toString(16) + '">';
+        html += '<h5>Children</h5>';
+        html += '<div class="container">';
+        html += '<div class="row">';
+        html += '<div class="col-md-4"><span class="objid" id="pObj_' + app_types[n].id.toString(16) + '"></span></div>';
+        html += '</div>';
+
+        html += '<div class="row">';
+        html += '<div class="col-md-2"><select id="objChildKeys_' + app_types[n].id.toString(16) + '"></select></div>';
+        html += '<div class="col-md-4">child object : <input style="display:inline;" id="objChildId_' + app_types[n].id.toString(16) + '"/></div>';
+        html += '<div class="col-md-2"><input type="button" onclick="add_app_obj_child(\'' + app_name + '\', $(\'#pObj_' + app_types[n].id.toString(16) + '\').html(), $(\'#objChildKeys_' + app_types[n].id.toString(16) + '\').val(), $(\'#objChildId_' + app_types[n].id.toString(16) + '\').val(), my_addrs, $(\'#paytxfee\').val());" value="add child" /></div>';
+        html += '</div>';
+        html += '<div class="row">';
+        html += '<div class="col-md-4"><div id="objChilds_' + app_types[n].id.toString(16) + '"></div></div>';
+        html += '</div>';
+        html += '</div>';
+        html += '</div>';
+
+
+        html += '<hr/>';
+    }
+
+    $('#' + app_txid+ '_types').html(html);
+}
+
+
+
+function update_app_type_obj(typeId,objs)
+{
+    var n;
+    var type = null;
+    var tstr = typeId.toString(16);
+    var has_childs;
+    var html = '';
+
+    $('#objs_' + tstr).empty();
+
+    for (n = 0; n < app_types.length; n++)
+    {
+        if(app_types[n].id==typeId)
+            type = app_types[n];
+    }
+
+    if (type == null) return;
+    
+    has_childs = false;
+
+    for (n = 0; n < type.keys.length; n++) {
+
+        $('#objChildKeys_' + tstr).empty();
+        if (type.keys[n].id == 0x09000001)
+        {
+            $('#objChildKeys_' + tstr).append('<option>' + type.keys[n].name + '</option>');
+            has_childs = true;
+        }
+    }
+
+    if (has_childs)
+        $('#childDiv_' + tstr).css('display', 'block');
+    else
+        $('#childDiv_' + tstr).css('display', 'none');
+
+    for (n = 0; n < objs.length; n++) {
+        $('#objs_' + tstr).append('<div onclick="load_obj(my_app.appName,\'' + objs[n] + '\',\'objData_' + tstr + '\'); $(\'#pObj_' + tstr + '\').html(\'' + objs[n] + '\'); " class="objid">' + objs[n] + '</div>')
+    }
+}
+
+function update_app_file(file, path) {
+
+    var n;
+    var html = '';
+    
+    html += '<div class="row"><div class="col-md-2">name :</div><div class="col-md-2">' + file.filename + '</div></div>';
+    html += '<div class="row"><div class="col-md-2">mime :</div><div class="col-md-2">' + file.mime + '</div></div>';
+    html += '<div class="row"><div class="col-md-2">size :</div><div class="col-md-2">' + file.size + '</div></div>';
+    html += '<div class="row"><div class="col-md-2">hash :</div><div class="col-md-2">' + file.dataHash + '</div></div>';
+    html += '<div class="row"><div class="col-md-2">url :</div><div class="col-md-2"><a href="' + path + '" >' + file.filename + '</a></div></div>';
+    
+    $('#' + my_app.txid + '_file').html(html);
+}
+
+function update_app_layout(file, path) {
+
+    var n;
+    var html = '';
+
+    html += '<div class="row"><div class="col-md-2">name :</div><div class="col-md-2">' + file.filename + '</div></div>';
+    html += '<div class="row"><div class="col-md-2">mime :</div><div class="col-md-2">' + file.mime + '</div></div>';
+    html += '<div class="row"><div class="col-md-2">size :</div><div class="col-md-2">' + file.size + '</div></div>';
+    html += '<div class="row"><div class="col-md-2">hash :</div><div class="col-md-2">' + file.dataHash + '</div></div>';
+    html += '<div class="row"><div class="col-md-2">url :</div><div class="col-md-2"><a href="' + path + '" >' + file.filename + '</a></div></div>';
+
+    $('#' + my_app.txid + '_layout').html(html);
+}
+
+function update_app_files(files, numFiles) {
+    
+    var n;
+    var html = '';
+    for (n = 0; n < files.length; n++)
+    {
+        html += '<div class="row"><div class="col-md-2"><span onclick="get_app_file(\'' + files[n] + '\');" class="fileid">' + files[n] + '</span></div></div>'
+    }
+
+    $('#' + my_app.txid + '_files').html(html);
+}
+
+function update_app_upl(file) {
+
+    var html = '';
+    var size;
+
+    if (typeof file == 'undefined') return;
+    if (!file.filename) return;
+
+    if (file.start >= file.end) return;
+
+    size = file.end - file.start;
+
+    html += '<div class="row"><div class="col-md-2">name :</div><div class="col-md-2">' + file.filename + '</div></div>';
+    html += '<div class="row"><div class="col-md-2">mime :</div><div class="col-md-2">' + file.mime + '</div></div>';
+    html += '<div class="row"><div class="col-md-2">size :</div><div class="col-md-2">' + size + '</div></div>';
+    html += '<div class="row"><div class="col-md-2">hash :</div><div class="col-md-2">' + file.dataHash + '</div></div>';
+    html += '<div class="row"><div class="col-md-2">addr :</div><div class="col-md-2"><select name="fileKey" id="fileKey"><option>no addr</option></select></div></div>';
+    html += '<div class="row"><div class="col-md-4"><input type="button" onclick="create_app_file(app_name,\'' + file.dataHash + '\',$(\'#fileKey\').val(),my_addrs,$(\'#paytxfee\').val())" value="create file tx" ></div></div>';
+    $('#upl_file').html(html);
+
+    update_my_addrs_select('fileKey');
+}
+
+function update_app_upl_layout(file) {
+
+    var html = '';
+    var size;
+
+    if (typeof file == 'undefined') return;
+    if (!file.filename) return;
+
+    if (file.start >= file.end) return;
+
+    size = file.end - file.start;
+
+    html += '<div class="row"><div class="col-md-2">name :</div><div class="col-md-2">' + file.filename + '</div></div>';
+    html += '<div class="row"><div class="col-md-2">mime :</div><div class="col-md-2">' + file.mime + '</div></div>';
+    html += '<div class="row"><div class="col-md-2">size :</div><div class="col-md-2">' + size + '</div></div>';
+    html += '<div class="row"><div class="col-md-2">hash :</div><div class="col-md-2">' + file.dataHash + '</div></div>';
+    html += '<div class="row"><div class="col-md-4"><input type="button" onclick="create_app_layout(app_name,\'' + file.dataHash + '\',my_addrs,$(\'#paytxfee\').val())" value="create layout tx" ></div></div>';
+    $('#upl_layout').html(html);
+}
+
+function update_app_upl_module(file) {
+
+    var html = '';
+    var size;
+
+    if (typeof file == 'undefined') return;
+    if (!file.filename) return;
+
+    if (file.start >= file.end) return;
+
+    size = file.end - file.start;
+
+    html += '<div class="row"><div class="col-md-2">name :</div><div class="col-md-2">' + file.filename + '</div></div>';
+    html += '<div class="row"><div class="col-md-2">mime :</div><div class="col-md-2">' + file.mime + '</div></div>';
+    html += '<div class="row"><div class="col-md-2">size :</div><div class="col-md-2">' + size + '</div></div>';
+    html += '<div class="row"><div class="col-md-2">hash :</div><div class="col-md-2">' + file.dataHash + '</div></div>';
+    html += '<div class="row"><div class="col-md-4"><input type="button" onclick="create_app_module(app_name,\'' + file.dataHash + '\',my_addrs,$(\'#paytxfee\').val())" value="create module tx" ></div></div>';
+    $('#upl_mod').html(html);
+}
+
+function get_app_html(app) {
+    var types, objects;
+    var html;
+
+    html = '<section>'
+    html += '<h1>' + app.appName + '</h1><br/><span>txid : ' + app.txid + '</span><br/>Master addr : <span id="appAddr">' + app.appAddr + '</span>';
+    html += '<h2 style="cursor:pointer;" onclick=" $(\'#app_type_div\').toggleClass(\'invisible\'); ">types</h2>';
+    html += '<div id="app_type_div">'
+    html += '<div class="row"><div class="col-md-2"><span id="' + app.txid + '_types" ></span></div></div>';
+    html += '<div class="container" id="new_type">';
+    html += '<fieldset><legend>new type</legend>';
+    html += '<div id="app_error"></div>';
+    html += '<div class="row"><div class="col-md-2">name : <input type="text" size="12" name="new_type_name" id="new_type_name" /></div><div class="col-md-2">id : <input type="text" size="6" name="new_type_id" id="new_type_id" /></div></div>';
+    html += '<h3>keys</h3>';
+    html += '<div id="new_type_keys"></div>';
+    html += '<hr/>';
+    html += '<div class="row"><div class="col-md-2">name<input type="text" size="12" name="new_type_key_name" id="new_type_key_name" /></div><div class="col-md-2">type: <select name="new_type_key" id="new_type_key"></select></div><div class="col-md-2">unique<input type="checkbox" name="new_type_key_unique" id="new_type_key_unique" value="1" /></div><div class="col-md-2"><input type="button" onclick="if ( add_type_key($(\'#new_type_key_name\').val(), $(\'#new_type_key\').val(), $(\'#new_type_key_unique\').attr(\'checked\')==\'checked\'   ) ) { $(\'#new_type_key_name\').val(\'\'); }"value="+" /></div></div>';
+    html += '<div class="row"><div class="col-md-2"><input type="button" onclick="create_type();" value="new type" /></div></div>';
+    html += '</fieldset>';
+    html += '<hr/>';
+    html += '</div>';
+    html += '</div>';
+
+
+    html += '<h2 onclick=" $(\'#app_file_div\').toggleClass(\'invisible\'); ">files</h2>';
+    html += '<div id="app_file_div">'
+    html += '<div id="' + app.txid + '_files"></div>';
+    html += '<div id="' + app.txid + '_file"></div>';
+    html += '<form method="POST" enctype="multipart/form-data">';
+    html += '<fieldset><legend>new file</legend>';
+    html += '<div id="upl_file"></div>';
+    html += '<div id="file_error"></div>';
+    html += '<div class="row"><div class="col-md-2"><input type="file" name="myfile" id="myfile" value="new file" /></div><div class="col-md-2"><input type="submit" value="send" /></div></div>';
+    html += '</fieldset>';
+    html += '</form>';
+    html += '<hr/>';
+    html += '</div>';
+
+    html += '<h2 onclick=" $(\'#app_layout_div\').toggleClass(\'invisible\'); ">layouts</h2>';
+    html += '<div id="app_layout_div">'
+    html += '<div id="' + app.txid + '_layouts"></div>';
+    html += '<div id="' + app.txid + '_layout"></div>';
+    html += '<form method="POST" enctype="multipart/form-data">';
+    html += '<fieldset><legend>new layout</legend>';
+    html += '<div id="upl_layout"></div>';
+    html += '<div id="layout_error"></div>';
+    html += '<div class="row"><div class="col-md-2"><input type="file" name="mylayout" id="mylayout" value="new layout" /></div><div class="col-md-2"><input type="submit" value="send" /></div></div>';
+    html += '</fieldset>';
+    html += '</form>';
+    html += '<hr/>';
+    html += '</div>';
+
+
+    html += '<h2 onclick=" $(\'#app_mod_div\').toggleClass(\'invisible\'); ">Modules & script</h2>';
+    html += '<div id="app_mod_div">'
+    html += '<div id="' + app.txid + '_mods"></div>';
+    html += '<div id="' + app.txid + '_mod"></div>';
+    html += '<form method="POST" enctype="multipart/form-data">';
+    html += '<fieldset><legend>new module</legend>';
+    html += '<div id="upl_mod"></div>';
+    html += '<div id="mod_error"></div>';
+    html += '<div class="row"><div class="col-md-2"><input type="file" name="mymod" id="mymod" value="new mod" /></div><div class="col-md-2"><input type="submit" value="send" /></div></div>';
+    html += '</fieldset>';
+    html += '</form>';
+    html += '<hr/>';
+    html += '</div>';
+
+    html += '</section>';
+
+    return html;
+}
+function get_apps_html(apps) {
+
+    var n = 0;
+    var html = '';
+
+    for(n=0;n<apps.length;n++)
+    {
+        html += '<section>'
+        html += '<h1><a href="/nodix.site/application/' + apps[n].appName + '" >' +apps[n].appName + '</a></h1><br/><span>txid : ' + apps[n].txid + '</span><br/>Master addr : <span id="appAddr">' + apps[n].appAddr + '</span>';
+        html += '</section>'
+
+        
+    }
+    return html;
+}
+
+
 
 function update_txs(txs, tbl_name) {
     var num_txs = txs.length;
@@ -681,6 +1079,17 @@ function update_txs(txs, tbl_name) {
                 cell = row.insertCell(1);
                 cell.className = "txouts";
                 cell.innerHTML = '#0 null <br/>';
+            }
+            else  if (txs[n].is_app_root == 1)
+            {
+            	cell = row.insertCell(0);
+                cell.className = "txins";
+                cell.innerHTML = 'approot <br/>';
+                cell = row.insertCell(1);
+                cell.className = "txouts";
+                
+               
+                cell.innerHTML = '#0 '+txs[n].vout[0].value+' '+txs[n].dstaddr +'<br/>';
             }
             else {
                 cell = row.insertCell(0);
@@ -764,35 +1173,56 @@ function update_mempool_txs(txs, tbl_name) {
 
             row.id = "tx_infos_" + txs[n].txid;
             row.className = "tx_infos";
-      
-           cell = row.insertCell(0);
-           cell.className = "txins";
-           
-            var nins, nouts;
-            var html = '';
-
-            nins = txs[n].vin.length;
-            for (nn = 0; nn < nins; nn++) {
-
-                var hh = ' <a href= "' + site_base_url + '/address/' + txs[n].vin[nn].dstaddr + '" class="tx_address">' + txs[n].vin[nn].dstaddr + '</a>';
-
-                html += '#' + nn + '&nbsp' + hh + '&nbsp' + txs[n].vin[nn].value / unit + '  <br/>';
+        
+            
+        	if (txs[n].is_app_root == 1)
+            {
+            	cell = row.insertCell(0);
+                cell.className = "txins";
+                cell.innerHTML = 'approot <br/>';
+                cell = row.insertCell(1);
+                cell.className = "txouts";   
+                cell.innerHTML = '#0 '+txs[n].vout[0].value+' '+txs[n].dstaddr +'<br/>';
             }
-            cell.innerHTML = html;
+            else
+            {
+                cell = row.insertCell(0);
+      	     	cell.className = "txins";
            
-           cell = row.insertCell(1);
-           cell.className = "txouts";
+            	var nins, nouts;
+            	var html = '';
 
-           html = '';
-           if (txs[n].vout) {
-               nouts = txs[n].vout.length;
-               for (nn = 0; nn < nouts; nn++) {
+            	nins = txs[n].vin.length;
+            	for (nn = 0; nn < nins; nn++) {
+            	    if (txs[n].vin[nn].srcapp) {
+            	        new_html += 'App&nbsp; : ' + vin[nn].srcapp;
+            	        
+            	        if (txs[n].appChildOf) new_html += '&nbsp; child';
+            	        if (txs[n].app_item == 1) new_html += '&nbsp; type';
+            	        if (txs[n].app_item == 2) new_html += '&nbsp; obj';
+            	        if (txs[n].app_item == 3) new_html += '&nbsp; file';
 
-                   var hh = ' <a href="' + site_base_url + '/address/' + txs[n].vout[nn].dstaddr + '" class="tx_address">' + txs[n].vout[nn].dstaddr + '</span> ';
-                    html += '#' + nn + '&nbsp' + hh + '&nbsp' + txs[n].vout[nn].value / unit + ' <br/>';
-               }
-           }
-           cell.innerHTML = html;
+            	    }
+            	    else {
+            	        var hh = ' <a href= "' + site_base_url + '/address/' + txs[n].vin[nn].dstaddr + '" class="tx_address">' + txs[n].vin[nn].dstaddr + '</a>';
+            	        html += '#' + nn + '&nbsp' + hh + '&nbsp' + txs[n].vin[nn].value / unit + '  <br/>';
+            	    }
+            	}
+            	cell.innerHTML = html;
+           
+           		cell = row.insertCell(1);
+           		cell.className = "txouts";
+
+           		html = '';
+           		if (txs[n].vout) {
+               		nouts = txs[n].vout.length;
+               		for (nn = 0; nn < nouts; nn++) {
+                   		var hh = ' <a href="' + site_base_url + '/address/' + txs[n].vout[nn].dstaddr + '" class="tx_address">' + txs[n].vout[nn].dstaddr + '</span> ';
+                    	html += '#' + nn + '&nbsp' + hh + '&nbsp' + txs[n].vout[nn].value / unit + ' <br/>';
+               		}
+           		}
+           		cell.innerHTML = html;
+           	}
         }
         old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
     }
@@ -1220,11 +1650,11 @@ function show_tx(txid) {
 }
 
 
-function update_my_addrs(table_name) {
+function update_my_addrs(table_name,fn_click) {
     var old_tbody = document.getElementById(table_name).tBodies[0];
     var new_tbody = document.createElement('tbody');
 
-    
+    selected_balance = 0;
 
     if ((my_addrs == null) || (my_addrs.length == 0)) {
         document.getElementById(table_name).style.display = 'none';
@@ -1247,18 +1677,63 @@ function update_my_addrs(table_name) {
 
             cell = row.insertCell(1);
             cell.className = "balance_confirmed";
-            cell.innerHTML = '<span>' + my_addrs[n].amount / unit + '</span>';
+            cell.innerHTML = '<span id="balance_' + my_addrs[n].address + '" amount="' + my_addrs[n].amount + '">' + my_addrs[n].amount / unit + '</span>';
 
             cell = row.insertCell(2);
             cell.className = "balance_unconfirmed";
             cell.innerHTML = '<span>' + my_addrs[n].unconf_amount / unit + '</span>';
+
+            cell = row.insertCell(3);
+            cell.innerHTML = '<div><input type="password" onchange=" $(\'#dostake_' + my_addrs[n].address + '\').prop(\'checked\',false); update_unspent(\'list_table\'); " id="secret_' + my_addrs[n].address + '" value="" /></div>';
+
+            cell = row.insertCell(4);
+            cell.className = "dostake";
+            cell.setAttribute("addr", my_addrs[n].address);
+            cell.innerHTML = '<div><input type="checkbox" id="dostake_' + my_addrs[n].address + '" value="" /></div>';
         }
         document.getElementById(table_name).style.display = 'block';
         $('#myaddrhdr').html(num_addrs + ' addresses');
     }
     old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
 
-    $('.my_wallet_addr').click(function () { addr_txs = null; addr_tx_page_idx = 0; list_unspent($(this).attr('addr'),$('#'+table_name).attr('txdiv')); });
+    $('.dostake').change(function () {
+        var addr = $(this).attr('addr');
+        var secret = $('#secret_' + addr).val();
+        var accountName = $('#my_account').val();
+
+       
+
+        rpc_call('getprivaddr', [accountName, addr], function (keyData) {
+            var stakeAddrAr = [];
+            var DecHexkey = strtoHexString(un_enc(secret, keyData.result.privkey.slice(0, 64)));
+            var test_key = ec.keyPair({ priv: DecHexkey, privEnc: 'hex' });
+            var tpubkey = test_key.getPublic().encodeCompressed('hex');
+            rpc_call('pubkeytoaddr', [tpubkey], function (data) {
+                if (data.result.addr != addr) {
+                    $('#dostake_' + addr).prop('checked', false);
+                    $('#secret_' + addr).css('color', 'red');
+                    $('#dostake_' + addr).attr('pubkey', '');
+                    $('#dostake_' + addr).attr('privkey', '');
+                }
+                else {
+                    $('#dostake_' + addr).prop('checked', true);
+                    $('#dostake_' + addr).attr('pubkey', tpubkey);
+                    $('#dostake_' + addr).attr('privkey', DecHexkey);
+                    $('#secret_' + addr).css('color', 'green');
+                }
+                for (n = 0; n < my_addrs.length; n++) {
+                    if ($('#dostake_' + my_addrs[n].address).is(':checked'))
+                        stakeAddrAr[n] = my_addrs[n].address;
+                }
+                update_unspent('list_table');
+            });
+        });
+    });
+
+    if (fn_click==null)
+        $('.my_wallet_addr').click(function () { addr_txs = null; addr_tx_page_idx = 0; list_unspent($(this).attr('addr'), $('#' + table_name).attr('txdiv')); });
+    else
+        $('.my_wallet_addr').click(function () { fn_click($(this), table_name) });
 }
 function update_staking() {
     if (stake_unspents == null) return;
@@ -1360,16 +1835,19 @@ function update_addrs(tbl_name) {
 function update_my_addrs_select(select_name) {
 
     $('#' + select_name).empty();
-
     if ((my_addrs == null) || (my_addrs.length == 0))
+    {
+        $('<option>no addr</option>').appendTo('#' + select_name);
         return;
+    }
+        
 
     for (var i = 0; i < my_addrs.length; i++) {
         $('<option value="' + my_addrs[i].address + '">' + my_addrs[i].label + '</option>').appendTo('#' + select_name);
     }
 }
 
-function update_my_addrs_divs(parent_name) {
+function update_my_addrs_divs(parent_name,fn_click) {
 
     $('#' + parent_name).empty();
     $('<div class="row"><div class="col-md-4">label</div><div class="col-md-4">balance</div><div class="col-md-4">unconfirmed</div></div>').appendTo('#' + parent_name);
@@ -1380,7 +1858,10 @@ function update_my_addrs_divs(parent_name) {
         $('<div class="row"><div class="col-md-4 my_wallet_addr" addr="' + my_addrs[i].address + '" >' + my_addrs[i].label + '</div>' + '<div class="col-md-4">' + my_addrs[i].amount / unit + '</div>' + '<div class="col-md-4">' + my_addrs[i].unconf_amount / unit + '</div>' + '</div>').appendTo('#' + parent_name);
     }
 
-    $('.my_wallet_addr').click(function () { addr_txs = null; addr_tx_page_idx = 0; list_unspent($(this).attr('addr'), $('#' + parent_name).attr('txdiv')); });
+    if (fn_click == null)
+        $('.my_wallet_addr').click(function () { addr_txs = null; addr_tx_page_idx = 0; list_unspent($(this).attr('addr'), $('#' + parent_name).attr('txdiv')); });
+    else
+        $('.my_wallet_addr').click(function () { fn_click($(this)) });
 }
 
 function update_unspent(tbl_name) {
@@ -1391,12 +1872,15 @@ function update_unspent(tbl_name) {
     old_tbody = document.getElementById(tbl_name).tBodies[0];
     new_tbody = document.createElement('tbody');
 
+    selected_balance = 0;
     total = 0;
     for (n = 0; n < num_unspents; n++) {
         var row = new_tbody.insertRow(n);
 
-        if ($('#dostake_' + unspents[n].dstaddr).is(':checked'))
+        if ($('#dostake_' + unspents[n].dstaddr).is(':checked')) {
             row.className = 'tx_ready';
+            selected_balance += unspents[n].amount;
+        }
         else
             row.className = 'tx_error';
 
@@ -1432,6 +1916,9 @@ function update_unspent(tbl_name) {
         total += unspents[n].amount;
     }
     $('#txtotal').html(total / unit);
+    $('#selected_balance').html(selected_balance / unit);
+
+    
     old_tbody.parentNode.replaceChild(new_tbody, old_tbody);
 }
 function update_spent() {
@@ -1657,4 +2144,18 @@ function update_accounts(new_account)
 
   
     $('#uname').html(accountName);
+}
+
+function update_types_select(types,app_types,select_id) {
+
+    var n;
+    $('#' + select_id).empty();
+    for (n = 0; n < types.length;n++)
+    {
+        $('<option value="' + types[n].id + '">' + types[n].name + '</option>').appendTo('#' + select_id);
+    }
+
+    for (n = 0; n < app_types.length; n++) {
+        $('<option value="' + app_types[n].id + '">' + app_types[n].name + '</option>').appendTo('#' + select_id);
+    }
 }

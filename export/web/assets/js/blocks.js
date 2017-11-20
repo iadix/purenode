@@ -10,6 +10,9 @@ var sent = 0;
 var recv = 0;
 
 
+if (!Uint8Array.prototype.slice && 'subarray' in Uint8Array.prototype)
+     Uint8Array.prototype.slice = Uint8Array.prototype.subarray;
+
 function get_tx(hash) {
     api_call('tx', '/' + hash, function (data) {
         tx = data;

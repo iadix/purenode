@@ -68,6 +68,7 @@ OS_API_C_FUNC(int) network_init()
 	sys_add_tpo_mod_func_name("libcon", "send_data_av", (void_func_ptr)send_data_av, 0);
 	sys_add_tpo_mod_func_name("libcon", "create_upnp_broadcast", (void_func_ptr)create_upnp_broadcast, 0);
 	sys_add_tpo_mod_func_name("libcon", "send_upnpbroadcast", (void_func_ptr)send_upnpbroadcast, 0);
+	sys_add_tpo_mod_func_name("libcon", "get_con_ip", (void_func_ptr)get_con_ip, 0);
 }
 
 OS_API_C_FUNC(int) send_data_av(struct con *Con, unsigned char *data, size_t len)
@@ -82,18 +83,17 @@ OS_API_C_FUNC(int) send_data_av(struct con *Con, unsigned char *data, size_t len
 	timeout.tv_sec = 0;
 	timeout.tv_usec = 1000;
 
-
-
 	/* Block until input arrives on one or more active sockets. */
 	fd_write = Con->con_set;
 	fd_err = Con->con_set;
+
 	ret = select(Con->sock + 1, NULL, &fd_write, &fd_err, &timeout);
 	if (ret < 0)
-		return 0;
+		return -1;
 
-	if (FD_ISSET(Con->sock, &fd_err)){ Con->last_rd = 0; return 0; }
+	if (FD_ISSET(Con->sock, &fd_err)){ Con->last_rd = 0; return -1; }
 	if (FD_ISSET(Con->sock, &fd_write))
-		s = send(Con->sock, data, (int)(len), 0);
+		s = send(Con->sock, data, (int)(len), MSG_NOSIGNAL);
 	else
 		return 0;
 
@@ -190,6 +190,26 @@ OS_API_C_FUNC(int) get_if(const char *gw_ip, struct string *name, struct string 
 	}
 	freeifaddrs(addrs);
 	return 0;
+}
+
+int is_ip_self(const struct in_addr ip)
+{
+	struct ifaddrs *addrs,*tmp;
+	int ret=0;
+
+	getifaddrs(&addrs);
+	tmp = addrs;
+	while (tmp)
+	{
+		if (tmp->ifa_addr && tmp->ifa_netmask )
+		{
+			struct in_addr if_addr=	((struct sockaddr_in *)tmp->ifa_addr)->sin_addr;
+			if(if_addr.s_addr==ip.s_addr){ret=1;break;}
+		}
+	    tmp = tmp->ifa_next;
+	}
+	freeifaddrs(addrs);
+	return ret;
 }
 
 OS_API_C_FUNC(const struct string *)get_con_error(struct con *Con)
@@ -539,6 +559,19 @@ OS_API_C_FUNC(int) send_data (struct con *Con,unsigned char *data,size_t len)
 	}
 	return b_sent;
 }
+
+OS_API_C_FUNC(int)get_con_ip(struct con *Con, ipv4_t ip)
+{
+	if (Con == PTR_NULL)return 0;
+
+	ip[0] = Con->peer.sin_addr.s_addr & 0xFF;
+	ip[1] = (Con->peer.sin_addr.s_addr >> 8) & 0xFF;
+	ip[2] = (Con->peer.sin_addr.s_addr >> 16) & 0xFF;
+	ip[3] = (Con->peer.sin_addr.s_addr >> 24) & 0xFF;
+
+	return 1;
+}
+
 OS_API_C_FUNC(struct con *)do_get_incoming(struct con *listen_con, unsigned int time_out)
 {
 	fd_set		    my_listen,error;
@@ -628,7 +661,9 @@ OS_API_C_FUNC(int) set_tcp_no_delay(struct con *mycon, int on)
 
 OS_API_C_FUNC(int) reconnect(struct con *mycon)
 {
-	struct hostent		*iHost;
+	/*struct hostent		*iHost;*/
+	struct addrinfo hints;
+	struct addrinfo *res = NULL;
 	int					iResult;
 	free_string	(&mycon->lastLine);
 	free_string	(&mycon->error);
@@ -645,14 +680,33 @@ OS_API_C_FUNC(int) reconnect(struct con *mycon)
 		make_string(&mycon->error,"no socket");
 		return 0;
 	}
+	
+	memset_c(&hints, 0, sizeof(struct addrinfo));
+    hints.ai_family = AF_INET;    /* Allow IPv4 */
+    hints.ai_socktype = SOCK_STREAM; /* Stream socket */
+    hints.ai_flags = 0;
+    hints.ai_protocol = IPPROTO_TCP;
+	
+	iResult = getaddrinfo (mycon->host.host.str,NULL,NULL,&res);
+	
+	if(iResult!=0){
+		make_string(&mycon->error,"host not found");
+		freeaddrinfo(res); 
+		return 0;
+	}
+	mycon->peer.sin_addr	=((struct sockaddr_in *)res->ai_addr)->sin_addr;
+	
+	/*
 	iHost = gethostbyname	(mycon->host.host.str);
 	if(iHost==NULL){
 		make_string(&mycon->error,"host not found");
 		return 0;
 	}
-
 	mycon->peer.sin_addr.s_addr		= *((unsigned long*) iHost->h_addr);
+	*/
+	
     mycon->peer.sin_family			= AF_INET;
+    freeaddrinfo					(res); 
     mycon->peer.sin_port		    = htons		 (mycon->host.port);
 	iResult						    = connect	 (mycon->sock, (struct sockaddr *)&mycon->peer, sizeof(struct sockaddr_in));
 	if(iResult!=0){
@@ -660,7 +714,7 @@ OS_API_C_FUNC(int) reconnect(struct con *mycon)
 		strcat_int(&mycon->error, iResult);
 		return 0;
 	}
-
+   
 	FD_SET(mycon->sock,&mycon->con_set);
 	return 1;
 
@@ -669,13 +723,50 @@ OS_API_C_FUNC(int) reconnect(struct con *mycon)
 OS_API_C_FUNC(struct con	*)do_connect(const struct host_def *host)
 {
 	struct con			*newCon;
-	struct hostent		*iHost;
+	/*struct hostent	*iHost;*/
+	struct addrinfo hints;
+	struct addrinfo *res = NULL;
+	
 	int					iResult;
-
+	
 	newCon				=	init_con	();
+	
 	newCon->host.port	=	host->port;
 	clone_string			(&newCon->host.port_str	,&host->port_str);
 	clone_string			(&newCon->host.host		,&host->host);
+	
+	log_output("resolving host\n");
+	
+	memset_c(&hints, 0, sizeof(struct addrinfo));
+    hints.ai_family = AF_INET;    /* Allow IPv4  */
+    hints.ai_socktype = SOCK_STREAM; /* Stream socket */
+    hints.ai_flags = 0;
+    hints.ai_protocol = IPPROTO_TCP;
+	
+	iResult = getaddrinfo (newCon->host.host.str,NULL,NULL,&res);
+	
+	if(iResult!=0){
+		make_string(&newCon->error,"host not found");
+		freeaddrinfo(res); 
+		return newCon;
+	}
+	
+	newCon->peer.sin_addr	=((struct sockaddr_in *)res->ai_addr)->sin_addr;
+/*	
+	iHost							= gethostbyname	(newCon->host.host.str);
+	if(iHost==NULL){
+		make_string(&newCon->error,"host not found");
+		return newCon;
+	}
+	newCon->peer.sin_addr.s_addr	= *((unsigned long*) iHost->h_addr);
+*/	
+	freeaddrinfo				(res); 
+	
+	if(is_ip_self(newCon->peer.sin_addr) )
+	{
+		make_string(&newCon->error,"connection to self skipped");
+		return newCon;
+	}
 
     /* Resolve the server address and port */
 	newCon->sock					= socket	 (AF_INET,SOCK_STREAM,IPPROTO_TCP);
@@ -683,14 +774,10 @@ OS_API_C_FUNC(struct con	*)do_connect(const struct host_def *host)
 		make_string(&newCon->error,"no socket");
 		return newCon;
 	}
-	iHost							= gethostbyname	(newCon->host.host.str);
-	if(iHost==NULL){
-		make_string(&newCon->error,"host not found");
-		return newCon;
-	}
 
-	newCon->peer.sin_addr.s_addr	= *((unsigned long*) iHost->h_addr);
-    newCon->peer.sin_family			= AF_INET;
+  	newCon->peer.sin_family		= AF_INET;
+  	log_output("connecting host\n");
+  	
     newCon->peer.sin_port		    = htons		 (newCon->host.port);
 	iResult						    = connect	 (newCon->sock, (struct sockaddr *)&newCon->peer, sizeof(struct sockaddr_in));
 
@@ -698,8 +785,11 @@ OS_API_C_FUNC(struct con	*)do_connect(const struct host_def *host)
 		make_string(&newCon->error,"connection error");
 		return newCon;
 	}
-
+	log_output("connected\n");
+	FD_ZERO(&newCon->con_set);
 	FD_SET(newCon->sock,&newCon->con_set);
+	
+
 	return newCon;
 }
 

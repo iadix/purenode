@@ -64,3 +64,17 @@ NODE_API int			C_API_FUNC		get_locator_next_blocks(mem_zone_ref_ptr locator, mem
 NODE_API int			C_API_FUNC		node_check_new_connections(){ return 0; }
 
 
+NODE_API int			C_API_FUNC		node_release_mining_lock(){ return 0; }
+NODE_API int			C_API_FUNC		node_store_last_pow_hash(mem_zone_ref_ptr blk){ return 0; }
+NODE_API int			C_API_FUNC		queue_addr_message(mem_zone_ref_ptr node, mem_zone_ref_ptr addrs){ return 0; }
+NODE_API int			C_API_FUNC		node_release_mempool_lock(){ return 0; }
+NODE_API int			C_API_FUNC		node_aquire_mining_lock(){ return 0; }
+NODE_API int			C_API_FUNC		node_del_btree_from_mempool(){ return 0; }
+NODE_API int			C_API_FUNC		node_aquire_mempool_lock(mem_zone_ref_ptr mempool){ return 0; }
+NODE_API int			C_API_FUNC		node_store_tmp_file(struct string *app_name, mem_zone_ref_ptr file){ return 0; }
+NODE_API int			C_API_FUNC		node_create_pow_block(mem_zone_ref_ptr newBlock, btc_addr_t coinbaseAddr){ return 0; }
+NODE_API int			C_API_FUNC		compute_last_pow_diff(mem_zone_ref_ptr blk, mem_zone_ref_ptr nBits){ return 0; }
+NODE_API int			C_API_FUNC		node_get_types_def(mem_zone_ref_ptr types){ return 0; }
+NODE_API int			C_API_FUNC		node_rm_tmp_file(struct string *app_name, mem_zone_ref_ptr file){ return 0; }
+
+

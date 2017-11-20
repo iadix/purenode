@@ -18,6 +18,9 @@ int init_zfuncs()
 	sys_add_tpo_mod_func_name("libcon", "deflate", (void_func_ptr)deflate, 0);
 	sys_add_tpo_mod_func_name("libcon", "deflateEnd", (void_func_ptr)deflateEnd, 0);
 
+	sys_add_tpo_mod_func_name("libcon", "compress2", (void_func_ptr)compress2, 0);
+	sys_add_tpo_mod_func_name("libcon", "uncompress", (void_func_ptr)uncompress, 0);
+
 
 	sys_add_tpo_mod_func_name("libcon", "inflate", (void_func_ptr)inflate, 0);
 	sys_add_tpo_mod_func_name("libcon", "inflateReset", (void_func_ptr)inflateReset, 0);

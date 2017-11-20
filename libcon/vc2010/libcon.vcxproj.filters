@@ -34,6 +34,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
     </Filter>
+    <Filter Include="Fichiers sources\zip">
+      <UniqueIdentifier>{ac74f4f0-dff6-45c5-9d9d-879b3e2bc6a6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\strs.c">
@@ -113,6 +116,18 @@
     </ClCompile>
     <ClCompile Include="..\zlibexp.c">
       <Filter>Fichiers sources\base</Filter>
+    </ClCompile>
+    <ClCompile Include="..\minizip-master\ioapi.c">
+      <Filter>Fichiers sources\zip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\minizip-master\ioapi_mem.c">
+      <Filter>Fichiers sources\zip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\minizip-master\zip.c">
+      <Filter>Fichiers sources\zip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dozip.c">
+      <Filter>Fichiers sources</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

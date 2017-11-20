@@ -23,10 +23,12 @@ LIBC_API const char	*	C_API_FUNC strrchr_c				(const char *src,int car);
 LIBC_API size_t 		C_API_FUNC strlen_c					(const char *string);
 LIBC_API size_t			C_API_FUNC strlpos_c				(const char *string,size_t ofset,char c);
 LIBC_API size_t			C_API_FUNC strrpos_c				(const char *string,char c);
-LIBC_API char *			C_API_FUNC itoa_s					(int value, char *string,size_t len, int radix);
-LIBC_API int			C_API_FUNC my_itoa_s				(int num, unsigned char* str, int len, int base);
-LIBC_API char *			C_API_FUNC uitoa_s					(size_t value, char *string,size_t len, int radix);
-LIBC_API char *			C_API_FUNC luitoa_s					(uint64_t value, char *string, size_t len, int radix);
+
+LIBC_API int			C_API_FUNC itoa_s					(int value, char *string,size_t len, int radix);
+LIBC_API int			C_API_FUNC uitoa_s					(size_t value, char *string, size_t len, int radix);
+LIBC_API int			C_API_FUNC luitoa_s					(uint64_t value, char *string, size_t len, int radix);
+LIBC_API int			C_API_FUNC litoa_s					(int64_t value, char *str, size_t len, int base);
+
 LIBC_API long			C_API_FUNC strtol_c					(const char *nptr, char **endptr,int base);
 LIBC_API int64_t		C_API_FUNC strtoll_c				(const char *nptr, char **endptr, int base);
 LIBC_API unsigned long	C_API_FUNC strtoul_c				(const char *nptr, char **endptr, int base);
@@ -48,6 +50,9 @@ LIBC_API void			C_API_FUNC dtoa_c					(char *buff, char conv, int bsize, int dpl
 LIBC_API unsigned int	C_API_FUNC parseDate				(const char *date);
 LIBC_API void			C_API_FUNC store_bigendian			(unsigned char *x, uint64_t u);
 LIBC_API uint64_t		C_API_FUNC load_bigendian			(const unsigned char *x);
+
+LIBC_API void			C_API_FUNC strtod_c					(const char *str, double *d);
+LIBC_API void			C_API_FUNC strtof_c					(const char *str, float *f);
 
 static const char		hex_chars[]		=	{'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
 

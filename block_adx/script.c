@@ -8,6 +8,9 @@
 #include <crypto.h>
 #include <strs.h>
 #include <tree.h>
+#include <fsio.h>
+
+#include "../zlib-1.2.8/zlib.h"
 
 #define BLOCK_API C_EXPORT
 #include "block_api.h"
@@ -147,17 +150,35 @@ int compute_script_size(mem_zone_ref_ptr script_node)
 	mem_zone_ref_ptr	key = PTR_NULL;
 	mem_zone_ref		my_list = { PTR_NULL };
 	size_t				length;
+	unsigned char		byte;
 
 	length = 0;
 
 	for (tree_manager_get_first_child(script_node, &my_list, &key); ((key != PTR_NULL) && (key->zone != PTR_NULL)); tree_manager_get_next_child(&my_list, &key))
 	{
 		unsigned char	*data;
+		uint64_t		i64val;
+		unsigned int	ival;
 
 		switch (tree_mamanger_get_node_type(key))
 		{
 			case NODE_BITCORE_SCRIPT_OPCODE:
+				tree_mamanger_get_node_byte(key, 0, &byte);
 				length++;
+
+				if(byte==0x4c)
+				{
+					unsigned char datasz;
+					tree_mamanger_get_node_byte(key, 1, &datasz);
+					length += (datasz+1);
+				}
+				if (byte == 0x4d)
+				{
+					unsigned short datasz;
+					tree_mamanger_get_node_word(key, 1, &datasz);
+					length += (datasz + 1);
+				}
+					
 			break;
 			case NODE_BITCORE_VSTR:
 				data = (unsigned char	*)tree_mamanger_get_node_data_ptr(key, 0);
@@ -195,6 +216,32 @@ int compute_script_size(mem_zone_ref_ptr script_node)
 					length += 9;
 				}
 				break;
+			case NODE_GFX_INT:
+				tree_mamanger_get_node_dword(key, 0, &ival);
+
+				if (ival == 0)
+					length++;
+				else if (ival < 256)
+					length+=2;
+				else if (ival < ((1 << 16) - 1))
+					length+=3;
+				else
+					length += 5;
+				break;
+			case NODE_GFX_BINT:
+				tree_mamanger_get_node_qword(key, 0, &i64val);
+				if (ival == 0)
+					length++;
+				else if (ival < 256)
+					length += 2;
+				else if (ival < ((1 << 16) - 1))
+					length += 3;
+				else if (ival < ((1 << 32) - 1))
+					length += 5;
+				else 
+					length += 9;
+
+				break;
 		}
 	}
 	return length;
@@ -220,12 +267,43 @@ OS_API_C_FUNC(int) serialize_script(mem_zone_ref_ptr script_node, struct string 
 	{
 		unsigned char	*data;
 		unsigned char	byte;
+		uint64_t		i64val;
+		unsigned int	ival;
 
 		switch (tree_mamanger_get_node_type(key))
 		{
 		case NODE_BITCORE_SCRIPT_OPCODE:
 			tree_mamanger_get_node_byte(key, 0, &byte);
 			*(script_data++) = byte;
+
+			if(byte==0x4c)
+			{
+				unsigned char datasz;
+				mem_ptr		  data_ptr;
+
+				tree_mamanger_get_node_byte(key, 1, &datasz);
+				*(script_data++) = datasz;
+				if(datasz>0)
+				{
+					data_ptr = tree_mamanger_get_node_data_ptr(key,2);
+					memcpy_c(script_data,data_ptr,datasz);
+					script_data+=datasz;
+				}
+			}
+			if (byte == 0x4d)
+			{
+				unsigned short datasz;
+				mem_ptr		  data_ptr;
+				tree_mamanger_get_node_word(key, 1, &datasz);
+				*((unsigned short*)(script_data)) = datasz;
+				script_data += 2;
+				if (datasz>0)
+				{
+					data_ptr = tree_mamanger_get_node_data_ptr(key, 3);
+					memcpy_c(script_data, data_ptr, datasz);
+					script_data += datasz;
+				}
+			}
 		break;
 		case NODE_BITCORE_VSTR:
 			data = (unsigned char *)tree_mamanger_get_node_data_ptr(key, 0);
@@ -290,6 +368,61 @@ OS_API_C_FUNC(int) serialize_script(mem_zone_ref_ptr script_node, struct string 
 				script_data += 8;
 			}
 			break;
+			case NODE_GFX_INT:
+				tree_mamanger_get_node_dword(key, 0, &ival);
+				
+				if (ival == 0)
+				{
+					*(script_data++) = 0;
+				}
+				else if (ival < 256)
+				{
+					*(script_data++) = 1;
+					*(script_data++) = ival;
+				}
+				else if (ival < ((1 << 16) - 1))
+				{
+					*(script_data++) = 2;
+					(*((unsigned short *)(script_data))) = ival;
+					script_data += 2;
+				}
+				else 
+				{
+					*(script_data++) = 4;
+					(*((unsigned int *)(script_data))) = ival;
+					script_data += 4;
+				}
+			break;
+			case NODE_GFX_BINT:
+				tree_mamanger_get_node_qword(key, 0, &i64val);
+				if (i64val == 0)
+				{
+					*(script_data++) = 0;
+				}
+				else if (i64val < 256)
+				{
+					*(script_data++) = 1;
+					*(script_data++) = i64val;
+				}
+				else if (i64val < ((1 << 16) - 1))
+				{
+					*(script_data++) = 2;
+					(*((unsigned short *)(script_data))) = i64val;
+					script_data += 2;
+				}
+				else if (i64val < ((1 << 32) - 1))
+				{
+					*(script_data++) = 4;
+					(*((unsigned int *)(script_data))) = i64val;
+					script_data += 4;
+				}
+				else
+				{
+					*(script_data++) = 8;
+					(*((uint64_t *)(script_data))) = i64val;
+					script_data += 8;
+				}
+				break;
 		}
 	}
 
@@ -342,16 +475,33 @@ struct string get_next_script_var(const struct string *script,size_t *offset)
 	struct string var = { PTR_NULL };
 	unsigned char *p = (unsigned char *)(&script->str[*offset]);
 
+	if ((*offset) >= script->len)return var;
+
 	if ((*p) < 80)
 	{
 		var.len		= (*p);
+
+		if (((*offset) + var.len) > script->len)return var;
+
 		var.size	= var.len + 1;
 		var.str		= malloc_c(var.size);
 		memcpy_c(var.str, p + 1, var.len);
 		var.str[var.len] = 0;
 		(*offset) += var.len + 1;
 	}
-	else
+	else if ((*p) == 0xFD)
+	{
+		(*offset)++;
+		if (((*offset) + var.len) > script->len)return var;
+
+		var.len = *(unsigned short *)(p+1);
+		var.size = var.len + 1;
+		var.str = malloc_c(var.size);
+		memcpy_c(var.str, p + 3, var.len);
+		var.str[var.len] = 0;
+		(*offset) += var.len + 3;
+	}
+	else if (((*offset) + 1) <= script->len)
 		(*offset)++;
 
 	return var;
@@ -360,16 +510,22 @@ struct string get_next_script_var(const struct string *script,size_t *offset)
 
 int add_script_var(mem_zone_ref_ptr script_node, const struct string *val)
 {
-	
 	mem_zone_ref new_var = { PTR_NULL };
 	int ret;
 	if (!tree_manager_add_child_node(script_node, "var", NODE_BITCORE_VSTR, &new_var))return 0;
 	ret=tree_manager_write_node_vstr(&new_var, 0, val);
 	release_zone_ref(&new_var);
 	return ret;
-	
-	
-	
+}
+
+int add_script_uivar(mem_zone_ref_ptr script_node,uint64_t val)
+{
+	mem_zone_ref new_var = { PTR_NULL };
+	int ret;
+	if (!tree_manager_add_child_node(script_node, "var", NODE_BITCORE_VINT, &new_var))return 0;
+	ret=tree_manager_write_node_qword(&new_var, 0, val);
+	release_zone_ref(&new_var);
+	return ret;
 }
 
 int add_script_opcode(mem_zone_ref_ptr script_node, unsigned char opcode)
@@ -381,6 +537,319 @@ int add_script_opcode(mem_zone_ref_ptr script_node, unsigned char opcode)
 	release_zone_ref(&new_var);
 	return ret;
 }
+
+int add_script_push_data(mem_zone_ref_ptr script_node,mem_ptr data, size_t size)
+{
+	mem_zone_ref	new_var = { PTR_NULL };
+	int				ret;
+	if (!tree_manager_add_child_node(script_node, "op", NODE_BITCORE_SCRIPT_OPCODE, &new_var))return 0;
+	
+	if(size<256)
+	{
+		ret = tree_manager_write_node_byte(&new_var, 0, 0x4c);
+		if(ret)ret = tree_manager_write_node_byte(&new_var, 1, size);
+		if(ret)ret = tree_manager_write_node_data(&new_var, data,2, size);
+	}
+	else if (size<65536)
+	{
+		ret = tree_manager_write_node_byte(&new_var, 0, 0x4D);
+		if (ret)ret = tree_manager_write_node_word(&new_var, 1, size);
+		if (ret)ret = tree_manager_write_node_data(&new_var, data, 3, size);
+	}
+
+	release_zone_ref(&new_var);
+	return ret;
+}
+
+OS_API_C_FUNC(int) make_script_file(mem_zone_ref_ptr file,struct string *pKey,struct string *sign, mem_zone_ref_ptr script)
+{
+	hash_t		  hash;
+	struct string mime = { 0 }, fileName = { 0 }, hashStr = { 0 };
+	size_t		  start,end,size;
+
+	tree_manager_get_child_value_i32(file, NODE_HASH("start"), &start);
+	tree_manager_get_child_value_i32(file, NODE_HASH("end"), &end);
+
+	size = end - start;
+
+	tree_manager_get_child_value_istr(file, NODE_HASH("filename"), &fileName, 0);
+	tree_manager_get_child_value_istr(file, NODE_HASH("mime"), &mime, 0);
+	tree_manager_get_child_value_hash(file, NODE_HASH("dataHash"), hash);
+	
+	hashStr.str = hash;
+	hashStr.len = 32;
+
+	add_script_var	(script, &hashStr);
+	add_script_var	(script, pKey);
+	add_script_var	(script, sign);
+	add_script_var	(script, &fileName);
+	add_script_var	(script, &mime);
+	add_script_uivar(script, size);
+
+	free_string		(&fileName);
+	free_string		(&mime);
+	return 1;
+}
+int get_script_file(struct string *script,mem_zone_ref_ptr file)
+{
+	hash_t		  hash;
+	struct string pKey = { 0 }, sizeStr = { 0 }, sign = { 0 }, mime = { 0 }, fileName = { 0 }, hashStr = { 0 };
+	size_t		  offset,size;
+	int			  ret;
+	
+	offset  = 0;
+
+	hashStr = get_next_script_var(script, &offset);
+	ret = (hashStr.len == 32) ? 1 : 0;
+	if (ret)
+	{
+		int n = 32;
+		while (n--)
+		{
+			hash[n] = hashStr.str[31 - n];
+		}
+	}
+
+	if(ret)pKey = get_next_script_var(script, &offset);
+	if(ret)ret  = (pKey.len == 33) ? 1 : 0;
+
+	if(ret)sign	= get_next_script_var(script, &offset);
+	if (ret)ret = blk_check_sign(&sign, &pKey, hash);
+	if(ret)fileName = get_next_script_var(script, &offset);
+	if(ret)ret = (fileName.len > 0) ? 1 : 0;
+	if(ret)mime = get_next_script_var(script, &offset);
+	if(ret)ret = (mime.len > 0) ? 1 : 0;
+	if(ret)sizeStr = get_next_script_var(script, &offset);
+	if(ret)ret = (sizeStr.len > 0) ? 1 : 0;
+
+	if (sizeStr.len == 1)
+		size = *((unsigned char *)(sizeStr.str));
+	else if (sizeStr.len == 2)
+		size = *((unsigned short *)(sizeStr.str));
+	else if (sizeStr.len == 4)
+		size = *((unsigned int *)(sizeStr.str));
+	else 
+		size = *((uint64_t *)(sizeStr.str));
+
+
+
+	if (ret)
+	{
+		mem_zone_ref sig = { PTR_NULL };
+
+		tree_manager_set_child_value_vstr(file, "filename", &fileName);
+		tree_manager_set_child_value_vstr(file, "mime", &mime);
+		tree_manager_set_child_value_i32(file, "size", size);
+		tree_manager_set_child_value_hash(file, "dataHash", (unsigned char *)hashStr.str);
+	}
+	
+	free_string(&hashStr);
+	free_string(&pKey);
+	free_string(&sign);
+	free_string(&fileName);
+	free_string(&mime);
+	free_string(&sizeStr);
+
+	return ret;
+}
+
+
+
+
+OS_API_C_FUNC(int) make_script_layout(mem_zone_ref_ptr file, mem_zone_ref_ptr script)
+{
+	char			chash[65];
+	struct string	mime = { 0 }, fileName = { 0 }, fileData = { 0 }, tmp_file = { 0 };
+	int				ret = 0;
+
+	tree_manager_get_child_value_istr(file, NODE_HASH("filename"), &fileName, 0);
+	tree_manager_get_child_value_str(file, NODE_HASH("dataHash"), chash, 65, 0);
+
+
+	make_string		(&tmp_file, "tmp");
+	cat_cstring_p	(&tmp_file, chash);
+	if (get_file(tmp_file.str, &fileData.str, &fileData.len)>0)
+	{
+		size_t			ll;
+		struct string	cbuff;
+
+		ll			= fileData.len;
+		cbuff.size  = ll;
+		cbuff.str	= malloc_c(cbuff.size);
+
+		compress2		(cbuff.str, &ll, fileData.str, fileData.len,9);
+
+		cbuff.len = ll;
+
+		add_script_var	(script, &fileName);
+		add_script_uivar(script, fileData.len);
+		add_script_var	(script, &cbuff);
+		
+		free_string		(&fileData);
+		free_string		(&cbuff);
+		ret = 1;
+	}
+
+	free_string(&tmp_file);
+	free_string(&fileName);
+	free_string(&mime);
+	return ret;
+}
+
+OS_API_C_FUNC(int) make_script_module(mem_zone_ref_ptr file, mem_zone_ref_ptr script)
+{
+	char			chash[65];
+	struct string	mime = { 0 }, fileName = { 0 }, fileData = { 0 }, tmp_file = { 0 };
+	int				ret = 0;
+
+	tree_manager_get_child_value_istr(file, NODE_HASH("filename"), &fileName, 0);
+	tree_manager_get_child_value_istr(file, NODE_HASH("mime"), &mime, 0);
+	tree_manager_get_child_value_str(file, NODE_HASH("dataHash"), chash, 65, 0);
+
+
+	make_string(&tmp_file, "tmp");
+	cat_cstring_p(&tmp_file, chash);
+	if (get_file(tmp_file.str, &fileData.str, &fileData.len)>0)
+	{
+		size_t			ll;
+		struct string	cbuff;
+
+		ll = fileData.len;
+		cbuff.size = ll;
+		cbuff.str = malloc_c(cbuff.size);
+
+		compress2(cbuff.str, &ll, fileData.str, fileData.len, 9);
+
+		cbuff.len = ll;
+
+		add_script_var(script, &fileName);
+		add_script_var(script, &mime);
+		
+		add_script_uivar(script, fileData.len);
+		add_script_var(script, &cbuff);
+
+		free_string(&fileData);
+		free_string(&cbuff);
+		ret = 1;
+	}
+
+	free_string(&tmp_file);
+	free_string(&mime);
+	free_string(&fileName);
+	free_string(&mime);
+	return ret;
+}
+
+int get_script_layout(struct string *script, mem_zone_ref_ptr file)
+{
+	struct string sizeStr = { 0 }, fileName = { 0 }, cbuff = { 0 }, fileData = { 0 };
+	size_t		  offset,size;
+	int			  ret;
+
+	offset = 0;
+
+	fileName		= get_next_script_var(script, &offset);
+	ret				= (fileName.len > 0) ? 1 : 0;
+	if (ret)sizeStr	= get_next_script_var(script, &offset);
+	if (ret)ret		= (sizeStr.len > 0) ? 1 : 0;
+
+	if (sizeStr.len == 1)
+		size = *((unsigned char *)(sizeStr.str));
+	else if (sizeStr.len == 2)
+		size = *((unsigned short *)(sizeStr.str));
+	else if (sizeStr.len == 4)
+		size = *((unsigned int *)(sizeStr.str));
+	else
+		size = *((uint64_t *)(sizeStr.str));
+
+	if (ret)cbuff = get_next_script_var(script, &offset);
+
+	if (ret)
+	{
+		hash_t		 hash;
+
+		fileData.size = size;
+		fileData.str  = malloc_c(fileData.size);
+
+		ret = (uncompress		(fileData.str, &size, cbuff.str, cbuff.len) == Z_OK)?1:0;
+
+		if (ret)
+		{
+			fileData.len = size;
+
+			mbedtls_sha256					 (fileData.str, fileData.len, hash, 0);
+			tree_manager_set_child_value_vstr(file, "filename", &fileName);
+			tree_manager_set_child_value_vstr(file, "filedata", &fileData);
+			tree_manager_set_child_value_hash(file, "dataHash", hash);
+		}
+
+		free_string(&fileData);
+	}
+
+	free_string(&fileName);
+	free_string(&cbuff);
+	free_string(&sizeStr);
+
+	return ret;
+}
+
+int get_script_module(struct string *script, mem_zone_ref_ptr file)
+{
+	struct string sizeStr = { 0 }, fileName = { 0 }, mime = { 0 }, cbuff = { 0 }, fileData = { 0 };
+	size_t		  offset, size;
+	int			  ret;
+
+	offset = 0;
+
+	fileName = get_next_script_var(script, &offset);
+	ret = (fileName.len > 0) ? 1 : 0;
+	if(ret)mime = get_next_script_var(script, &offset);
+	if(ret)ret  = ((!strcmp_c(mime.str, "application/module")) || (!strcmp_c(mime.str, "application/script"))) ? 1 : 0;
+	if (ret)sizeStr = get_next_script_var(script, &offset);
+	if (ret)ret = (sizeStr.len > 0) ? 1 : 0;
+
+	if (sizeStr.len == 1)
+		size = *((unsigned char *)(sizeStr.str));
+	else if (sizeStr.len == 2)
+		size = *((unsigned short *)(sizeStr.str));
+	else if (sizeStr.len == 4)
+		size = *((unsigned int *)(sizeStr.str));
+	else
+		size = *((uint64_t *)(sizeStr.str));
+
+	if (ret)cbuff = get_next_script_var(script, &offset);
+
+	if (ret)
+	{
+		hash_t		 hash;
+
+		fileData.size = size;
+		fileData.str  = malloc_c(fileData.size);
+
+		ret = (uncompress(fileData.str, &size, cbuff.str, cbuff.len) == Z_OK) ? 1 : 0;
+
+		if (ret)
+		{
+			fileData.len = size;
+
+			mbedtls_sha256(fileData.str, fileData.len, hash, 0);
+			tree_manager_set_child_value_vstr(file, "filename", &fileName);
+			tree_manager_set_child_value_vstr(file, "mime", &mime);
+			tree_manager_set_child_value_vstr(file, "filedata", &fileData);
+			tree_manager_set_child_value_hash(file, "dataHash", hash);
+		}
+
+		free_string(&fileData);
+	}
+
+	free_string(&fileName);
+	free_string(&mime);
+	free_string(&cbuff);
+	free_string(&sizeStr);
+
+	return ret;
+}
+
 
 OS_API_C_FUNC(int) parse_sig_seq(const struct string *sign_seq, struct string *sign, unsigned char *hashtype, int rev)
 {
@@ -479,6 +948,10 @@ OS_API_C_FUNC(int) get_insig_info(const struct string *script, struct string *si
 	struct string	sigseq = { PTR_NULL };
 	size_t			offset = 0;
 	int				ret = 0;
+
+	if (script->len == 0)return 0;
+	if (script->str == PTR_NULL)return 0;
+
 	sigseq = get_next_script_var(script, &offset);
 	if (sigseq.str == PTR_NULL)return 0;
 	if (sigseq.len < 69)
@@ -511,6 +984,9 @@ int get_insig(const struct string *script, struct string *sign_seq, struct strin
 int check_sign(const struct string *sign, const struct string *pubK, const hash_t txh)
 {
 	int ret=0;
+
+	if (sign->str == PTR_NULL)return 0;
+
 	if (pubK->len == 33)
 	{
 		struct string ppk = { PTR_NULL };
@@ -534,11 +1010,74 @@ int check_sign(const struct string *sign, const struct string *pubK, const hash_
 			dp[n + 1]	= p[(31 - n) + 1];
 		}
 		ret = crypto_sign_open(sign, &msg, &ppk);
+		
 		free_string(&msg);
 		free_string(&ppk);
 	}
 	return ret;
 }
+
+int get_script_data(const struct string *script, size_t *offset,struct string *data)
+{
+	unsigned char opcode;
+	if ((*offset) >= script->len) return 0;
+	opcode = script->str[(*offset)];
+	switch (opcode)
+	{
+		case 0x4c:
+
+			if (((*offset)+1) >= script->len) return 0;
+
+			data->len = *((unsigned char *)(&script->str[(*offset) + 1]));
+
+			if (((*offset) + 2 + data->len) > script->len)return 0;
+
+			data->size = data->len + 1;
+			data->str = malloc_c(data->size);
+			memcpy_c(data->str, &script->str[(*offset) + 2], data->len);
+			data->str[data->len] = 0;
+			(*offset) += 2 + data->len;
+		return 1;
+		break;
+		case 0x4D:
+
+			if (((*offset) + 2) >= script->len) return 0;
+
+			data->len = *((unsigned short *)(&script->str[(*offset) + 1]));
+			
+			if (((*offset) + 3 + data->len) > script->len)return 0;
+
+			data->size = data->len + 1;
+			data->str = malloc_c(data->size);
+			memcpy_c(data->str, &script->str[(*offset) + 3], data->len);
+			data->str[data->len] = 0;
+			(*offset) += 3 + data->len;
+		return 1;
+		break;
+	}
+
+	return 0;
+}
+
+OS_API_C_FUNC(int) get_out_script_return_val(const struct string *script, struct string *data)
+{
+	if (script->str == PTR_NULL)return 0;
+	if (script->len <26)return 0;
+
+	if (script->str[25] == 0x6a)
+	{
+		size_t offset = 26;
+		return get_script_data(script, &offset, data);
+	}
+	if (script->len <36)return 0;
+	if (script->str[35] == 0x6a)
+	{
+		size_t offset = 36;
+		return get_script_data(script, &offset, data);
+	}
+	return 0;
+}
+
 
 
 OS_API_C_FUNC(int) get_out_script_address(const struct string *script, struct string *pubk, btc_addr_t addr)
@@ -571,6 +1110,57 @@ OS_API_C_FUNC(int) get_out_script_address(const struct string *script, struct st
 	}
 	return 0;
 }
+
+OS_API_C_FUNC(int) create_p2sh_script_byte(btc_addr_t addr,mem_zone_ref_ptr script_node,unsigned char val)
+{
+	unsigned char	addrBin[26];
+	struct string  strKey = { PTR_NULL };
+	size_t sz;
+
+	sz = 25;
+	b58tobin			(addrBin, &sz, addr, sizeof(btc_addr_t));
+	make_string_l		(&strKey, addrBin + 1, 20);
+
+
+	add_script_opcode	(script_node, 0x76);
+	add_script_opcode	(script_node, 0xA9);
+	add_script_var		(script_node, &strKey);
+	add_script_opcode	(script_node, 0x88);
+	add_script_opcode	(script_node, 0xAC);
+
+	add_script_opcode	(script_node, 0x6a);
+	add_script_push_data(script_node, &val,1);
+
+	
+
+	return 0;
+}
+
+OS_API_C_FUNC(int) create_p2sh_script_data(btc_addr_t addr, mem_zone_ref_ptr script_node, unsigned char *data,size_t len)
+{
+	unsigned char	addrBin[26];
+	struct string  strKey = { PTR_NULL };
+	size_t sz;
+
+	sz = 25;
+	b58tobin(addrBin, &sz, addr, sizeof(btc_addr_t));
+	make_string_l(&strKey, addrBin + 1, 20);
+
+
+	add_script_opcode(script_node, 0x76);
+	add_script_opcode(script_node, 0xA9);
+	add_script_var(script_node, &strKey);
+	add_script_opcode(script_node, 0x88);
+	add_script_opcode(script_node, 0xAC);
+
+	add_script_opcode(script_node, 0x6a);
+	add_script_push_data(script_node, data, len);
+
+
+
+	return 0;
+}
+
 
 OS_API_C_FUNC(int) create_p2sh_script(btc_addr_t addr,mem_zone_ref_ptr script_node)
 {
@@ -618,6 +1208,36 @@ OS_API_C_FUNC(int) create_payment_script(struct string *pubk, unsigned int type,
 	}
 
 	
+	return 0;
+}
+
+OS_API_C_FUNC(int) create_payment_script_data(struct string *pubk, unsigned int type, mem_zone_ref_ptr script_node, unsigned char *data, size_t len)
+{
+	if (type == 1)
+	{
+		char			keyHash[20];
+		struct string  strKey;
+
+		key_to_hash(pubk->str, keyHash);
+
+		strKey.str = keyHash;
+		strKey.len = 20;
+		strKey.size = 20;
+
+		add_script_opcode(script_node, 0x76);
+		add_script_opcode(script_node, 0xA9);
+		add_script_var(script_node, &strKey);
+		add_script_opcode(script_node, 0x88);
+		add_script_opcode(script_node, 0xAC);
+	}
+	else
+	{
+		add_script_var(script_node, pubk);
+		add_script_opcode(script_node, 0xAC);
+	}
+	add_script_opcode	(script_node, 0x6a);
+	add_script_push_data(script_node, data, len);
+
 	return 0;
 }
 

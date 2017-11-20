@@ -35,6 +35,7 @@ OS_API_C_FUNC(int) clone_string(struct string *str, const struct string *str1)
 	str->len	=	str1->len;
 	str->size	=	str->len+1;
 	str->str	=	malloc_c(str->size);
+	if (str->str == PTR_NULL)return 0;
 	memcpy_c	(str->str,str1->str,str->size);
 
 	return 1;
@@ -177,6 +178,9 @@ OS_API_C_FUNC(int) cat_ncstring_p(struct string *str, const char *src, size_t sr
 		str->str = realloc_c(str->str, str->size);
 	else
 		str->str = malloc_c(str->size);
+
+	if (str->str == PTR_NULL)
+		return 0;
 
 	str->str[str->len] = path_sep;
 	memcpy_c(&str->str[str->len+1], src, src_len);
@@ -391,6 +395,9 @@ OS_API_C_FUNC(int) make_cstring(const struct string *str, char *toto, size_t len
 
 OS_API_C_FUNC(void) free_string(struct string *str)
 {
+	if (str == uint_to_mem(0xDEF0DEF0))return;
+	if (str->str == uint_to_mem(0xDEF0DEF0))return;
+
 	if(str->str!=NULL){free_c(str->str);}
 	str->str=NULL;
 	str->len=0;

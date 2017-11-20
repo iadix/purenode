@@ -2,6 +2,10 @@
 #define BLOCK_API C_IMPORT
 #endif
 
+struct bin_tree;
+typedef struct bin_tree node;
+
+
 /*
 *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=
 block.c
@@ -60,14 +64,25 @@ BLOCK_API  int	C_API_FUNC is_vout_null(mem_zone_ref_const_ptr tx, unsigned int i
 BLOCK_API  int	C_API_FUNC new_transaction(mem_zone_ref_ptr tx, ctime_t time);
 
 /* add output to the transaction */
-BLOCK_API  int	C_API_FUNC tx_add_output(mem_zone_ref_ptr tx, uint64_t value, const struct string *script);
+BLOCK_API  int	C_API_FUNC tx_add_output(mem_zone_ref_ptr tx, uint64_t value, const struct string *script);
+
 /* add input to the transaction */
-BLOCK_API  int	C_API_FUNC tx_add_input(mem_zone_ref_ptr tx, const hash_t tx_hash, unsigned int index, struct string *script);
+BLOCK_API  int	C_API_FUNC tx_add_input(mem_zone_ref_ptr tx, const hash_t tx_hash, unsigned int index, struct string *script);
+
 /* create paiment script */
 BLOCK_API  int	C_API_FUNC create_payment_script(struct string *pubk, unsigned int type, mem_zone_ref_ptr script_node);
 
+/* create paiment script with return data */
+OS_API_C_FUNC(int) create_payment_script_data(struct string *pubk, unsigned int type, mem_zone_ref_ptr script_node, unsigned char *data, size_t len);
+
 /* create paiment script */
 BLOCK_API  int	C_API_FUNC create_p2sh_script(btc_addr_t addr, mem_zone_ref_ptr script_node);
+
+
+/* create paiment script with data */
+BLOCK_API  int	C_API_FUNC create_p2sh_script_byte(btc_addr_t addr,mem_zone_ref_ptr script_node,unsigned char val);
+
+BLOCK_API  int	C_API_FUNC create_p2sh_script_data(btc_addr_t addr, mem_zone_ref_ptr script_node, unsigned char *data, size_t len);
 
 /* compute transaction signature hash */
 BLOCK_API  int	C_API_FUNC compute_tx_sign_hash(mem_zone_ref_const_ptr tx, unsigned int nIn, const struct string *script, unsigned int hash_type, hash_t txh);
@@ -95,9 +110,11 @@ BLOCK_API  int	C_API_FUNC get_tx_input_hash(mem_zone_ref_ptr tx, unsigned int id
 BLOCK_API  int	C_API_FUNC get_tx_output_amount(mem_zone_ref_ptr tx, unsigned int idx, uint64_t *amount);
 
 /* get output addr from tx output idx */
-BLOCK_API  int	C_API_FUNC get_tx_output_addr(const hash_t tx_hash, unsigned int idx, btc_addr_t addr);
+BLOCK_API  int	C_API_FUNC get_tx_output_addr(const hash_t tx_hash, unsigned int idx, btc_addr_t addr);
+
 /* sign transaction input */
-BLOCK_API  int	C_API_FUNC tx_sign(mem_zone_ref_const_ptr tx, unsigned int nIn, unsigned int hashType, const struct string *sign, const struct string *inPubKey);
+BLOCK_API  int	C_API_FUNC tx_sign(mem_zone_ref_const_ptr tx, unsigned int nIn, unsigned int hashType, const struct string *sign, const struct string *inPubKey);
+
 /* compute sha256d hash from block header */
 BLOCK_API int	C_API_FUNC	compute_block_hash(mem_zone_ref_ptr block, hash_t hash);
 
@@ -119,6 +136,10 @@ BLOCK_API int	C_API_FUNC	blk_check_sign(const struct string *sign, const struct 
 /* check validity of input transactions */
 BLOCK_API  int	C_API_FUNC check_tx_list(mem_zone_ref_ptr tx_list, uint64_t block_reward,hash_t merkle,unsigned int check_sig);
 
+
+/* find input in tx list */
+BLOCK_API  int	C_API_FUNC find_inputs	(mem_zone_ref_ptr tx_list, hash_t txid, unsigned int oidx);
+
 /* get tx input idx */
 BLOCK_API int	C_API_FUNC	get_tx_input(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr vin);
 
@@ -127,6 +148,56 @@ BLOCK_API int	C_API_FUNC	get_tx_input(mem_zone_ref_const_ptr tx, unsigned int id
 BLOCK_API unsigned int	C_API_FUNC SetCompact(unsigned int bits, hash_t out);
 
 
+/*check utxo */
+BLOCK_API int C_API_FUNC check_utxo(const char *tx, unsigned int oidx);
+
+/* sdump infos about tx */
+BLOCK_API int C_API_FUNC dump_tx_infos(mem_zone_ref_ptr tx);
+BLOCK_API int C_API_FUNC dump_txh_infos(const char *hash);
+
+BLOCK_API int C_API_FUNC set_root_app(mem_zone_ref_ptr tx);
+BLOCK_API int C_API_FUNC get_root_app(mem_zone_ref_ptr  rootAppHash);
+BLOCK_API int C_API_FUNC get_apps(mem_zone_ref_ptr Apps);
+
+BLOCK_API int C_API_FUNC get_root_app_addr(mem_zone_ref_ptr rootAppAddr);
+
+BLOCK_API int C_API_FUNC is_app_root(mem_zone_ref_ptr tx);
+
+BLOCK_API int C_API_FUNC blk_load_app_root();
+
+BLOCK_API int C_API_FUNC blk_load_apps(mem_zone_ref_ptr apps);
+
+BLOCK_API int C_API_FUNC make_approot_tx(mem_zone_ref_ptr tx, ctime_t time,btc_addr_t addr);
+
+BLOCK_API int C_API_FUNC get_root_app_fee(mem_zone_ref_ptr rootAppFees);
+
+BLOCK_API int C_API_FUNC make_app_tx		(mem_zone_ref_ptr tx,const char *app_name,btc_addr_t appAddr);
+BLOCK_API int C_API_FUNC make_app_item_tx	(mem_zone_ref_ptr tx, const struct string *app_name, unsigned int item_id);
+BLOCK_API int C_API_FUNC parse_approot_tx	(mem_zone_ref_ptr tx);
+
+
+BLOCK_API int C_API_FUNC get_app_name		(const struct string *script, struct string *app_name);
+BLOCK_API int C_API_FUNC get_app_types		(mem_zone_ref_ptr app, mem_zone_ref_ptr types);
+BLOCK_API int C_API_FUNC get_app_scripts	(mem_zone_ref_ptr app, mem_zone_ref_ptr scripts);
+
+BLOCK_API int C_API_FUNC get_type_infos(struct string *script, char *name, unsigned int *id, unsigned int *flags);
+
+BLOCK_API int C_API_FUNC get_tx_file(mem_zone_ref_ptr tx, mem_zone_ref_ptr hash_list);
+BLOCK_API  int	C_API_FUNC tx_is_app_file(mem_zone_ref_ptr tx, struct string *appName, mem_zone_ref_ptr file);
+BLOCK_API  int	C_API_FUNC get_app_type_key(struct string *appName, unsigned int type_id, const char *kname, unsigned int *ktype, unsigned int *flags);
+BLOCK_API  int	C_API_FUNC get_app_type_idxs(const char *appName, unsigned int type_id, mem_zone_ref_ptr keys);
+BLOCK_API  int	C_API_FUNC load_obj_type(const char *app_name, const char *objHash, unsigned int *type_id, btc_addr_t objAddr);
+BLOCK_API  int	C_API_FUNC check_app_obj_unique(const char *appName, unsigned int type_id, mem_zone_ref_ptr obj);
+
+BLOCK_API  int	C_API_FUNC get_block_tree(node **blktree);
+
+
+BLOCK_API  int	C_API_FUNC get_tx_data(mem_zone_ref_ptr tx, mem_zone_ref_ptr txData);
+
+BLOCK_API  int	C_API_FUNC blk_find_last_pow_block(mem_zone_ref_ptr pindex, unsigned int *block_time);
+BLOCK_API  int	C_API_FUNC block_pow(uint64_t height);
+BLOCK_API  int	C_API_FUNC extract_key(dh_key_t priv, dh_key_t pub);
+BLOCK_API  int	C_API_FUNC remove_tx_index(hash_t tx_hash);
 /*
 *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=
 script.c
@@ -135,6 +206,9 @@ script.c
 
 /* get public key / address from output script */
 BLOCK_API int C_API_FUNC   get_out_script_address(const struct string *script, struct string *pubk, btc_addr_t addr);
+
+
+BLOCK_API int C_API_FUNC   get_out_script_return_val(const struct string *script, struct string *data);
 
 /* get tx ouput script */
 BLOCK_API int C_API_FUNC   get_tx_output_script(const hash_t tx_hash, unsigned int idx, struct string *script, uint64_t *amount);
@@ -149,6 +223,11 @@ BLOCK_API void C_API_FUNC  key_to_addr(unsigned char *pkey, btc_addr_t addr);
 BLOCK_API void C_API_FUNC   paddr_to_key(btc_paddr_t addr, dh_key_t key);
 
 
+BLOCK_API int C_API_FUNC   make_script_file(mem_zone_ref_ptr file, struct string *pKey, struct string *sign, mem_zone_ref_ptr script);
+
+BLOCK_API int C_API_FUNC   make_script_layout(mem_zone_ref_ptr file, mem_zone_ref_ptr script);
+
+BLOCK_API int C_API_FUNC   make_script_module(mem_zone_ref_ptr file, mem_zone_ref_ptr script);
 /*
 *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=
 store.c
@@ -161,22 +240,22 @@ BLOCK_API int C_API_FUNC  get_moneysupply(uint64_t *amount);
 BLOCK_API int C_API_FUNC get_last_block_height();
 
 /* find block hash from tx hash */
-BLOCK_API int C_API_FUNC  find_blk_hash(const hash_t tx_hash, hash_t blk_hash);
+BLOCK_API int C_API_FUNC  find_blk_hash(const hash_t tx_hash, hash_t blk_hash,uint64_t *height,unsigned int *ofset,unsigned int *tx_time);
 
 /* find block hash in local store */
 BLOCK_API int C_API_FUNC  find_hash(hash_t hash);
 
+/* find hash in block index */
+BLOCK_API int C_API_FUNC  find_index_hash(hash_t h);
+
 /* load block header from local store */
 BLOCK_API int C_API_FUNC  load_blk_hdr(mem_zone_ref_ptr hdr, const char *blk_hash);
-
-/* load block signature from local store */
-BLOCK_API int C_API_FUNC  get_blk_sign(const char *blk_hash, struct string *sign);
 
 /* load block height from local store */
 BLOCK_API int C_API_FUNC  get_blk_height(const char *blk_hash, uint64_t *height);
 
 /* load block header infos from tx hash */
-BLOCK_API int C_API_FUNC  get_tx_blk_height(const hash_t tx_hash, uint64_t *height, uint64_t *block_time, uint64_t *tx_time);
+BLOCK_API int C_API_FUNC  get_tx_blk_height(const hash_t tx_hash, uint64_t *height, uint64_t *block_time, unsigned int *tx_time);
 
 /* check if block is pow */
 BLOCK_API int C_API_FUNC  is_pow_block(const char *blk_hash);
@@ -184,11 +263,8 @@ BLOCK_API int C_API_FUNC  is_pow_block(const char *blk_hash);
 /* store block in local storage */
 BLOCK_API int C_API_FUNC  store_block(mem_zone_ref_ptr header, mem_zone_ref_ptr tx_list);
 
-/* load tx from a block based on the tx hash */
-BLOCK_API int C_API_FUNC  blk_load_tx_hash(const char *blk_hash, const char *tx_hash, mem_zone_ref_ptr tx);
-
-/* load tx from a block based on its index */
-BLOCK_API int C_API_FUNC  load_blk_tx(mem_zone_ref_ptr tx, const char *blk_hash, unsigned int tx_idx);
+/* load tx from a block based on the tx ofset */
+BLOCK_API int C_API_FUNC  blk_load_tx_ofset(const char *blk_hash, unsigned int ofset, mem_zone_ref_ptr tx);
 
 /* load tx from its hash */
 BLOCK_API int C_API_FUNC  load_tx(mem_zone_ref_ptr tx, hash_t blk_hash, const hash_t tx_hash);
@@ -197,7 +273,7 @@ BLOCK_API int C_API_FUNC  load_tx(mem_zone_ref_ptr tx, hash_t blk_hash, const ha
 BLOCK_API int C_API_FUNC  load_tx_input(mem_zone_ref_const_ptr tx, unsigned int idx, mem_zone_ref_ptr	vin, mem_zone_ref_ptr tx_out);
 
 /* load input from block hash and tx hash + input id */
-BLOCK_API int C_API_FUNC  load_blk_tx_input(const char *blk_hash, unsigned int tx_idx, unsigned int vin_idx, mem_zone_ref_ptr vout);
+BLOCK_API int C_API_FUNC  load_blk_tx_input(const char *blk_hash, unsigned int tx_ofset, unsigned int vin_idx, mem_zone_ref_ptr vout);
 
 /* get amount of tx output*/
 BLOCK_API int C_API_FUNC  load_tx_output_amount(const hash_t tx_hash, unsigned int idx, uint64_t *amount);
@@ -207,6 +283,15 @@ BLOCK_API int C_API_FUNC  load_tx_input_vout(mem_zone_ref_const_ptr tx, unsigned
 
 /* load all tx hashes from an address */
 BLOCK_API int C_API_FUNC  load_tx_addresses(btc_addr_t addr, mem_zone_ref_ptr tx_hashes);
+
+/*load app object */
+BLOCK_API int C_API_FUNC  load_obj(const char *app_name, const char *objHash, const char *objName, unsigned int opts, mem_zone_ref_ptr obj, btc_addr_t objAddr);
+
+/*add child obj tx */
+BLOCK_API int C_API_FUNC  make_app_child_obj_tx(mem_zone_ref_ptr tx, const char *app_name, hash_t objHash, const char *keyName, unsigned int ktype,hash_t childHash);
+
+/* get obj hashes list */
+BLOCK_API int C_API_FUNC  get_app_obj_hashes(const char *app_name, mem_zone_ref_ptr hash_list);
 
 /* load block size from local store */
 BLOCK_API int C_API_FUNC  get_block_size(const char *blk_hash, size_t *size);
@@ -226,18 +311,11 @@ BLOCK_API int C_API_FUNC  load_blk_txs(const char* blk_hash, mem_zone_ref_ptr tx
 /* load block time from local store */
 BLOCK_API int C_API_FUNC  get_block_time(const char *blkHash, ctime_t *time);
 
-/* get block pow from local store */
-BLOCK_API int C_API_FUNC  get_pow_block(const char *blk_hash, hash_t pow);
-
-
 /*store tx inputs */
 BLOCK_API int C_API_FUNC  store_tx_inputs(mem_zone_ref_ptr tx);
 
 /*store tx outputs */
-BLOCK_API int C_API_FUNC  store_tx_outputs(mem_zone_ref_ptr tx, const char *blk_hash);
-
-/*store tx hash into index */
-BLOCK_API int C_API_FUNC  store_tx_index(const char * blk_hash, mem_zone_ref_ptr tx, hash_t thash);
+BLOCK_API int C_API_FUNC  store_tx_outputs(mem_zone_ref_ptr tx);
 
 /*store tx hash into address index */
 BLOCK_API int C_API_FUNC  store_tx_addresses(btc_addr_t addr, hash_t tx_hash);
@@ -251,16 +329,30 @@ BLOCK_API int C_API_FUNC  remove_tx(hash_t tx_hash);
 /* load block index from storage */
 BLOCK_API  int	C_API_FUNC load_block_indexes(mem_zone_ref_ptr hdr_list);
 
-/* store block height for block hash*/
-BLOCK_API  int	C_API_FUNC store_block_height(const char *hash, uint64_t height);
-
 /*store block hash/txid index */
-BLOCK_API  int	C_API_FUNC store_tx_blk_index(const hash_t tx_hash, const hash_t blk_hash);
+BLOCK_API  int	C_API_FUNC store_tx_blk_index(const hash_t tx_hash, const hash_t blk_hash,uint64_t height,size_t tx_ofset,unsigned int time);
+
+/*store block tx hashes */
+BLOCK_API int  C_API_FUNC store_block_txs(mem_zone_ref_ptr header, mem_zone_ref_ptr tx_list);
 
 /* clear all transaction indexes */
 BLOCK_API  int	C_API_FUNC clear_tx_index();
 
+/* load obj hash from type */
+BLOCK_API  int	C_API_FUNC get_app_type_obj_hashes(const char *app_name, unsigned int type_id, size_t first, size_t max, mem_zone_ref_ptr hash_list);
+BLOCK_API  int	C_API_FUNC get_app_type_nobjs(const char *app_name, unsigned int type_id);
 
+BLOCK_API  int	C_API_FUNC get_app_file(mem_zone_ref_ptr file_tx, struct string *app_name, mem_zone_ref_ptr file);
+
+
+BLOCK_API  int	C_API_FUNC get_appfile_tx(const char *app_name, hash_t fileHash, hash_t txHash);
+
+BLOCK_API  int	C_API_FUNC has_app_file(struct string *app_name, hash_t fileHash);
+
+
+BLOCK_API  int	C_API_FUNC get_app_files(struct string *app_name, size_t first, size_t num, mem_zone_ref_ptr files);
+
+BLOCK_API  int	C_API_FUNC get_app_missing_files(struct string *app_name, mem_zone_ref_ptr pending, mem_zone_ref_ptr files);
 
 /* staking API definition */
 

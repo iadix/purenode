@@ -1,7 +1,11 @@
 <style>
     .accnt_pw
     {
-        disp^l
+        display:none;
+    }
+    #anon_wallet
+    {
+        display:none;
     }
 </style>
 <!--=== Wallet ===-->
@@ -17,15 +21,34 @@
           </select>
       </div>
   </div>
-  <h2 class="heading-md">Manage your wallet</h2>
+
+
+  
   </section>
 
-  <p>Below are the addresses for your account. <br /> <span id="uname"></span>&nbsp;<span id="myaddrhdr"></span></p>
-  <br />
+    <div id="anon_wallet">
+        <section>
+            <h2>anonymous wallet passphrase</h2>
+            <div id="anon_pw_error"></div>
+            <label>password </label><input type="password" id="anon_pw" />
+            <label>timeout</label><input type="text" id="anon_timeout" value="1800" />
+            <input type="button" onclick="set_anon_pw($('#anon_pw').val(), parseInt($('#anon_timeout').val()));" value="set passphrase" />
+            <div id="anon_pw_ok"></div>
+        </section>
+    </div>
+
+
+
+
+
   <form class="sky-form" id="sky-form" action="#">
   <!-- Wallet-Form -->
   <section>
-      
+      <h2 class="heading-md">Manage your wallet</h2>
+
+      <p>Below are the addresses for your account. <br /> <span id="uname"></span>&nbsp;<span id="myaddrhdr"></span></p>
+      <br />
+
       <div class="row">
           <div class="col-md-2">
               <label>account</label>

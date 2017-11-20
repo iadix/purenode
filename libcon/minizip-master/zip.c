@@ -639,7 +639,7 @@ extern zipFile ZEXPORT zipOpen4(const void *path, int append, uint64_t disk_size
     ziinit.z_filefunc.ztell32_file = NULL;
 
 	if (pzlib_filefunc64_32_def == NULL)
-		return NULL;// fill_fopen64_filefunc(&ziinit.z_filefunc.zfile_func64);
+		return NULL;/* fill_fopen64_filefunc(&ziinit.z_filefunc.zfile_func64); */
     else
         ziinit.z_filefunc = *pzlib_filefunc64_32_def;
 

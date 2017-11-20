@@ -1,17 +1,17 @@
 
 struct string
 {
-	char	*str;		//pointer to null terminated string
-	size_t  len;		//number of characters in the string
-	size_t  size;		//memory size of the string
+	char	*str;		/*pointer to null terminated string*/
+	size_t  len;		/*number of characters in the string*/
+	size_t  size;		/*memory size of the string*/
 };
 
 
 struct host_def
 {
-	struct string		host;		//host name
-	struct string		port_str;	//port string
-	unsigned short		port;		//port integer
+	struct string		host;		/*host name*/
+	struct string		port_str;	/*port string*/
+	unsigned short		port;		/*port integer*/
 };
 
 

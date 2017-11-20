@@ -12,8 +12,9 @@
 */
 #define LIBC_API C_EXPORT
 #include "../../base/std_base.h"
+
 #include "../../base/std_def.h"
-#include "../../base/std_mem.h"
+
 #include "../../base/std_str.h"
 
 #if defined unix || defined __APPLE__
@@ -89,6 +90,7 @@ static long     ZCALLBACK fseek64_file_func(voidpf opaque, voidpf stream, uint64
 static int      ZCALLBACK fclose_file_func(voidpf opaque, voidpf stream);
 static int      ZCALLBACK ferror_file_func(voidpf opaque, voidpf stream);
 
+/*
 typedef struct 
 {
     FILE *file;
@@ -105,7 +107,7 @@ static voidpf file_build_ioposix(FILE *file, const char *filename)
     ioposix->file = file;
     ioposix->filenameLength = (int)strlen_c(filename) + 1;
     ioposix->filename = (char*)malloc_c(ioposix->filenameLength * sizeof(char));
-    strncpy_c((char*)ioposix->filename, filename, ioposix->filenameLength);
+    strncpy((char*)ioposix->filename, filename, ioposix->filenameLength);
     return (voidpf)ioposix;
 }
 
@@ -147,6 +149,7 @@ static voidpf ZCALLBACK fopen64_file_func(voidpf opaque, const void *filename, i
     return file;
 }
 
+
 static voidpf ZCALLBACK fopendisk64_file_func(voidpf opaque, voidpf stream, uint32_t number_disk, int mode)
 {
     FILE_IOPOSIX *ioposix = NULL;
@@ -157,8 +160,8 @@ static voidpf ZCALLBACK fopendisk64_file_func(voidpf opaque, voidpf stream, uint
     if (stream == NULL)
         return NULL;
     ioposix = (FILE_IOPOSIX*)stream;
-    diskFilename = (char*)malloc_c(ioposix->filenameLength * sizeof(char));
-    strncpy_c(diskFilename, (const char*)ioposix->filename, ioposix->filenameLength);
+    diskFilename = (char*)malloc(ioposix->filenameLength * sizeof(char));
+    strncpy(diskFilename, (const char*)ioposix->filename, ioposix->filenameLength);
     for (i = ioposix->filenameLength - 1; i >= 0; i -= 1)
     {
         if (diskFilename[i] != '.')
@@ -168,7 +171,7 @@ static voidpf ZCALLBACK fopendisk64_file_func(voidpf opaque, voidpf stream, uint
     }
     if (i >= 0)
         ret = fopen64_file_func(opaque, diskFilename, mode);
-    free_c(diskFilename);
+    free(diskFilename);
     return ret;
 }
 
@@ -182,8 +185,8 @@ static voidpf ZCALLBACK fopendisk_file_func(voidpf opaque, voidpf stream, uint32
     if (stream == NULL)
         return NULL;
     ioposix = (FILE_IOPOSIX*)stream;
-    diskFilename = (char*)malloc_c(ioposix->filenameLength * sizeof(char));
-    strncpy_c(diskFilename, (const char*)ioposix->filename, ioposix->filenameLength);
+    diskFilename = (char*)malloc(ioposix->filenameLength * sizeof(char));
+    strncpy(diskFilename, (const char*)ioposix->filename, ioposix->filenameLength);
     for (i = ioposix->filenameLength - 1; i >= 0; i -= 1)
     {
         if (diskFilename[i] != '.')
@@ -193,7 +196,7 @@ static voidpf ZCALLBACK fopendisk_file_func(voidpf opaque, voidpf stream, uint32
     }
     if (i >= 0)
         ret = fopen_file_func(opaque, diskFilename, mode);
-    free_c(diskFilename);
+    free(diskFilename);
     return ret;
 }
 
@@ -309,9 +312,9 @@ static int ZCALLBACK fclose_file_func(voidpf opaque, voidpf stream)
         return ret;
     ioposix = (FILE_IOPOSIX*)stream;
     if (ioposix->filename != NULL)
-        free_c(ioposix->filename);
+        free(ioposix->filename);
     ret = fclose(ioposix->file);
-    free_c(ioposix);
+    free(ioposix);
     return ret;
 }
 
@@ -351,3 +354,4 @@ void fill_fopen64_filefunc(zlib_filefunc64_def *pzlib_filefunc_def)
     pzlib_filefunc_def->zerror_file = ferror_file_func;
     pzlib_filefunc_def->opaque = NULL;
 }
+*/

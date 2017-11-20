@@ -97,30 +97,36 @@ OS_API_C_FUNC(int) get_target_spacing(unsigned int *target)
 	*target = TargetSpacing;
 	return 1;
 }
-OS_API_C_FUNC(int) generated_stake_modifier(const char *blk_hash, hash_t StakeMod)
+OS_API_C_FUNC(int) generated_stake_modifier(const char *blk_hash,uint64_t *height, hash_t StakeMod)
 {
 	struct string		blk_path = { PTR_NULL };
-	int					ret = 0;
+	unsigned char		*data;
+	size_t			len;
+	int			ret = 0;
 
-	make_string		(&blk_path, "blks");
+	make_string	(&blk_path, "blks");
 	cat_ncstring_p	(&blk_path, blk_hash+0,2);
 	cat_ncstring_p	(&blk_path, blk_hash+2, 2);
 	cat_cstring_p	(&blk_path, blk_hash);
-	cat_cstring_p	(&blk_path, "stakemodifier2");
-	if (stat_file(blk_path.str) == 0)
+	cat_cstring	(&blk_path, "_blk");
+
+	if(get_file_len(blk_path.str,238,&data,&len)>0)
 	{
-		unsigned char	*data;
-		size_t			data_len;
-		if (get_file(blk_path.str, &data, &data_len)>0)
+	  if(len>=88)
+		*height = *((uint64_t *)(data+80));
+	  if(len>=206)
+	  {
+		if(*((unsigned char *)(data+205))==32)
 		{
-			if (data_len >= sizeof(hash_t))
-			{
-				memcpy_c(StakeMod, data, sizeof(hash_t));
-				ret = 1;
-			}
-			free_c(data);
+			memcpy_c(StakeMod,data+206,32);
+			ret		=1;
 		}
 	}
+	free_c(data);
+	}
+	else
+	  ret = -1;
+
 	free_string(&blk_path);
 	return ret;
 }
@@ -128,14 +134,15 @@ OS_API_C_FUNC(int) generated_stake_modifier(const char *blk_hash, hash_t StakeMo
 // Get the last stake modifier and its generation time from a given block
 OS_API_C_FUNC(int) find_last_stake_modifier(char * chash, hash_t nStakeModifier)
 {
-	uint64_t	height;
+	uint64_t	height=0;
 
-	if (!get_blk_height(chash, &height))return 0;
-	while (!generated_stake_modifier(chash, nStakeModifier))
+	while (generated_stake_modifier(chash,&height, nStakeModifier)==0)
 	{
 		hash_t		prevHash;
-		int			n;
-		if (!get_hash_idx("block_indexes", height--, prevHash))return 0;
+		int		n;
+		
+		if(height==1)return 0;
+		if (!get_hash_idx("block_indexes", height-1, prevHash))return 0;
 		n = 0;
 		while (n<32)
 		{
@@ -144,6 +151,7 @@ OS_API_C_FUNC(int) find_last_stake_modifier(char * chash, hash_t nStakeModifier)
 			n++;
 		}
 		chash[64] = 0;
+                
 	}
 	return 1;
 }
@@ -154,12 +162,13 @@ OS_API_C_FUNC(int) get_last_stake_modifier(mem_zone_ref_ptr pindex, hash_t nStak
 	int				ret=0;
 
     if (pindex==PTR_NULL)return 0;
-	if (pindex->zone==PTR_NULL)return 0;
-	if (!tree_manager_get_child_value_str(pindex, NODE_HASH("blkHash"), chash, 65, 16))return 0;
+    if (pindex->zone==PTR_NULL)return 0;
+    if (!tree_manager_get_child_value_str(pindex, NODE_HASH("blkHash"), chash, 65, 16))return 0;
 
-	ret=find_last_stake_modifier(chash, nStakeModifier);
-	return ret;
+     ret=find_last_stake_modifier(chash, nStakeModifier);
+    return ret;
 }
+/*
 OS_API_C_FUNC(int) is_pos_block(const char *blk_hash)
 {
 	struct string file_path = { 0 };
@@ -175,21 +184,25 @@ OS_API_C_FUNC(int) is_pos_block(const char *blk_hash)
 	ret = (stat == 0) ? 1 : 0;
 	return ret;
 }
+*/
 
-
-// Get the last pos block and its generation time from a given block
+/* Get the last pos block and its generation time from a given block */
 int get_last_pos_block(mem_zone_ref_ptr pindex, unsigned int *block_time)
 {
 	char			chash[65];
 	int				ret = 0;
 	tree_manager_get_child_value_str(pindex, NODE_HASH("blkHash"), chash, 65, 16);
-	while (!is_pos_block(chash))
+	/*while (!is_pos_block(chash))*/
+	
+	while(!tree_manager_find_child_node(pindex,NODE_HASH("blk pos"),0xFFFFFFFF,PTR_NULL))
 	{
 		tree_manager_get_child_value_str(pindex, NODE_HASH("prev"), chash, 65, 16);
 		if (!load_blk_hdr(pindex, chash))
 			return 0;
 	}
-	if (is_pos_block(chash))
+	/*if (is_pos_block(chash))*/
+
+	if(tree_manager_find_child_node(pindex,NODE_HASH("blk pos"),0xFFFFFFFF,PTR_NULL))
 	{
 		tree_manager_get_child_value_i32(pindex, NODE_HASH("time"), block_time);
 		return 1;
@@ -224,12 +237,15 @@ OS_API_C_FUNC(int) load_last_pos_blk(mem_zone_ref_ptr header)
 			chash[64] = 0;
 			ret = load_blk_hdr(header, chash);
 
+			/*
 			if (ret)
 			{
 				uint64_t height;
 				get_blk_height					(chash, &height);
+				tree_manager_get_child_value_i64(header,NODE_HASH("height"),&height);
 				tree_manager_set_child_value_i64(header, "height", height);
 			}
+			*/
 		}
 		free_c(data);
 	}
@@ -313,10 +329,10 @@ OS_API_C_FUNC(int) store_blk_tx_staking(mem_zone_ref_ptr tx_list)
 
 OS_API_C_FUNC(int) store_blk_staking(mem_zone_ref_ptr header)
 {
+	unsigned char buffer[128];
 	char blk_hash[65];
 	struct string blk_path = { 0 }, file_path = { 0 };
-	hash_t StakeMod, hashPos;
-	int stat, ret;
+	int  ret;
 
 	if (!tree_manager_get_child_value_str(header, NODE_HASH("blkHash"), blk_hash, 65, 16))return 0;
 
@@ -324,6 +340,39 @@ OS_API_C_FUNC(int) store_blk_staking(mem_zone_ref_ptr header)
 	cat_ncstring_p(&blk_path, blk_hash + 0, 2);
 	cat_ncstring_p(&blk_path, blk_hash + 2, 2);
 	cat_cstring_p(&blk_path, blk_hash);
+	cat_cstring(&blk_path, "_blk");
+	
+
+	if(tree_manager_get_child_value_hash(header, NODE_HASH("blk pos")	, &buffer[1]))
+	{
+		buffer[0]	=	3;
+		if(tree_manager_get_child_value_hash(header, NODE_HASH("StakeMod2"), &buffer[34]))
+		{
+			buffer[33]	=	32;
+			ret=truncate_file		(blk_path.str,172,buffer,66);
+		}
+		else
+		{
+			buffer[33]	=	0;
+                        memset_c(&buffer[34],0,32);
+			ret=truncate_file		(blk_path.str,172,buffer,66);
+		}
+	}
+	else
+	{
+		if(tree_manager_get_child_value_hash(header, NODE_HASH("StakeMod2"), &buffer[1]))
+		{
+			buffer[0]	=	32;
+			ret=truncate_file		(blk_path.str,205,buffer,33);
+		}
+		else
+		{
+			buffer[0]	=	0;
+			memset_c			(&buffer[1],0,32);
+			ret=truncate_file		(blk_path.str,205,buffer,33);
+		}
+	}
+	/*
 	stat = stat_file(blk_path.str);
 	if (stat != 0)
 	{
@@ -345,13 +394,12 @@ OS_API_C_FUNC(int) store_blk_staking(mem_zone_ref_ptr header)
 		ret = put_file(file_path.str, hashPos, sizeof(hash_t));
 		free_string(&file_path);
 	}
+	*/
 	free_string(&blk_path);
-
-
-
-
 	return ret;
 }
+
+/*
 OS_API_C_FUNC(int) get_pos_block(const char *blk_hash, hash_t pos)
 {
 	unsigned char   *data;
@@ -376,16 +424,16 @@ OS_API_C_FUNC(int) get_pos_block(const char *blk_hash, hash_t pos)
 	free_string(&file_path);
 	return ret;
 }
+*/
 
 OS_API_C_FUNC(int) get_blk_staking_infos(mem_zone_ref_ptr blk, const char *blk_hash, mem_zone_ref_ptr infos)
 {
-	hash_t stakemod, rdiff, diff;
-	mem_zone_ref vout = { PTR_NULL };
-	unsigned int staketime, nBits;
-	unsigned char *data, n;
-	uint64_t weight;
-	size_t len;
-	struct string blk_path = { 0 }, file_path = { 0 };
+	hash_t			stakemod, rdiff, diff,proof;
+	mem_zone_ref	vout = { PTR_NULL };
+	unsigned int	staketime, nBits;
+	unsigned char	 n;
+	uint64_t		weight;
+	
 
 	tree_manager_get_child_value_i32(blk, NODE_HASH("bits"), &nBits);
 
@@ -396,7 +444,7 @@ OS_API_C_FUNC(int) get_blk_staking_infos(mem_zone_ref_ptr blk, const char *blk_h
 	else
 		tree_manager_set_child_value_hash(infos, "stakemodifier2", nullhash);
 
-	if (load_blk_tx_input(blk_hash, 1, 0, &vout))
+	if (load_blk_tx_input(blk_hash, 66, 0, &vout))
 	{
 		tree_manager_get_child_value_i64(&vout, NODE_HASH("value"), &weight);
 		tree_manager_set_child_value_i64(infos, "stake weight", weight);
@@ -414,15 +462,19 @@ OS_API_C_FUNC(int) get_blk_staking_infos(mem_zone_ref_ptr blk, const char *blk_h
 
 	}
 
-
 	tree_manager_set_child_value_hash(infos, "hbits", rdiff);
 
+	if(tree_manager_get_child_value_hash(blk,NODE_HASH("blk pos"),proof))
+		tree_manager_set_child_value_hash(infos, "proofhash", proof);
+	
+
+	/*
+
+	struct string blk_path = { 0 }, file_path = { 0 };
 	make_string(&blk_path, "blks");
 	cat_ncstring_p(&blk_path, blk_hash + 0, 2);
 	cat_ncstring_p(&blk_path, blk_hash + 2, 2);
 	cat_cstring_p(&blk_path, blk_hash);
-	
-
 	clone_string(&file_path, &blk_path);
 	cat_cstring_p(&file_path, "pos");
 	if (get_file(file_path.str, &data, &len) > 0)
@@ -434,6 +486,9 @@ OS_API_C_FUNC(int) get_blk_staking_infos(mem_zone_ref_ptr blk, const char *blk_h
 	}
 	free_string(&file_path);
 	free_string(&blk_path);
+	*/
+
+
 
 	return 1;
 
@@ -444,9 +499,12 @@ OS_API_C_FUNC(int) get_tx_pos_hash_data(mem_zone_ref_ptr hdr,const hash_t txHash
 	hash_t			StakeModifier;
 	size_t			sZ;
 	unsigned int    StakeModifierTime;
-	uint64_t		height, block_time, tx_time, weight;
-	unsigned int    ttime;
-
+	uint64_t		height, block_time, weight;
+	unsigned int    tx_time,tt;
+	
+	hash_t			blkh;
+	mem_zone_ref	mtx = { PTR_NULL };
+	
 	load_tx_output_amount(txHash, OutIdx, &weight);
 	if (last_diff == 0xFFFFFFFF)
 	{
@@ -457,16 +515,21 @@ OS_API_C_FUNC(int) get_tx_pos_hash_data(mem_zone_ref_ptr hdr,const hash_t txHash
 	else
 		mul_compact(last_diff, weight, out_diff);
 
+	load_tx(&mtx, blkh, txHash);
+	tree_manager_get_child_value_i32(&mtx, NODE_HASH("time"), &tt);
+	release_zone_ref(&mtx);
+
 	if (!get_tx_blk_height	(txHash, &height, &block_time, &tx_time))
 		return 0;
+
+
 
 	if (!get_last_stake_modifier(hdr, StakeModifier, &StakeModifierTime))
 		return 0;
 
-	ttime	= tx_time;
 	*amount = weight;
 	memcpy_c(buffer															, StakeModifier	, sizeof(hash_t));
-	memcpy_c(buffer + sizeof(hash_t)										, &ttime		, sizeof(unsigned int));
+	memcpy_c(buffer + sizeof(hash_t)										, &tx_time		, sizeof(unsigned int));
 	memcpy_c(buffer + sizeof(hash_t) + sizeof(unsigned int)					, txHash		, sizeof(hash_t));
 	memcpy_c(buffer + sizeof(hash_t) + sizeof(hash_t) + sizeof(unsigned int), &OutIdx		, sizeof(unsigned int));
 
@@ -531,6 +594,7 @@ int compute_next_stake_modifier(mem_zone_ref_ptr blk,hash_t nStakeModifier, hash
 	mbedtls_sha256_context	ctx;
 	mem_zone_ref			pindex = { PTR_NULL };
 	mem_zone_ref			log = { PTR_NULL };
+	
 	/*
 	tree_manager_create_node			("log", NODE_LOG_PARAMS, &log);
 	tree_manager_set_child_value_hash	(&log, "StakeMod"	, nStakeModifier);
@@ -538,6 +602,7 @@ int compute_next_stake_modifier(mem_zone_ref_ptr blk,hash_t nStakeModifier, hash
 	log_message							("stake_pos3: ComputeNextStakeModifier:\n\tprev modifier:\n\t%StakeMod%\n\tkernel:\n\t%kernel%\n", &log);
 	release_zone_ref					(&log);
 	*/
+
 	mbedtls_sha256_init		(&ctx);
 	mbedtls_sha256_starts	(&ctx, 0);
 	mbedtls_sha256_update	(&ctx, Kernel, sizeof(hash_t));
@@ -562,7 +627,9 @@ OS_API_C_FUNC(int) find_last_pos_block(mem_zone_ref_ptr pindex)
 	char			chash[65];
 	int				ret = 0;
 	tree_manager_get_child_value_str(pindex, NODE_HASH("blkHash"), chash, 65, 16);
-	while (!is_pos_block(chash))
+/*	while (!is_pos_block(chash))*/
+
+	while(!tree_manager_find_child_node(pindex,NODE_HASH("blk pos"),0xFFFFFFFF,PTR_NULL))
 	{
 		tree_manager_get_child_value_str(pindex, NODE_HASH("prev"), chash, 65, 16);
 		if (!load_blk_hdr(pindex, chash))
@@ -655,6 +722,8 @@ OS_API_C_FUNC(int) find_blk_staking_tx(mem_zone_ref_ptr tx_list, mem_zone_ref_pt
 	
 }
 
+
+
 OS_API_C_FUNC(int) check_tx_pos(mem_zone_ref_ptr blk,mem_zone_ref_ptr tx)
 {
 	char				prevHash[65];
@@ -682,7 +751,7 @@ OS_API_C_FUNC(int) check_tx_pos(mem_zone_ref_ptr blk,mem_zone_ref_ptr tx)
 
 	if (!find_last_stake_modifier(prevHash, lastStakeModifier))
 	{
-		memset_c(lastStakeModifier, 0, sizeof(hash_t));
+	    memset_c(lastStakeModifier, 0, sizeof(hash_t));
 	}
 
 	if (!tree_manager_get_child_value_hash(blk, NODE_HASH("blkHash"), blk_hash))
@@ -775,10 +844,15 @@ OS_API_C_FUNC(int) create_pos_block(hash_t pHash, mem_zone_ref_ptr tx, mem_zone_
 
 	get_blk_height	(chash, &height);
 
-	if (tree_manager_create_node("block", NODE_BITCORE_BLOCK, newBlock))
+	if (tree_manager_create_node("block", NODE_BITCORE_BLK_HDR, newBlock))
 	{
+		char psig[80];
+		struct string sigstr = { 0 };
 		mem_zone_ref txs = { PTR_NULL };
 		unsigned char vntx[2] = { 0 };
+
+		
+
 
 		tree_manager_set_child_value_hash	(newBlock, "prev", pHash);
 		tree_manager_set_child_value_i32	(newBlock, "version", version);
@@ -786,6 +860,9 @@ OS_API_C_FUNC(int) create_pos_block(hash_t pHash, mem_zone_ref_ptr tx, mem_zone_
 		tree_manager_set_child_value_i32	(newBlock, "bits", last_diff);
 		tree_manager_set_child_value_i32	(newBlock, "nonce", 0);
 		tree_manager_set_child_value_vint	(newBlock, "ntx", vntx);
+		tree_manager_add_child_node			(newBlock, "signature", NODE_BITCORE_ECDSA_SIG, PTR_NULL);
+
+		tree_manager_allocate_child_data	(newBlock, "signature",128);
 		
 
 		if (tree_manager_add_child_node(newBlock, "txs", NODE_BITCORE_TX_LIST, &txs))
@@ -797,9 +874,7 @@ OS_API_C_FUNC(int) create_pos_block(hash_t pHash, mem_zone_ref_ptr tx, mem_zone_
 				release_zone_ref(&mtx);
 			}
 
-
-
-			tree_manager_node_dup	(&txs, tx, &mtx);
+			tree_manager_node_dup	(&txs, tx, &mtx,0xFFFFFFFF);
 			release_zone_ref		(&mtx);
 			
 			build_merkel_tree		(&txs, merkle);

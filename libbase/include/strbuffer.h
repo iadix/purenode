@@ -10,8 +10,6 @@ typedef int (*get_func)(void *data);
 typedef int64_t json_int_t;
 
 typedef struct {
-    //char *value;
-	//mem_zone_ref	value_ref;
 	char			value_ptr[1024];
     size_t length;   /* bytes used */
     size_t size;     /* bytes allocated */
