@@ -308,11 +308,16 @@ BLOCK_API  int	C_API_FUNC remove_tx_index(hash_t tx_hash);
 
 
 
+
+
 /*
 *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=
 script.c
 *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=
 */
+
+
+
 
 
 
@@ -351,11 +356,19 @@ BLOCK_API int C_API_FUNC   make_script_layout(mem_zone_ref_ptr file, mem_zone_re
 /* make script from module definition */
 
 BLOCK_API int C_API_FUNC   make_script_module(mem_zone_ref_ptr file, mem_zone_ref_ptr script);
+
+
+
+
 /*
 *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=
 store.c
 *=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=
 */
+
+
+
+
 
 /* load application root */
 
