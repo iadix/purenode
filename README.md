@@ -1,3 +1,8 @@
+More informations at
+
+http://nodix.eu:16820/index.site
+
+
 Prerequisites:
 
 install nasm
