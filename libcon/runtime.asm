@@ -134,7 +134,7 @@ compare_z_exchange_c:
 	mov  edi,	[esp+12]
 	mov  ebx,	[esp+16]
 	
-	lfence
+	mfence
 	
 	;Compare EAX with r/m32. If equal, ZF is set and r32 is	 loaded into r/m32. Else, clear ZF and load r/m32 into AL
 	
@@ -148,7 +148,7 @@ compare_z_exchange_c:
 	 
 	_compare_z_exchange_c_done:
 
-	sfence
+	mfence
 	pop ebx
 	pop edi
 ret
@@ -163,9 +163,9 @@ fetch_add_c:
 	push edi
 	mov  edi,	[ebp+8]
 	mov  eax,	[ebp+12]
-	lfence
+	mfence
 	lock xadd byte [edi]	, al
-	sfence
+	mfence
 	pop edi
 	pop ebp
 ret
