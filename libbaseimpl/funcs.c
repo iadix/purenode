@@ -22,6 +22,9 @@ OS_API_C_FUNC(  void	)			tree_manager_sort_childs(mem_zone_ref_ptr parent_ref_pt
 OS_API_C_FUNC(  int	)			tree_manager_get_first_child(mem_zone_ref_const_ptr p_node_ref, mem_zone_ref_ptr child_list, mem_zone_ref_ptr *p_node_out_ref){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_get_next_child(mem_zone_ref_ptr child_list, mem_zone_ref_ptr *p_node_out_ref){return 0;}
 
+OS_API_C_FUNC(int)				tree_manager_get_next_child_shared(mem_zone_ref_ptr *child_list, mem_zone_ref_ptr *p_node_out_ref) { return 0; }
+OS_API_C_FUNC(int)				tree_manager_get_first_child_shared(mem_zone_ref_const_ptr p_node_ref, mem_zone_ref_ptr *child_list, mem_zone_ref_ptr *p_node_out_ref) { return 0; }
+
 OS_API_C_FUNC(  int	)			tree_manager_get_last_child(mem_zone_ref_const_ptr p_node_ref, mem_zone_ref_ptr child_list, mem_zone_ref_ptr *p_node_out_ref){return 0;}
 OS_API_C_FUNC(  int	)			tree_manager_get_prev_child(mem_zone_ref_ptr child_list, mem_zone_ref_ptr *p_node_out_ref){return 0;}
 OS_API_C_FUNC(int)			ripemd160(const void* in, unsigned long length, void* out){ return 0; }
@@ -172,10 +175,10 @@ OS_API_C_FUNC(int)			tree_manager_copy_children_ref(mem_zone_ref_ptr dest_ref_pt
 
 
 OS_API_C_FUNC(void) free_http_infos(struct http_infos *infos){}
-OS_API_C_FUNC(  void )		tree_manager_init(size_t x){return ;}
+OS_API_C_FUNC(  void )		tree_manager_init(size_t x, unsigned int flags){return ;}
 OS_API_C_FUNC(  int	)	tree_manager_json_loadb(const char *buffer, size_t buflen, mem_zone_ref_ptr result){return 0;}
 OS_API_C_FUNC(  int	)	tree_manager_free_node_array(mem_zone_ref_ptr childs_ref_ptr){return 0;}
-OS_API_C_FUNC(  void)		log_message(const char *fmt, mem_zone_ref_ptr args){return ;}
+OS_API_C_FUNC(  void)		log_message(const char *fmt, mem_zone_ref_const_ptr args){return ;}
 
 OS_API_C_FUNC(void) mbedtls_sha256_init(mbedtls_sha256_context *ctx){ return ; }
 OS_API_C_FUNC(void) mbedtls_sha256_starts(mbedtls_sha256_context *ctx, int is224){ return; }

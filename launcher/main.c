@@ -1,3 +1,4 @@
+//#define _DEBUG
 /* copyright antoine bentue-ferrer 2016 */
 #include <base/std_def.h>
 #include <base/std_mem.h>
@@ -10,6 +11,11 @@
 #include <tpo_mod.h>
 #include <fsio.h>
 
+//libcon.lib;libbase.lib;nodix.lib;kernel32.lib;
+
+#ifdef NDEBUG
+#undef _DEBUG
+#endif
 
 #ifdef _DEBUG
 
@@ -33,6 +39,13 @@ C_IMPORT int C_API_FUNC node_get_apps(mem_zone_ref_ptr params);
 C_IMPORT int C_API_FUNC node_get_app(mem_zone_ref_ptr p1, mem_zone_ref_ptr p2);
 C_IMPORT int C_API_FUNC node_get_app_types_def(mem_zone_ref_ptr p1, mem_zone_ref_ptr p2);
 C_IMPORT int C_API_FUNC node_get_app_objs(mem_zone_ref_ptr p1, mem_zone_ref_ptr p2);
+C_IMPORT int C_API_FUNC blog_get_cat(mem_zone_ref_ptr p1, mem_zone_ref_ptr p2);
+C_IMPORT int C_API_FUNC blog_get_post(mem_zone_ref_ptr p1, mem_zone_ref_ptr p2);
+C_IMPORT int C_API_FUNC blog_get_accounts(mem_zone_ref_ptr p1, mem_zone_ref_ptr p2);
+C_IMPORT int C_API_FUNC blog_get_msgs(mem_zone_ref_ptr p1, mem_zone_ref_ptr p2);
+
+
+
 
 C_IMPORT int C_API_FUNC node_get_types_def(mem_zone_ref_ptr params);
 C_IMPORT int C_API_FUNC node_add_tmp_file(mem_zone_ref_ptr params);
@@ -51,6 +64,7 @@ C_IMPORT int C_API_FUNC	node_is_next_block(mem_zone_ref_ptr in);
 
 C_IMPORT int C_API_FUNC	node_list_accounts(mem_zone_ref_ptr account_list);
 C_IMPORT int C_API_FUNC	node_list_addrs(mem_zone_ref_ptr account_name, mem_zone_ref_ptr addr_list);
+
 			 
 C_IMPORT int C_API_FUNC	accept_block(mem_zone_ref_ptr in, mem_zone_ref_ptr out);
 C_IMPORT int C_API_FUNC	compute_pow_diff(mem_zone_ref_ptr in, mem_zone_ref_ptr out);
@@ -58,7 +72,7 @@ C_IMPORT int C_API_FUNC	get_pow_reward(mem_zone_ref_ptr in, mem_zone_ref_ptr out
 C_IMPORT int C_API_FUNC	check_tx_files(mem_zone_ref_ptr in, mem_zone_ref_ptr out);
 			 
 C_IMPORT int C_API_FUNC	init_protocol(mem_zone_ref_ptr params);
-C_IMPORT int C_API_FUNC	init_blocks(mem_zone_ref_ptr params);
+C_IMPORT int C_API_FUNC	init_blocks(mem_zone_ref_ptr p1, mem_zone_ref_ptr p2);
 			 
 C_IMPORT int C_API_FUNC	connect_peer_node(mem_zone_ref_ptr in);
 C_IMPORT int C_API_FUNC	node_get_script_modules(mem_zone_ref_ptr in);
@@ -73,11 +87,17 @@ C_IMPORT int C_API_FUNC	node_init_service(mem_zone_ref_ptr in, mem_zone_ref_ptr 
 C_IMPORT int C_API_FUNC	make_genesis_block(mem_zone_ref_ptr in, mem_zone_ref_ptr out);
 C_IMPORT int C_API_FUNC	get_sess_account(mem_zone_ref_ptr in, mem_zone_ref_ptr out);
 C_IMPORT int C_API_FUNC	node_has_service_module(mem_zone_ref_ptr module_name);
+C_IMPORT int C_API_FUNC	node_load_bookmark();
 
 
 
 C_IMPORT int C_API_FUNC	get_nscene(mem_zone_ref_ptr in);
 C_IMPORT int C_API_FUNC	get_scene_list(mem_zone_ref_ptr in, mem_zone_ref_ptr in2);
+C_IMPORT int C_API_FUNC	blog_get_cat_posts(mem_zone_ref_ptr account_name, mem_zone_ref_ptr addr_list);
+C_IMPORT int C_API_FUNC blog_get_last_posts(mem_zone_ref_ptr account_name, mem_zone_ref_ptr addr_list);
+
+C_IMPORT int C_API_FUNC	blog_get_ncats(mem_zone_ref_ptr in);
+C_IMPORT int C_API_FUNC	blog_get_cats(mem_zone_ref_ptr in, mem_zone_ref_ptr in2);
 
 C_IMPORT int C_API_FUNC	node_log_version_infos(mem_zone_ref_ptr in);
 C_IMPORT int C_API_FUNC	queue_verack_message(mem_zone_ref_ptr in);
@@ -93,6 +113,9 @@ C_IMPORT int C_API_FUNC	node_get_mem_pool(mem_zone_ref_ptr tx_list);
 C_IMPORT int C_API_FUNC	node_init_self(mem_zone_ref_ptr params);
 C_IMPORT int C_API_FUNC	node_store_last_pos_hash(mem_zone_ref_ptr blk);
 C_IMPORT int C_API_FUNC	node_add_tx_to_mempool(mem_zone_ref_ptr tx);
+C_IMPORT int C_API_FUNC	node_broadcast_addr(mem_zone_ref_ptr p2p_addr);
+C_IMPORT int C_API_FUNC	node_add_remote_peers(mem_zone_ref_ptr node, mem_zone_ref_ptr addrs);
+C_IMPORT int C_API_FUNC	node_set_bookmark(mem_zone_ref_ptr p2p_addr, mem_zone_ref_ptr state_node);
 
 C_IMPORT int C_API_FUNC node_get_root_app(mem_zone_ref_ptr txh);
 
@@ -113,7 +136,7 @@ C_IMPORT int C_API_FUNC app_start(mem_zone_ref_ptr params);
 C_IMPORT int C_API_FUNC app_loop(mem_zone_ref_ptr params);
 C_IMPORT int C_API_FUNC app_stop(mem_zone_ref_ptr params);
 
-C_IMPORT void C_API_FUNC tree_manager_init(size_t size);
+C_IMPORT void C_API_FUNC tree_manager_init(size_t size,unsigned int flags);
 
 
 
@@ -123,7 +146,9 @@ typedef init_func *init_func_ptr;
 #else
 
 typedef int C_API_FUNC app_func(mem_zone_ref_ptr params);
-typedef void C_API_FUNC	tree_manager_init_func(size_t size);
+
+typedef void C_API_FUNC	tree_manager_init_func(size_t size, unsigned int flags);
+
 typedef int	C_API_FUNC load_script_func(const char *file,const char *name, mem_zone_ref_ptr script_vars,unsigned int opt);
 typedef int	C_API_FUNC resolve_script_var_func(mem_zone_ref_ptr script_vars, mem_zone_ref_ptr script_proc, const char *var_path, unsigned int var_type, mem_zone_ref_ptr out_var, mem_zone_ref_ptr pout_var);
 typedef int C_API_FUNC get_script_var_value_str_func(mem_zone_ref_ptr global_vars, const char *var_path, struct string *out, unsigned int radix);
@@ -298,10 +323,12 @@ int main(int argc, const char **argv)
 {
 	
 	struct string			node_name = { PTR_NULL },data_dir={PTR_NULL};
-	mem_zone_ref			 params = { PTR_NULL }, script_vars = { PTR_NULL }, init_node_proc = { PTR_NULL };
+	mem_zone_ref			nodeDef = { PTR_NULL }, params = { PTR_NULL }, script_vars = { PTR_NULL }, init_node_proc = { PTR_NULL };
 	const_mem_ptr			*params_ptr;
 	tpo_mod_file			*nodix_mod;
-	int done = 0,n;
+	
+	int						done = 0,n,withGC;
+
 
 
 
@@ -310,12 +337,34 @@ int main(int argc, const char **argv)
 	set_exe_path			();
 	network_init			();
 
-	create_def();
+	create_def				();
+
+
+	if (daemonize("nodix") <= 0)
+	{
+		console_print("daemonize failed \n");
+		return 0;
+	}
 
 	tpo_mod_init			(&libbase_mod);
 	load_module				("modz/libbase.tpo", "libbase", &libbase_mod);
-	
 
+	withGC = 0;
+	
+	if (argc > 1)
+	{
+		allocate_new_zone(0, argc * sizeof(mem_ptr), &params);
+		for (n = 0; n < (argc - 1); n++)
+		{
+			if (!strcmp_c(argv[n + 1], "gc"))
+				withGC = 1;
+
+			params_ptr = get_zone_ptr(&params, n * sizeof(mem_ptr));
+			(*params_ptr) = argv[n + 1];
+		}
+		params_ptr = get_zone_ptr(&params, n * sizeof(mem_ptr));
+		(*params_ptr) = PTR_NULL;
+	}
 			
 #ifndef _DEBUG
 	load_script				 = (load_script_func_ptr)get_tpo_mod_exp_addr_name(&libbase_mod, "load_script", 0);
@@ -327,15 +376,24 @@ int main(int argc, const char **argv)
 #endif
 
 #ifdef _DEBUG
-	set_dbg_ptr		(init_protocol, init_blocks, node_init_self, node_load_block_indexes, make_genesis_block, node_load_last_blks, connect_peer_node, node_log_version_infos, queue_verack_message, queue_getaddr_message, queue_version_message,queue_ping_message, queue_pong_message, queue_inv_message, queue_getdata_message, node_is_next_block, node_check_chain, node_store_last_pos_hash, node_set_last_block, set_block_hash, add_money_supply, node_truncate_chain_to, sub_money_supply, remove_stored_block, block_has_pow, set_next_check);
-	set_dbg_ptr2(node_add_block_header, accept_block, compute_pow_diff, store_block, node_init_service, node_get_script_modules, get_pow_reward, node_get_script_msg_handlers, node_get_mem_pool, node_del_txs_from_mempool, node_add_tx_to_mempool, store_wallet_tx, store_wallet_txs, queue_mempool_message, node_list_accounts, node_list_addrs, get_sess_account, node_has_service_module, queue_getblock_hdrs_message, node_get_root_app, node_get_root_app_addr, node_get_mempool_hashes, node_get_root_app_fee, node_get_apps, node_get_app, node_get_app_types_def, node_get_types_def, node_get_app_objs, node_add_tmp_file, check_tx_files, get_scene_list, get_nscene, node_del_btree_from_mempool);
+	set_dbg_ptr(init_protocol, init_blocks, node_init_self, node_load_block_indexes, make_genesis_block, node_load_last_blks, connect_peer_node, node_log_version_infos, queue_verack_message, queue_getaddr_message, queue_version_message, queue_ping_message, queue_pong_message, queue_inv_message, queue_getdata_message, node_is_next_block, node_check_chain, node_store_last_pos_hash, node_set_last_block, set_block_hash, add_money_supply, node_truncate_chain_to, sub_money_supply, remove_stored_block, block_has_pow, set_next_check);
+	set_dbg_ptr2(node_add_block_header, accept_block, compute_pow_diff, store_block, node_init_service, node_get_script_modules, get_pow_reward, node_get_script_msg_handlers, node_get_mem_pool, node_del_txs_from_mempool, node_add_tx_to_mempool, store_wallet_tx, store_wallet_txs, queue_mempool_message, node_list_accounts, node_list_addrs, get_sess_account, node_has_service_module, queue_getblock_hdrs_message, node_get_root_app, node_get_root_app_addr, node_get_mempool_hashes, node_get_root_app_fee, node_get_apps, node_get_app, node_get_app_types_def, node_get_types_def, node_get_app_objs, node_add_tmp_file, check_tx_files, get_scene_list, get_nscene, node_del_btree_from_mempool, blog_get_ncats, blog_get_cats, blog_get_cat_posts, blog_get_cat, blog_get_post, blog_get_last_posts, node_broadcast_addr, node_add_remote_peers, node_set_bookmark, node_load_bookmark, blog_get_accounts, blog_get_msgs);
 	set_pos_dbg_ptr	(init_pos, store_blk_staking, load_last_pos_blk, find_last_pos_block, compute_last_pos_diff, store_blk_tx_staking,stake_get_reward);
 #endif
 
-	tree_manager_init		(32 * 1024 * 1024);
+	if(withGC == 1 )
+		tree_manager_init		(32 * 1024 * 1024, 0x10);
+	else
+		tree_manager_init		(32 * 1024 * 1024, 0x0);
+
+
 	
-	load_script				("nodix.node","nodix.node", &script_vars,3);
-	
+	if (!load_script("nodix.node", "nodix.node", &script_vars, 3))
+	{
+		log_output("unable to load node script \n");
+		return -1;
+	}
+
 	if (!get_script_var_value_str(&script_vars, "configuration.name", &node_name, 0))
 		make_string(&node_name, "nodix");
 
@@ -352,9 +410,13 @@ int main(int argc, const char **argv)
 			return 0;
 		}
 	}
+
+	if (!aquire_lock_file(node_name.str))
+	{
+		console_print("already running\n");
+		return 0;
+	}
 	
-
-
 	get_script_var_value_ptr(&script_vars, "nodix.mod_ptr"	, (mem_ptr *)&nodix_mod);
 	
 	resolve_script_var(&script_vars, PTR_NULL, "init_node", 0xFFFFFFFF, &init_node_proc, PTR_NULL);
@@ -366,7 +428,8 @@ int main(int argc, const char **argv)
 	app_stop = (app_func_ptr)get_tpo_mod_exp_addr_name(nodix_mod, "app_stop", 0);
 #endif
 
-	
+
+
 
 	if (!app_init(&script_vars))
 	{
@@ -382,23 +445,7 @@ int main(int argc, const char **argv)
 		return 0;
 	}
 	
-	if (daemonize(node_name.str) <= 0)
-	{
-		console_print("daemonize failed \n");
-		return 0;
-	}
-	
-	if (argc > 1)
-	{
-		allocate_new_zone(0, argc*sizeof(mem_ptr), &params);
-		for (n = 0; n < (argc-1); n++)
-		{
-			params_ptr		= get_zone_ptr(&params, n*sizeof(mem_ptr));
-			(*params_ptr)	= argv[n+1];
-		}
-		params_ptr		= get_zone_ptr(&params, n*sizeof(mem_ptr));
-		(*params_ptr)	= PTR_NULL;
-	}
+
 
 	if (!app_start(&params))
 	{
@@ -410,7 +457,8 @@ int main(int argc, const char **argv)
 	
 	while (isRunning())
 	{
-		app_loop(PTR_NULL);
+	
+		app_loop		(PTR_NULL);
 	}
 
 	app_stop(PTR_NULL);

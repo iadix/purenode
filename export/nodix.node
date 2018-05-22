@@ -44,8 +44,9 @@ let NODE_GFX_OBJECT configuration = `
 let NODE_BITCORE_NODE SelfNode = `
 {
 	"user_agent" : "nodix",
-	(NODE_GFX_BINT)"paytxfee" : 10000,
+	(NODE_GFX_BINT)"paytxfee" : 0,
 	"block_height" : 0,
+	"useGC" : false,
 	(NODE_GFX_INT)"version"  : 60018,
 	(NODE_GFX_BOOL)"uPnP":false,
 	(NODE_GFX_INT)"bestChainDepth":3,
@@ -63,6 +64,7 @@ let NODE_BITCORE_NODE SelfNode = `
 	(NODE_BITCORE_BLK_HDR) "last_block" : {},
 	(NODE_BITCORE_BLK_HDR) "lastPOSBlk" : {},
 	(NODE_BITCORE_BLK_HDR) "lastPOWBlk" : {},
+	(NODE_GFX_OBJECT) "trustedApps": { "blog" : true, "raytrace" : true },
 	(NODE_BITCORE_ADDR)"p2p_addr" :
 	{
 		"services": 0,
@@ -77,7 +79,8 @@ let NODE_BITCORE_NODE SelfNode = `
 		"apppath"   : "/app/",
 		"name"		: "Nodix webservice",
 		"indexpage" : "/nodix.site",
-		"mimes" : {"js":"text/javascript", "css" : "text/css", "png" : "image/png", "pdf" : "application/pdf", "gif" : "image/gif", "svg" : "image/svg+xml", "html" : "text/html" },
+		"mimes"		: {"js":"text/javascript", "css" : "text/css", "woff" : "text/css", "woff2" : "text/css", "png" : "image/png", "pdf" : "application/pdf", "gif" : "image/gif", "svg" : "image/svg+xml", "html" : "text/html" },
+	
 		"defaultmime" : "text/plain",
 		"cacheTime" : 0,
 		"nthreads"	: 4,
@@ -95,7 +98,6 @@ let NODE_BITCORE_NODE SelfNode = `
 	(NODE_BITCORE_MSG_LIST) "send queue" : [],
 	(NODE_BITCORE_MSG_LIST) "emitted_queue" : [],
 	(NODE_BITCORE_TX_LIST) "mempool" : [],
-	(NODE_BITCORE_TX_LIST) "tmp tx pool" : [],
 	(NODE_BITCORE_TX_LIST) "submitted txs" : [],
 	(NODE_BITCORE_HASH_LIST) "pending files" : [],
 	(NODE_BITCORE_BLOCK_LIST) "submitted blocks" : []
@@ -117,11 +119,14 @@ let NODE_GFX_BINT			block_reward = 0
 let NODE_GFX_BINT			lost_reward = 0
 let NODE_GFX_BINT			cur_len = 0
 
+let NODE_GFX_SHORT			one = 1
+
 let NODE_BITCORE_HASH_LIST  hash_list = `[]`
 
 
 accumulator add_reward = `
-		block_adx.block_has_pow(SelfNode.block_index[accum_idx]) :
+	
+	block_adx.block_has_pow(SelfNode.block_index[accum_idx]) :
 		configuration.staking.pos_kernel.stake_get_reward(accum_idx, block_reward) : error endor
 		accum block_reward;
 		success
@@ -135,7 +140,7 @@ handler on_verack(node,payload)		= ` node_adx.queue_ping_message(node) success `
 handler on_ping(node,payload)		= ` node_adx.queue_pong_message(node,payload.nonce) success `
 handler on_pong(node, payload)		= ` gettime node.ping_delay; gettime node.last_pong; sub node.ping_delay, node.last_ping;  set node.next_pong = 0; set node.synching = 1; success `
 handler on_inv(node, payload)		= ` node_adx.queue_getdata_message(node, payload.hashes) success `
-handler on_addr(node, payload)		= ` foreach payload.addrs node_adx.node_log_addr_infos node_adx.node_add_remote_peers(payload.addrs) success `
+handler on_addr(node, payload)		= ` foreach payload.addrs > node_adx.node_log_addr_infos; node_adx.node_add_remote_peers(node,payload.addrs) success `
 handler on_tx(node, payload)		= ` node_adx.node_add_tx_to_mempool(payload.tx) ? node_adx.check_tx_files(node,payload.tx) endor success `
 handler on_mempool(node, payload)   = ` node_adx.node_get_mempool_hashes(hash_list) node_adx.queue_inv_message(node,hash_list) success `
 
@@ -156,7 +161,10 @@ handler on_version(node,payload) = `
 
 	node_adx.node_log_version_infos(node)
 
-	node_adx.queue_verack_message(node)
+	node_adx.node_set_bookmark		(node.p2p_addr, one);
+	node_adx.queue_verack_message	(node)
+	node_adx.node_broadcast_addr	(node.p2p_addr)
+
 	success
 
 `
@@ -235,7 +243,7 @@ handler on_block(node, payload) = `
 proc init_node = `
 
 	protocol_adx.init_protocol	(configuration)
-	block_adx.init_blocks		(configuration)
+	block_adx.init_blocks		(configuration, SelfNode.trustedApps)
 	node_adx.node_init_self		(SelfNode)
 	
 	loadmod(configuration.staking.pos_kernel)
@@ -248,14 +256,12 @@ proc init_node = `
 	
 	if (SelfNode.block_height = 0)
 		node_adx.node_set_last_block						(genesis_blk)
-		nodix.compute_pow_diff							(genesis_blk, SelfNode.current_pow_diff)
+		nodix.compute_pow_diff								(genesis_blk, SelfNode.current_pow_diff)
 		configuration.staking.pos_kernel.store_blk_staking  (genesis_blk)
 	endif
 	
 	if (SelfNode.block_height > 1)
 		node_adx.node_load_last_blks()
-
-
 
 		block_adx.get_pow_reward(SelfNode.lastPOWBlk.height, block_reward)
 		set SelfNode.pow_reward = block_reward;
@@ -293,10 +299,11 @@ proc init_node = `
 	sethandler SelfNode.emitted_queue{ "cmd=tx" } = on_tx;
 	
 	
-	node_adx.connect_peer_node(configuration.seed_node)
-	node_adx.queue_version_message(SelfNode.peer_nodes[0])
-	node_adx.queue_getaddr_message(SelfNode.peer_nodes[0])
-	node_adx.queue_mempool_message(SelfNode.peer_nodes[0])
+
+	node_adx.node_load_bookmark() : 
+		node_adx.connect_peer_node(configuration.seed_node)
+	endor
+
 	node_adx.set_next_check(0)
 
 

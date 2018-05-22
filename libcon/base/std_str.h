@@ -34,6 +34,7 @@ LIBC_API int64_t		C_API_FUNC strtoll_c				(const char *nptr, char **endptr, int 
 LIBC_API unsigned long	C_API_FUNC strtoul_c				(const char *nptr, char **endptr, int base);
 LIBC_API short			C_API_FUNC strtos_c					(const char *nptr, char **endptr, int base);
 LIBC_API long			C_API_FUNC atol_c					(const char *str ); 
+LIBC_API void			C_API_FUNC dtoll_c					(double dAmount, uint64_t *nAmount);
 LIBC_API const char *	C_API_FUNC strstr_c					(const char *buf, const char *sub);
 LIBC_API unsigned int	C_API_FUNC get_new_kern_log_id		(const char *pref,unsigned char color);
 LIBC_API void			C_API_FUNC kernel_log				(unsigned int kern_log_id,const char *str);

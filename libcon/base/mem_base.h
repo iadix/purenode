@@ -1,25 +1,27 @@
-#define MAX_MEM_AREAS  16
-#define MAX_MEM_ZONES  1024*64
-#define MAX_FREE_ZONES 1024*8
+#define MAX_MEM_AREAS  32
+#define MAX_MEM_ZONES  1024*128
+#define MAX_FREE_ZONES 1024*64
 #define PTR_NULL	(void *)0x00000000L
 #define PTR_INVALID (void *)0xDEADBEEFLL
 #define PTR_FF		(void *)0xFFFFFFFFLL
 
+
+
 typedef struct
 {
-	volatile mem_ptr zone;
+	volatile  mem_ptr zone;
 }mem_zone_ref;
 
 typedef struct
 {
-	 const_mem_ptr	 zone;
+	const_mem_ptr zone;
 }mem_zone_const_ref;
 
 typedef mem_zone_ref			*mem_zone_ref_ptr;
 typedef const mem_zone_ref		*mem_zone_ref_const_ptr;
 typedef mem_zone_const_ref		*mem_zone_const_ref_ptr;
 
-typedef int C_API_FUNC zone_free_func(mem_zone_ref_ptr zone_ref);
+typedef int C_API_FUNC zone_free_func(mem_zone_ref_ptr zone_ref, unsigned int scan_id);
 typedef  zone_free_func	*zone_free_func_ptr;
 
 typedef int C_API_FUNC thread_func(mem_zone_ref_ptr p,unsigned int *status);
@@ -53,18 +55,25 @@ LIBC_API void 			C_API_FUNC empty_trash				();
 		
 LIBC_API void			C_API_FUNC copy_zone_ref			(mem_zone_ref_ptr dest_zone_ref,mem_zone_ref_const_ptr zone_ref);
 LIBC_API void			C_API_FUNC copy_zone_const_ref		(mem_zone_const_ref_ptr dest_zone_ref,mem_zone_const_ref_ptr zone_ref);
+LIBC_API unsigned int	C_API_FUNC get_zone_area_type		(mem_zone_ref_const_ptr zone);
 LIBC_API unsigned int	C_API_FUNC create_zone_ref			(mem_zone_ref *dest_zone_ref,mem_ptr ptr,mem_size size);
 LIBC_API void			C_API_FUNC init_mem_system			();
 LIBC_API size_t			C_API_FUNC dump_mem_used			(unsigned int area_id);
 LIBC_API size_t			C_API_FUNC dump_mem_used_after		(unsigned int area_id, unsigned int time, mem_zone_ref *outs, size_t nOuts);
 
+
+LIBC_API int			C_API_FUNC  get_shared_slot			(mem_zone_ref_ptr shared_zone, mem_zone_ref_ptr *zone_ptr);
+LIBC_API int			C_API_FUNC release_shared_slot		(mem_zone_ref_ptr zone_ptr);
+
 LIBC_API mem_ptr		C_API_FUNC get_zone_ptr				(mem_zone_ref_const_ptr ref,mem_size ofset);
 LIBC_API mem_size		C_API_FUNC get_zone_size			(mem_zone_ref_const_ptr ref);
+LIBC_API unsigned int	C_API_FUNC do_mark_sweep			(unsigned int area_id, unsigned int delay);
+LIBC_API void			C_API_FUNC mark_zone				(mem_ptr zone, unsigned int scan_id);
 
 LIBC_API unsigned int	C_API_FUNC find_zones_used			(unsigned int area_id);
 LIBC_API void			C_API_FUNC do_gdt_real_mode			(mem_ptr new_gdt);
 LIBC_API unsigned int	C_API_FUNC get_zone_numref			(mem_zone_ref *zone_ref);
-
+LIBC_API unsigned int	C_API_FUNC area_type				(unsigned int area_id);
 
 LIBC_API void			C_API_FUNC swap_zone_ref					(mem_zone_ref_ptr dest_zone_ref, mem_zone_ref_ptr src_zone_ref);
 //LIBC_API int			C_API_FUNC align_zone_memory				(mem_zone_ref *zone_ref, mem_size align);
@@ -156,8 +165,11 @@ static __inline void copy_vec4u_c	(vec_4uc_t d,const vec_4uc_t s)
 	d[3]=s[3];
 }
 
-LIBC_API void			C_API_FUNC release_zone_ref	(mem_zone_ref_ptr zone_ref);
-LIBC_API void			C_API_FUNC dec_zone_ref		(mem_zone_ref_ptr zone_ref);
+LIBC_API void			C_API_FUNC  release_zone_ref	(mem_zone_ref_ptr zone_ref);
+LIBC_API void			C_API_FUNC  dec_zone_ref		(mem_zone_ref_ptr zone_ref);
+LIBC_API unsigned int   C_API_FUNC	inc_zone_ref		(mem_zone_ref_ptr zone_ref);
+LIBC_API mem_size	    C_API_FUNC	set_zone_free		(mem_zone_ref_ptr ref, zone_free_func_ptr	free_func);
+
 
 #ifdef __cplusplus
 	}

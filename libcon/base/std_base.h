@@ -1,40 +1,6 @@
 #ifndef __STD_BASE__
 #define __STD_BASE__
 
-#ifdef __GNUC__
-#define C_EXPORT __attribute__ ((visibility ("default")))
-#define C_IMPORT __attribute__ ((visibility ("default"))) 
-#define struct_packed			__attribute__((packed))
-
-#if defined(_M_X64) || defined(__amd64__)
-
-	#define C_API_FUNC			
-	#define ASM_API_FUNC		
-
-	#define KERN_API_FUNC			ASM_API_FUNC
-	
-	#define	MOD_NAME_DECO			GCC_STDCALL_64
-
-	typedef long int				int64_t;
-	typedef unsigned long int		uint64_t;
-
-
-#else
-	
-	#define C_API_FUNC				__attribute__((stdcall)) 
-	#define ASM_API_FUNC			__attribute__((cdecl)) 	
-	
-	#define KERN_API_FUNC			ASM_API_FUNC
-
-	#define	MOD_NAME_DECO			GCC_STDCALL_32
-
-	typedef long long				int64_t;
-	typedef	unsigned long long		uint64_t;
-
-#endif
-
-
-#endif
 
 #ifdef _MSC_VER
 	#define C_EXPORT			__declspec(dllexport)
@@ -51,7 +17,40 @@
 		#define KERN_API_FUNC		ASM_API_FUNC
 		#define	MOD_NAME_DECO		MSVC_STDCALL_32
 	#endif	
+#elif defined(__GNUC__)
+
+	#define C_EXPORT __attribute__ ((visibility ("default")))
+	#define C_IMPORT __attribute__ ((visibility ("default"))) 
+	#define struct_packed			__attribute__((packed))
+
+	#if defined(_M_X64) || defined(__amd64__)
+
+		#define C_API_FUNC			
+		#define ASM_API_FUNC		
+
+		#define KERN_API_FUNC			ASM_API_FUNC
+		
+		#define	MOD_NAME_DECO			GCC_STDCALL_64
+
+		typedef long int				int64_t;
+		typedef unsigned long int		uint64_t;
+
+
+	#else
+		
+		#define C_API_FUNC				__attribute__((stdcall)) 
+		#define ASM_API_FUNC			__attribute__((cdecl)) 	
+		
+		#define KERN_API_FUNC			ASM_API_FUNC
+
+		#define	MOD_NAME_DECO			GCC_STDCALL_32
+
+		typedef long long				int64_t;
+		typedef	unsigned long long		uint64_t;
+
+	#endif
 #endif
+
 
 typedef	void		   void_func();
 typedef	void_func	   *void_func_ptr;

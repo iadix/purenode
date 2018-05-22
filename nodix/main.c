@@ -1,5 +1,5 @@
 ﻿//copyright antoine bentue-ferrer 2016
-#include <stdio.h>
+//#include <stdio.h>
 
 #include <base/std_def.h>
 #include <base/std_mem.h>
@@ -23,6 +23,8 @@
 #include "../block_adx/block_api.h"
 #include "../wallet/wallet_api.h"
 #include "../node_adx/node_api.h"
+
+//#define _DEBUG
 
 mem_zone_ref		self_node  = { PTR_INVALID };
 hash_t				null_hash = { 0xCD };
@@ -101,11 +103,7 @@ find_last_stake_modifier_func_ptr			find_last_stake_modifier = PTR_INVALID;
 #endif
 
 //protocol module
-C_IMPORT int			C_API_FUNC create_getheaders_message(mem_zone_ref_ptr node, mem_zone_ref_ptr blk_locator, hash_t hash_stop, mem_zone_ref_ptr blk_hdr_pack);
 C_IMPORT int			C_API_FUNC node_process_event_handler(const char *msg_list_name, mem_zone_ref_ptr node, mem_zone_ref_ptr msg);
-
-
-
 
 OS_API_C_FUNC(int) compute_pow_diff(mem_zone_ref_ptr newPOWBlock, mem_zone_ref_ptr nBits)
 {
@@ -521,32 +519,14 @@ int handle_getdata(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 }
 
 
-int get_bitcore_addr(mem_zone_ref_ptr node, ipv4_t ip, unsigned short *port, uint64_t *services)
-{
-	mem_zone_ref	addr_node = { PTR_NULL };
 
-	if (!tree_manager_find_child_node(node, NODE_HASH("p2p_addr"), NODE_BITCORE_ADDR, &addr_node))
-		return 0;
-
-	tree_manager_get_child_value_i64(&addr_node, NODE_HASH("services"), services);
-	tree_manager_get_child_value_ipv4(&addr_node, NODE_HASH("addr"), ip);
-	tree_manager_get_child_value_i16(&addr_node, NODE_HASH("port"), port);
-	release_zone_ref(&addr_node);
-	return 1;
-}
 
 int handle_getaddr(mem_zone_ref_ptr src_node, mem_zone_ref_ptr payload)
 {
 	mem_zone_ref		my_list = { PTR_NULL }, peer_nodes = { PTR_NULL }, addrs = { PTR_NULL };
 	mem_zone_ref_ptr	node = PTR_NULL;
-	ipv4_t				src_ip;
-	uint64_t			src_services;
-	unsigned short		src_port;
 	ctime_t				now;
-
-	if (!get_bitcore_addr(src_node, src_ip, &src_port, &src_services))return 0;
-
-	if (!tree_manager_find_child_node(&self_node, NODE_HASH("peer_nodes"), NODE_BITCORE_NODE_LIST, &peer_nodes))
+		if (!tree_manager_find_child_node(&self_node, NODE_HASH("peer_nodes"), NODE_BITCORE_NODE_LIST, &peer_nodes))
 		return 1;
 
 	now = get_time_c();
@@ -554,17 +534,16 @@ int handle_getaddr(mem_zone_ref_ptr src_node, mem_zone_ref_ptr payload)
 
 	for (tree_manager_get_first_child(&peer_nodes, &my_list, &node); ((node != PTR_NULL) && (node->zone != PTR_NULL)); tree_manager_get_next_child(&my_list, &node))
 	{
-		ipv4_t		   ip;
-		uint64_t	   services;
-		mem_zone_ref	addr = { PTR_NULL };
+		ipv4_t		    ip = { 0 };
+		uint64_t	    services;
+		mem_zone_ref	addr = { PTR_NULL }, log = { PTR_NULL };
 		unsigned int	status;
-		unsigned short port;
+		unsigned short  port=0;
 
-		if ((ip == src_ip) && (port == src_port))continue;
 		if (!tree_manager_get_child_value_i32(node, NODE_HASH("p2p_status"), &status))continue;
 		if (status == 0)continue;
+		if (is_same_node(src_node, node))continue;
 		if (!get_bitcore_addr(node, ip, &port, &services))continue;
-
 
 		if (tree_manager_add_child_node(&addrs, "addr", NODE_BITCORE_ADDRT, &addr))
 		{
@@ -576,7 +555,7 @@ int handle_getaddr(mem_zone_ref_ptr src_node, mem_zone_ref_ptr payload)
 		}
 	}
 
-	queue_addr_message(node, &addrs);
+	queue_addr_message(src_node, &addrs);
 
 	release_zone_ref(&addrs);
 	release_zone_ref(&peer_nodes);
@@ -594,7 +573,7 @@ int handle_version(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 	uint64_t	 time, services, timestamp;
 	int			 index = 0;
 	ipv4_t		 node_ip,my_ip;
-	uint64_t		nblks;
+
 	tree_manager_get_child_value_i32(payload, NODE_HASH("proto_ver"), &proto_ver);
 	tree_manager_get_child_value_i64(payload, NODE_HASH("timestamp"), &time);
 	tree_manager_get_child_value_i64(payload, NODE_HASH("services"), &services);
@@ -1207,6 +1186,8 @@ int handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 	}
 
 	ret=add_new_block(&header, &tx_list);
+
+	node_release_mining_lock();
 	if (!ret)
 	{
 		log_output("add_new_block error\n");
@@ -1215,16 +1196,14 @@ int handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 
 		snooze_c(10000);
 
-
 		tree_manager_set_child_value_i32(node, "need_recon", 1);
 		free_string(&signature);
 		release_zone_ref(&header);
 		release_zone_ref(&tx_list);
-		node_release_mining_lock();
 		return 1;
 	}
 
-	node_release_mining_lock();
+	
 	
 	if (ret)
 	{
@@ -1235,8 +1214,17 @@ int handle_block(mem_zone_ref_ptr node, mem_zone_ref_ptr payload)
 		tree_manager_create_node("files", NODE_BITCORE_HASH_LIST, &files);
 		for (tree_manager_get_first_child(&tx_list, &my_list, &tx); ((tx != NULL) && (tx->zone != NULL)); tree_manager_get_next_child(&my_list, &tx))
 		{
-			get_tx_file(tx, &files);
+			struct string app_name = { 0 };
+
+			if (tree_manager_get_child_value_istr(tx, NODE_HASH("appFile"), &app_name, 0))
+			{
+				if(is_trusted_app(app_name.str))
+					get_tx_file(tx, &files);
+
+				free_string(&app_name);
+			}
 		}
+
 		if (tree_manager_get_node_num_children(&files)>0)
 		{
 			queue_getdata_message(node, &files);
@@ -1292,6 +1280,8 @@ int handle_message(mem_zone_ref_ptr node,const char *cmd,mem_zone_ref_ptr payloa
 	if (!strncmp_c(cmd, "addr", 4))return handle_addr(node, payload);
 	*/
 	
+	
+	if (!strncmp_c(cmd, "getaddr", 7))return handle_getaddr(node, payload);
 	if (!strncmp_c(cmd, "getdata", 7))return handle_getdata(node, payload);
 	if (!strncmp_c(cmd, "getblocks", 9))return handle_getblocks(node, payload);
 	if (!strncmp_c(cmd, "file", 4))return handle_file(node, payload);
@@ -1334,6 +1324,11 @@ OS_API_C_FUNC(int) scan_addresses()
 			mem_zone_ref new_addr = { PTR_NULL };
 			if (tree_manager_find_child_node(addr, NODE_HASH("addr"), NODE_BITCORE_WALLET_ADDR, &new_addr))
 			{
+				btc_addr_t						addr;
+
+				tree_manager_get_node_btcaddr	(&new_addr, 0, addr);
+				rescan_addr						(addr);
+
 				//background_func(scanaddr_func, &new_addr);
 				release_zone_ref(&new_addr);
 			}
@@ -1374,15 +1369,14 @@ int process_node_messages(mem_zone_ref_ptr node)
 		ret=node_process_event_handler		("emitted_queue", node, msg);
 		if (ret<0)
 		{
-
 			tree_manager_find_child_node(msg, NODE_HASH("payload"), NODE_BITCORE_PAYLOAD, &payload_node);
 			ret = handle_message		(node, cmd, &payload_node);
 			release_zone_ref			(&payload_node);
 		}
 
 		if (ret < 0)ret = 1;
-		tree_manager_set_child_value_si32(msg, "handled", ret);
-		tree_manager_set_child_value_si32(node, "last_msg_time", now);
+		tree_manager_set_child_value_si32(msg , "handled"		, ret);
+		tree_manager_set_child_value_si32(node, "last_msg_time"	, now);
 	}
 	tree_remove_child_by_member_value_dword			(&msg_list, NODE_BITCORE_MSG, "handled" , 1);
 	tree_remove_child_by_member_value_lt_dword		(&msg_list, NODE_BITCORE_MSG, "recvtime", now-300);
@@ -1459,14 +1453,20 @@ int process_nodes()
 	for (tree_manager_get_first_child(&peer_nodes, &my_list, &node); ((node != NULL) && (node->zone != NULL)); tree_manager_get_next_child(&my_list, &node))
 	{
 		unsigned int		test, synching;
-		unsigned int		last_msg_time;
+		unsigned int		last_msg_time,status;
 		uint64_t			block_height;
 		ctime_t				ping_delay, last_ping, next_pong;
+
+		if (!tree_manager_get_child_value_i32(node, NODE_HASH("p2p_status"), &status))status = 0;
+
+		if (status == 0)continue;
+
+		if (!tree_manager_get_child_value_i64(node, NODE_HASH("block_height"), &block_height))block_height = 0;
 
 		process_node_messages(node);
 		process_node_elements(node);
 
-		if (!tree_manager_get_child_value_i64 (node, NODE_HASH("block_height"), &block_height))block_height = 0;
+		
 		if (!tree_manager_get_child_value_i32 (node, NODE_HASH("synching"), &synching))synching = 0;
 		if (!tree_manager_get_child_value_i32 (node, NODE_HASH("testing_chain"), &test))test = 0;
 		if (!tree_manager_get_child_value_si64(node, NODE_HASH("last_ping"), &last_ping))last_ping = 0;
@@ -1474,15 +1474,14 @@ int process_nodes()
 		if (!tree_manager_get_child_value_si64(node, NODE_HASH("next_pong"), &next_pong))next_pong = 0;
 
 		
-
-		if ((next_pong != 0) && (cctime>next_pong))
+		if ((last_msg_time!=0)&&(curtime - last_msg_time) > 120)
 		{
 			log_output						("node ping timeout \n");
 			tree_manager_set_child_value_i32(node, "need_recon", 1);
 			continue;
 		}
 
-		if (((curtime - last_msg_time) > 60) && ((cctime-last_ping)>60000))
+		if ( ((last_msg_time != 0) && ((curtime - last_msg_time) > 60)) && ((cctime-last_ping)>60000))
 			queue_ping_message(node);
 
 		if (!tree_manager_get_child_value_si64(node, NODE_HASH("ping_delay"), &ping_delay))
@@ -1580,6 +1579,7 @@ OS_API_C_FUNC(int) app_init(mem_zone_ref_ptr params)
 	memset_c(null_hash, 0, 32);
 
 	init_upnp();
+	
 
 	create_dir("txs");
 	if (stat_file("txs") != 0)
@@ -1616,6 +1616,11 @@ OS_API_C_FUNC(int) app_init(mem_zone_ref_ptr params)
 		if(ret)node_set_script			(params);
 	}
 
+	if (get_zone_area_type(&self_node) & 0x10)
+		tree_manager_set_child_value_i32(&self_node, "useGC", 1);
+	else
+		tree_manager_set_child_value_i32(&self_node, "useGC", 0);
+	
 	if (!ret)
 	{
 		release_zone_ref(&self_node);
@@ -1689,6 +1694,21 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 	log_output("app start\n");
 
 	tree_manager_get_child_value_i64(&self_node, NODE_HASH("block_height"), &height);
+	
+	//node_remove_last_block();
+
+	/*
+	
+	node_remove_last_block();
+	node_remove_last_block();
+	node_remove_last_block();
+	node_remove_last_block();
+	node_remove_last_block();
+	node_remove_last_block();
+	node_remove_last_block();
+	node_remove_last_block();
+	node_remove_last_block();
+	*/
 
 	//node_remove_last_block();
 	
@@ -1702,9 +1722,8 @@ OS_API_C_FUNC(int) app_start(mem_zone_ref_ptr params)
 	/*node_remove_last_block();*/
 
 	
-	
 	if (rebuild_tx)
-		node_rewrite_txs(1000);
+		node_rewrite_txs(100);
 	
 	if (rebuild_supply)
 		rebuild_money_supply();
@@ -1721,9 +1740,25 @@ OS_API_C_FUNC(int) app_loop(mem_zone_ref_ptr params)
 	mem_zone_ref		my_list = { PTR_NULL };
 	mem_zone_ref		hash_list = { PTR_NULL };
 	unsigned int		new_block = 0, new_tx = 0;;
+	
 
 
-	empty_trash					();
+	empty_trash();
+	do_mark_sweep(get_tree_mem_area_id(),5000);
+	/*
+	{
+		mem_zone_ref		log = { PTR_NULL };
+		size_t				nz1, nz2;
+		nz1 = find_zones_used(get_mem_area_id());
+		nz2 = find_zones_used(get_tree_mem_area_id());
+
+		tree_manager_create_node("log", NODE_LOG_PARAMS, &log);
+		tree_manager_set_child_value_i32(&log, "z1", nz1);
+		tree_manager_set_child_value_i32(&log, "z2", nz2);
+		log_message("area1 : %z1% area1 : %z2% ", &log);
+		release_zone_ref(&log);
+	}
+	*/
 
 	node_check_new_connections	();
 	node_check_services			();
@@ -1732,24 +1767,41 @@ OS_API_C_FUNC(int) app_loop(mem_zone_ref_ptr params)
 
 	if (tree_manager_find_child_node(&self_node, NODE_HASH("submitted txs"), NODE_BITCORE_TX_LIST, &tx_list))
 	{
-		mem_zone_ref_ptr	tx = PTR_NULL;
+		mem_zone_ref		my_list = { PTR_NULL };
+		mem_zone_ref_ptr	tx = PTR_NULL,my_list_ptr;
+
+
+		if ((get_zone_area_type(&tx_list) & 0x10) == 0)
+			my_list_ptr = &my_list;
+
+	
 		tree_manager_create_node("hashes", NODE_BITCORE_HASH_LIST, &hash_list);
-		for (tree_manager_get_first_child(&tx_list, &my_list, &tx); ((tx != PTR_NULL) && (tx->zone != PTR_NULL)); tree_manager_get_next_child(&my_list, &tx))
+		for (tree_manager_get_first_child_shared(&tx_list,&my_list_ptr, &tx); ((tx != PTR_NULL) && (tx->zone != PTR_NULL)); tree_manager_get_next_child_shared(&my_list_ptr, &tx))
 		{
 			mem_zone_ref		new_hash = { PTR_NULL };
+			unsigned int		sbm;
+			
+			if (!tree_manager_get_child_value_i32(tx, NODE_HASH("submitted"), &sbm))
+				sbm = 0;
 
-			if (tree_manager_find_child_node(tx, NODE_HASH("submitted"), 0xFFFFFFFF, PTR_NULL))continue;
+			if (sbm == 1)continue;
 
 			if (tree_manager_add_child_node(&hash_list, "hash", NODE_BITCORE_TX_HASH, &new_hash))
 			{
+				mem_zone_ref		nnew_tx = { PTR_NULL };
 				hash_t				txh;
 
-				tree_manager_get_child_value_hash	(tx, NODE_HASH("txid"), txh);
+				tree_manager_set_child_value_bool	(tx, "submitted", 1);
+
+				tree_manager_node_dup				(PTR_NULL, tx, &nnew_tx, 8);
+
+				tree_manager_get_child_value_hash	(&nnew_tx, NODE_HASH("txid"), txh);
 				tree_manager_write_node_hash		(&new_hash, 0, txh);
 				release_zone_ref					(&new_hash);
-				tree_manager_set_child_value_bool	(tx, "submitted", 1);
-				if(node_add_tx_to_mempool			(tx))
+				if(node_add_tx_to_mempool			(&nnew_tx))
 					new_tx = 1;
+
+				release_zone_ref(&nnew_tx);
 			}
 		}
 		if (new_tx)
@@ -1783,19 +1835,22 @@ OS_API_C_FUNC(int) app_loop(mem_zone_ref_ptr params)
 		for (tree_manager_get_first_child(&blk_list, &my_list, &blk); ((blk != PTR_NULL) && (blk->zone != PTR_NULL)); tree_manager_get_next_child(&my_list, &blk))
 		{
 			hash_t			blk_hash = { 0 };
+			mem_zone_ref	new_blk = { PTR_NULL };
 			unsigned int	ready;
 			int				ret;
 			if (!tree_manager_find_child_node(blk, NODE_HASH("txs"), NODE_BITCORE_TX_LIST, &tx_list))continue;
 			if (!tree_manager_get_child_value_i32(blk, NODE_HASH("ready"), &ready))continue;
+
+			tree_manager_node_dup(PTR_NULL, blk, &new_blk, 8);
 			
-			ret=accept_block					(blk, &tx_list);
+			ret=accept_block					(&new_blk, &tx_list);
 			if (ret)
 			{
 				mem_zone_ref		new_hash = { PTR_NULL };
-				ret= add_new_block(blk, &tx_list);
+				ret= add_new_block(&new_blk, &tx_list);
 				if (ret)
 				{
-					tree_manager_get_child_value_hash(blk, NODE_HASH("blkHash"), blk_hash);
+					tree_manager_get_child_value_hash(&new_blk, NODE_HASH("blkHash"), blk_hash);
 					if (tree_manager_add_child_node(&hash_list, "hash", NODE_BITCORE_BLOCK_HASH, &new_hash))
 					{
 						tree_manager_write_node_hash(&new_hash, 0, blk_hash);
@@ -1804,6 +1859,8 @@ OS_API_C_FUNC(int) app_loop(mem_zone_ref_ptr params)
 					new_block = 1;
 				}
 			}
+
+			release_zone_ref					(&new_blk);
 			release_zone_ref					(&tx_list);
 			tree_manager_set_child_value_bool	(blk, "done", 1);
 		}

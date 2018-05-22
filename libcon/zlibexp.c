@@ -2,6 +2,7 @@
 #define LIBC_API C_EXPORT
 #include "../../base/std_base.h"
 #include "../../base/std_def.h"
+#include "../../base/std_mem.h"
 #include "../../base/std_str.h"
 
 #include "include/strs.h"

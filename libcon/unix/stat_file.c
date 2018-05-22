@@ -17,11 +17,13 @@
 #include <pwd.h>
 
 char	path_sep				= '/';
-struct string log_file_name		={PTR_INVALID };
-struct string home_path			= { PTR_INVALID };
-struct string exe_path			= { PTR_INVALID };
+struct string log_file_name		= { PTR_INVALID,0,0 };
+struct string lck_file_name		= { PTR_INVALID,0,0 };
+struct string home_path			= { PTR_INVALID,0,0 };
+struct string exe_path			= { PTR_INVALID,0,0 };
 unsigned int running			= 1;
-FILE	*log_file				=PTR_INVALID ;
+FILE	*log_file				= PTR_INVALID ;
+int		lock_file				= PTR_INVALID ;
 
 
 struct thread
@@ -745,13 +747,33 @@ OS_API_C_FUNC(ctime_t)	 get_time_c()
 
 
 
+OS_API_C_FUNC(int) aquire_lock_file(const char *name)
+{
+	init_string(&lck_file_name);
+	make_string(&lck_file_name, name);
+	cat_cstring(&lck_file_name, ".pid");
+
+	if ((lock_file = open(lck_file_name.str, O_CREAT | O_RDWR, 0666)) < 0) {
+		console_print("could not open lock file\n");
+		return 0;
+	}
+	if (flock(lock_file, LOCK_EX | LOCK_NB) < 0) {
+		console_print("could not aquire lock file\n");
+		close(lock_file);
+		return 0;
+	}
+
+	return 1;
+}
 
 
 
  OS_API_C_FUNC(int) daemonize(const char *name)
 {
+   char		    pidbuff[16];
    pid_t		pid, sid;
    pid_t		tid, ttid;
+   size_t		pbsz;
 
    umask			(0);
    init_string		(&log_file_name);
@@ -775,7 +797,7 @@ OS_API_C_FUNC(ctime_t)	 get_time_c()
 
    if (log_output("new process\n") < 0)
 	   return -1;
-
+   pid  = getpid	();
    ttid = gettid	();
    replace_thread_h (tid, ttid);
 
@@ -794,13 +816,15 @@ OS_API_C_FUNC(ctime_t)	 get_time_c()
 	   log_output( "sid failed");
 	   return -1;
    }
-   
-   /*
-   close(STDIN_FILENO);
-   close(STDOUT_FILENO);
-   close(STDERR_FILENO);
-   */
 
+
+
+   uitoa_s			(pid, pidbuff, 16, 10);
+   pbsz				= strlen_c(pidbuff);
+   pidbuff[pbsz++]	= 10;
+
+   write			(lock_file, pidbuff, pbsz);
+   
    return 1;
 }
 

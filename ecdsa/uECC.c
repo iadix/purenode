@@ -1016,7 +1016,7 @@ uECC_VLI_API int uECC_generate_random_int(uECC_word_t *random,
 }
 
 int uECC_make_key(uint8_t *public_key,
-	uint8_t *private_key,
+	const uint8_t *private_key,
 	uECC_Curve curve) {
 #if uECC_VLI_NATIVE_LITTLE_ENDIAN
 	uECC_word_t *_private = (uECC_word_t *)private_key;

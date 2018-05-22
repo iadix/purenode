@@ -24,22 +24,28 @@
 
 char path_sep='\\';
 struct string log_file_name = { PTR_INVALID,0,0};
-struct string home_path = { PTR_INVALID,0,0};
-struct string exe_path = { PTR_INVALID,0,0};
-unsigned int running = 1;
-struct tm tmtime = { 0xCD };
+struct string lck_file_name = { PTR_INVALID,0,0 };
+struct string home_path		= { PTR_INVALID,0,0};
+struct string exe_path		= { PTR_INVALID,0,0};
+HANDLE		  lockFile		= PTR_INVALID;
+unsigned int running		= 1;
+struct tm tmtime			= { 0xCD };
+
+
 struct thread
 {
 	thread_func_ptr		func;
 	mem_zone_ref		params;
+	mem_ptr				stack;
 	unsigned int		status;
 	unsigned int		tree_area_id;
 	unsigned int		mem_area_id;
 	DWORD				h;
+	HANDLE				th;
 };
 
 
-struct thread threads[16] = { PTR_INVALID };
+struct thread threads[32] = { PTR_INVALID };
 
 
 OS_API_C_FUNC(int) set_mem_exe(mem_zone_ref_ptr zone)
@@ -571,9 +577,24 @@ OS_API_C_FUNC(int) set_home_path(const char *name)
 	return 1;
 }
 
+OS_API_C_FUNC(int) aquire_lock_file(const char *name)
+{
+	init_string(&lck_file_name);
+	make_string(&lck_file_name, name);
+	cat_cstring(&lck_file_name, ".pid");
+
+	lockFile = CreateFile(lck_file_name.str, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
+	if (lockFile == INVALID_HANDLE_VALUE)
+	{
+		console_print("unable to open lock file \n");
+		return 0;
+	}
+
+	return 1;
+}
+
 OS_API_C_FUNC(int) daemonize(const char *name)
 {
-	/*set_home_path(name);*/
 	init_string (&log_file_name);
 	make_string	(&log_file_name,name);
 	cat_cstring	(&log_file_name,".log");
@@ -663,25 +684,83 @@ OS_API_C_FUNC(unsigned int) get_mem_area_id()
 	return threads[cur].mem_area_id;
 }
 
+extern mem_ptr ASM_API_FUNC get_stack_frame_c();
+
 DWORD WINAPI thread_start(void *p)
 {
 	thread_func_ptr		func;
-	struct thread	    *thread;
-	int ret;
+	struct thread	    *mythread;
+	HANDLE				ph;
+	int					ret;
 
-	thread			= (struct thread *)p;
-	thread->h		= GetCurrentThreadId();
-	func			= thread->func;
+	mythread			= (struct thread *)p;
+	mythread->h		= GetCurrentThreadId();
+	ph				= GetCurrentProcess();
+
+
+	DuplicateHandle(ph, GetCurrentThread(), ph, &mythread->th, DUPLICATE_SAME_ACCESS, FALSE, DUPLICATE_SAME_ACCESS);
+
+
+	func			= mythread->func;
 
 	init_default_mem_area(4 * 1024 * 1024);
-	
-	ret = func			 (&thread->params, &thread->status);
+
+	ret = func			 (&mythread->params, &mythread->status);
 	free_mem_area		 (0);
 	
 	return ret;
 }
 
 unsigned int next_ttid=1;
+extern ASM_API_FUNC scan_stack_c(mem_ptr lower, mem_ptr upper, mem_ptr stack_frame, mem_ptr stack);
+
+void scan_threads_stack(mem_ptr lower, mem_ptr upper)
+{
+	unsigned int n = 0;
+	DWORD h;
+
+	h = GetCurrentThreadId();
+	for (n = 1; n < 16; n++)
+	{
+		CONTEXT ctx;
+
+		if (threads[n].h == 0)continue;
+		if (threads[n].h == h)continue;
+		if (SuspendThread(threads[n].th) == -1)
+		{
+			log_output("could not suspend thread \n");
+			continue;
+		}
+
+		memset_c(&ctx, 0, sizeof(CONTEXT));
+
+		ctx.ContextFlags = CONTEXT_ALL;
+		
+		if (GetThreadContext(threads[n].th, &ctx))
+		{ 
+			if ((ctx.Esp != 0) && (ctx.Ebp!=0) && (ctx.Ebp > ctx.Esp))
+				scan_stack_c(lower, upper, ctx.Ebp, ctx.Esp);
+		}
+		else
+		{
+			log_output("could not get thread ctx\n");
+		}
+
+		ResumeThread(threads[n].th);
+		
+	}
+}
+
+void resume_threads()
+{
+	unsigned int n = 0;
+
+	for (n = 0; n < 16; n++)
+	{
+		if (threads[n].h == 0)continue;
+		ResumeThread(threads[n].th);
+	}
+}
 
 
 OS_API_C_FUNC(int) background_func(thread_func_ptr func,mem_zone_ref_ptr params)
@@ -695,9 +774,21 @@ OS_API_C_FUNC(int) background_func(thread_func_ptr func,mem_zone_ref_ptr params)
 
 	copy_zone_ref(&threads[cur].params, params);
 	threads[cur].func = func;
+
 	threads[cur].status = 0;
 
-	newThread	= CreateThread(NULL, 32*1024, thread_start, &threads[cur], 0, &threadid);
+
+	/*
+	SECURITY_ATTRIBUTES		secs;
+	SECURITY_DESCRIPTOR		desc;
+
+	desc.Sacl
+	desc.Control = THREAD_GET_CONTEXT;
+
+	secs.lpSecurityDescriptor
+	*/
+
+	newThread = CreateThread(NULL, 32 * 1024, thread_start, &threads[cur], 0, &threadid);
 
 	while (threads[cur].status == 0)
 	{
@@ -857,3 +948,5 @@ OS_API_C_FUNC(void) snooze_c(size_t n)
 {
 	SleepEx(n/1000, 1);
 }
+
+

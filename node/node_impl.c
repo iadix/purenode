@@ -33,7 +33,7 @@ NODE_API int			C_API_FUNC		remove_block(hash_t blk_hash){return 0;}
 
 NODE_API int			C_API_FUNC		node_init_service(mem_zone_ref_ptr service, mem_zone_ref_ptr pos_mod_def){ return 0; }
 NODE_API int			C_API_FUNC		proccess_http_reqs(mem_zone_ref_ptr service){ return 0; }
-NODE_API int			C_API_FUNC		get_file_mime(mem_zone_ref_ptr service, const char *filepath, struct string *mime){ return 0; }
+NODE_API int			C_API_FUNC		get_file_mime(mem_zone_ref_const_ptr service, const char *filepath, struct string *mime){ return 0; }
 NODE_API int			C_API_FUNC		check_http_request(mem_zone_ref_ptr service){ return 0; }
 NODE_API int			C_API_FUNC		node_process_event_handler(const char *msg_list_name, mem_zone_ref_ptr node, mem_zone_ref_ptr msg){ return 0; }
 
@@ -76,5 +76,7 @@ NODE_API int			C_API_FUNC		node_create_pow_block(mem_zone_ref_ptr newBlock, btc_
 NODE_API int			C_API_FUNC		compute_last_pow_diff(mem_zone_ref_ptr blk, mem_zone_ref_ptr nBits){ return 0; }
 NODE_API int			C_API_FUNC		node_get_types_def(mem_zone_ref_ptr types){ return 0; }
 NODE_API int			C_API_FUNC		node_rm_tmp_file(struct string *app_name, mem_zone_ref_ptr file){ return 0; }
-
+NODE_API int			C_API_FUNC		get_bitcore_addr(mem_zone_ref_ptr node, ipv4_t ip, unsigned short *port, uint64_t *services) { return 0; }
+NODE_API int			C_API_FUNC		is_same_node(mem_zone_ref_ptr node1, mem_zone_ref_ptr node2) { return 0; }
+NODE_API int			C_API_FUNC		node_check_mempool_unique(mem_zone_ref_const_ptr node_txs, const char *appName, unsigned int typeID, mem_zone_ref_const_ptr obj) { return 0; }
 

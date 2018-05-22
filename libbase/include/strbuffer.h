@@ -57,6 +57,10 @@ typedef struct {
 #define TOKEN_FALSE          260
 #define TOKEN_NULL           261
 
+#define STREAM_STATE_OK        0
+#define STREAM_STATE_EOF      -1
+#define STREAM_STATE_ERROR    -2
+
 int strbuffer_init(strbuffer_t *strbuff);
 void strbuffer_close(strbuffer_t *strbuff);
 

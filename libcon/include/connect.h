@@ -43,3 +43,4 @@ LIBC_API void					C_API_FUNC do_read_group();
 LIBC_API int					C_API_FUNC pop_read_done(struct string *out);
 LIBC_API void					C_API_FUNC con_close(struct con *Con);
 
+LIBC_API void					C_API_FUNC free_con_buffer(struct con *my_con);

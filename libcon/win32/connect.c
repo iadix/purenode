@@ -84,7 +84,7 @@ OS_API_C_FUNC(int) get_if(const char *gw_ip, struct string *name, struct string 
 			*/
 			if (pAdapter->IpAddressList.IpAddress.String[0] != '0')
 			{
-				if (!strcmp(pAdapter->GatewayList.IpAddress.String, gw_ip))
+				if (!strcmp_c(pAdapter->GatewayList.IpAddress.String, gw_ip))
 				{
 					make_string(name, pAdapter->Description);
 					make_string(ip, pAdapter->IpAddressList.IpAddress.String);
@@ -435,7 +435,7 @@ OS_API_C_FUNC(char *)readline(struct con *Con, time_t timeout)
 	
 	size_t			 n_char;
 	char			 c;
-	time_t			s_time;
+	ctime_t			s_time, n_time;
 
 	if(Con->lastLine.str!=NULL)
 		free_string(&Con->lastLine);
@@ -444,17 +444,22 @@ OS_API_C_FUNC(char *)readline(struct con *Con, time_t timeout)
 		free_string(&Con->error);
 
 	memset_c			(line,0,1024);
-	s_time		=	milliseconds_now();
+	get_system_time_c	(&s_time);
+
+	//s_time		=	milliseconds_now();
 	n_char		=	0;
  	while(n_char<1023)
 	{
 		struct timeval	stimeout;
 		int				n;
 	
-		fd_read			=	Con->con_set;
-		fd_err			=	Con->con_set;
-		stimeout.tv_sec	=	0;
-		stimeout.tv_usec =	1000;
+		FD_ZERO(&fd_read);
+		FD_SET(Con->sock, &fd_read);
+
+		//fd_read		=	Con->con_set;
+		fd_err				=	Con->con_set;
+		stimeout.tv_sec		=	0;
+		stimeout.tv_usec	=	1000;
 
 		if (select (Con->sock+1, &fd_read, NULL, &fd_err, &stimeout) < 0)
 		{
@@ -484,7 +489,6 @@ OS_API_C_FUNC(char *)readline(struct con *Con, time_t timeout)
 					closesocket	(Con->sock);
 					FD_ZERO	(&Con->con_set);
 					Con->sock=0;
-					return NULL;
 				}
 				else
 				{
@@ -493,20 +497,25 @@ OS_API_C_FUNC(char *)readline(struct con *Con, time_t timeout)
 					cat_cstring	(&Con->error,"' ");
 					strcat_int  (&Con->error,n_char);
 					cat_cstring	(&Con->error," ");
-					return NULL;
-
 				}
+				return NULL;
 			}
 			if(c==10)break;
 			if(c!=13)line[n_char++]=c;
 		}
-		if((milliseconds_now()-s_time)>=timeout)
+
+		get_system_time_c(&n_time);
+
+		if((n_time-s_time)>=timeout)
 		{
 			make_string(&Con->error,"timeout");
 			return NULL;
 		}
 	}
-	if(n_char==0){make_string(&Con->error,"empty line");return NULL;}
+	if(n_char==0){
+		make_string(&Con->error,"empty line");
+		return NULL;
+	}
 
 	line[n_char] =	0;
 	make_string(&Con->lastLine,line);
@@ -678,10 +687,15 @@ OS_API_C_FUNC(struct con *)do_get_incoming(struct con *listen_con, unsigned int 
 	timeout.tv_sec	=	0;
 	timeout.tv_usec =	time_out*1000;
 
-	my_listen		=	listenset;
+	FD_ZERO	(&my_listen);
+	FD_SET	(listen_con->sock,&my_listen);
 
-	if(select(listen_con->sock + 1, &my_listen, NULL, NULL, &timeout)<0)
+	//my_listen		=	listenset;
+
+	if (select(listen_con->sock + 1, &my_listen, NULL, NULL, &timeout) < 0){
+		log_output("select error\n");
 		return NULL;
+	}
 
 	if (FD_ISSET(listen_con->sock, &my_listen))
     {
@@ -694,10 +708,11 @@ OS_API_C_FUNC(struct con *)do_get_incoming(struct con *listen_con, unsigned int 
 		init_string			(&newCon->lastLine);
 		newCon->sock    =	accept(listen_con->sock, (struct sockaddr *)&newCon->peer, &clilen);
 
+		listen				(listen_con->sock, 30);
+
 		if(newCon->sock==INVALID_SOCKET)
 		{
 			make_string		(&newCon->error,"invalid socket");
-			listen			(listen_con->sock,15);
 		}
 		else
 		{
@@ -741,7 +756,7 @@ OS_API_C_FUNC(struct con	*)open_port(const char *my_addr, unsigned short port)
 		return newCon;
 	}
 	/* Set up queue for incoming connections. */
-	if(listen			(newCon->sock,15)<0)
+	if(listen			(newCon->sock,30)<0)
 	{
 		make_string(&newCon->error,"listen error");
 		return newCon;
@@ -815,7 +830,7 @@ OS_API_C_FUNC(struct con	*)do_connect(const struct host_def *host)
 	struct con			*newCon;
 	struct hostent		*iHost;
 	int					iResult;
-
+	u_long				iMode = 1;
 	newCon				=	init_con	();
 	newCon->host.port	=	host->port;
 	clone_string			(&newCon->host.port_str	,&host->port_str);
@@ -837,18 +852,67 @@ OS_API_C_FUNC(struct con	*)do_connect(const struct host_def *host)
 	newCon->peer.sin_addr.s_addr	= *((unsigned long*) iHost->h_addr);
     newCon->peer.sin_family			= AF_INET;
     newCon->peer.sin_port		    = htons		 (newCon->host.port);
-	iResult						    = connect	 (newCon->sock, (struct sockaddr *)&newCon->peer, sizeof(struct sockaddr_in));
 
-	if(iResult!=0){
-		make_string(&newCon->error,"connection error");
-		return newCon;
+	
+	ioctlsocket			 (newCon->sock, FIONBIO, &iMode);
+	iResult	= connect	 (newCon->sock, (struct sockaddr *)&newCon->peer, sizeof(struct sockaddr_in));
+
+	if(iResult == SOCKET_ERROR) {
+
+		int iError = WSAGetLastError();
+
+		//check if error was WSAEWOULDBLOCK, where we'll wait
+		if (iError == WSAEWOULDBLOCK)
+		{
+			fd_set			Write, Err;
+			TIMEVAL			Timeout;
+			int				TimeoutSec = 2; // timeout after 10 seconds
+
+			FD_ZERO			(&Write);
+			FD_ZERO			(&Err);
+			FD_SET			(newCon->sock, &Write);
+			FD_SET			(newCon->sock, &Err);
+
+			Timeout.tv_sec	= TimeoutSec;
+			Timeout.tv_usec = 0;
+			iResult			= select(0,NULL,&Write,&Err,&Timeout);
+			if (iResult == 0)
+			{
+				make_string(&newCon->error, "connection timeout");
+				return newCon;
+			}
+			else if ((FD_ISSET(newCon->sock, &Err)) || (!FD_ISSET(newCon->sock, &Write)))
+			{
+				make_string(&newCon->error, "connection error");
+				return newCon;
+			}
+		}
+		else
+		{
+			make_string(&newCon->error, "connection error");
+			return newCon;
+		}
 	}
+
+	iMode = 0;
+
+	ioctlsocket(newCon->sock, FIONBIO, &iMode);
 	FD_SET(newCon->sock,&newCon->con_set);
 
 	return newCon;
 }
+
+OS_API_C_FUNC(void) free_con_buffer(struct con *my_con)
+{
+	free_string(&my_con->error);
+	free_string(&my_con->lastLine);
+}
+
+
+
 OS_API_C_FUNC(int) network_init()
 {
+
 
 #ifndef _DEBUG
 	sys_add_tpo_mod_func_name("libcon", "network_init", (void_func_ptr)network_init, 0);
@@ -879,8 +943,8 @@ OS_API_C_FUNC(int) network_init()
 	sys_add_tpo_mod_func_name("libcon", "send_data_av", (void_func_ptr)send_data_av, 0);
 	sys_add_tpo_mod_func_name("libcon", "create_upnp_broadcast", (void_func_ptr)create_upnp_broadcast, 0);
 	sys_add_tpo_mod_func_name("libcon", "send_upnpbroadcast", (void_func_ptr)send_upnpbroadcast, 0);
+	sys_add_tpo_mod_func_name("libcon", "free_con_buffer", (void_func_ptr)free_con_buffer, 0);
 	
-
 	
 
 #endif
@@ -889,3 +953,5 @@ OS_API_C_FUNC(int) network_init()
 	FD_ZERO(&listenset);
 	return WSAStartup(MAKEWORD(2, 2), &wsaData);
 }
+
+

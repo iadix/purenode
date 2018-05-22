@@ -1233,3 +1233,8 @@ OS_API_C_FUNC(void) store_bigendian(unsigned char *x, uint64_t u)
 	x[1] = u; u >>= 8;
 	x[0] = u;
 }
+
+OS_API_C_FUNC(void) dtoll_c(double dAmount, uint64_t *nAmount)
+{
+	(*nAmount) = dAmount;
+}

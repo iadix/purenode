@@ -1,4 +1,8 @@
 /* copyright iadix 2016 */
+
+//#define _DEBUG
+
+
 #define LIBC_API C_EXPORT
 #include "base/std_def.h"
 #include "base/std_mem.h"
@@ -10,7 +14,6 @@
 #include "include/fsio.h"
 #include "include/mem_stream.h"
 #include "include/tpo_mod.h"
-
 
 
 unsigned int			debug				=	0xFFFFFFFF;
@@ -506,10 +509,137 @@ OS_API_C_FUNC(void) register_tpo_exports(tpo_mod_file *tpo_mod,const char *mod_n
 
 }
 
+struct ctx_t
+{
+	unsigned short StackSeg;
+	unsigned short DataSeg;
+	unsigned short CodeSeg;
+	unsigned int   mem_area_id;
+	unsigned int   tree_area_id;
+};
+
+struct sandbox_t
+{
+	struct ctx_t	newctx;
+	struct ctx_t	origctx;
+
+};
+
+
+int generate_export_stub(struct sandbox_t *sand_box,mem_ptr sec_ptr,size_t func_ofset,unsigned int StackOffset,mem_zone_ref_ptr stub_code)
+{
+	mem_stream				strm;
+	unsigned char			cpy_stack[] = { 0x8B,0x06,0x89,0x07,0x83,0xEE,0x04,0x83,0xEF,0x04,0x49,0x75,0xF3 };
+	unsigned int			jmp_adr;
+
+	mem_stream_init(&strm, stub_code, 0);
+
+	mem_stream_write_8		(&strm, 0x55);		//push ebp
+	mem_stream_write_16		(&strm, 0xE589);	//mov  ebp	, esp
+	mem_stream_write_8		(&strm, 0x60);		//pusha
+
+	mem_stream_write_16		(&strm, 0xB866);	//mov ax	, StackSeg
+	mem_stream_write_16		(&strm, sand_box->newctx.StackSeg);
+
+	mem_stream_write_16		(&strm, 0xC08E);	//mov es	, ax
+	mem_stream_write_16		(&strm, 0xFF31);	//xor edi	, edi
+
+	mem_stream_write_16		(&strm, 0x758D);	//lea esi	, [ebp+4]
+	mem_stream_write_8		(&strm, 0x04);
+	
+	mem_stream_write_8		(&strm, 0xB9);		//mov ecx	, StackOffset
+	mem_stream_write_32		(&strm, StackOffset);
+
+	mem_stream_write_16		(&strm, 0xE9C1);	///shr ecx	, 2
+	mem_stream_write_8		(&strm, 0x02);
+
+	mem_stream_write		(&strm,cpy_stack,sizeof(cpy_stack));
+
+	mem_stream_write_16		(&strm, 0xB866);	//mov ax	,	StackSeg
+	mem_stream_write_16		(&strm, sand_box->newctx.StackSeg);
+	
+	mem_stream_write_16		(&strm, 0xD08E);	//mov ss	,	ax
+	mem_stream_write_16		(&strm, 0xE431);	//xor esp	,	esp
+	
+	mem_stream_write_16		(&strm, 0xB866);	//mov ax	,	DataSeg
+	mem_stream_write_16		(&strm, sand_box->newctx.DataSeg);
+
+	mem_stream_write_16		(&strm, 0xC08E);	//mov es	,	ax
+	mem_stream_write_16		(&strm, 0xD88E);	//mov ds	,	ax
+	
+	mem_stream_write_8		(&strm, 0x9A);		//call CodeSeg:my_func
+	mem_stream_write_32		(&strm, func_ofset);
+	mem_stream_write_16		(&strm, sand_box->newctx.CodeSeg);
+
+	jmp_adr					= mem_stream_get_pos(&strm)+7;
+
+	mem_stream_write_8		(&strm, 0xEA);		//jmp OrigCodeSeg:export_stub_back
+	mem_stream_write_32		(&strm, jmp_adr);
+	mem_stream_write_16		(&strm, sand_box->origctx.CodeSeg);
+
+	mem_stream_write_16		(&strm, 0xB866);	//mov ax		,	OrigDataSeg
+	mem_stream_write_16		(&strm, sand_box->origctx.DataSeg);
+
+	mem_stream_write_16		(&strm, 0xC08E);	//mov es		,	ax
+	mem_stream_write_16		(&strm, 0xD88E);	//mov ds		,	ax
+
+	mem_stream_write_16		(&strm, 0xB866);	//mov ax		,	OrigStackSeg
+	mem_stream_write_16		(&strm, sand_box->origctx.DataSeg);
+	
+	mem_stream_write_16		(&strm, 0xD08E);	//mov ss		,	ax
+	
+	mem_stream_write_8		(&strm, 0x61);		//popa
+
+
+	mem_stream_write_16		(&strm, 0xEC89);	//mov esp		, ebp
+	
+	mem_stream_write_8		(&strm, 0xED);		//pop ebp
+
+	mem_stream_write_8		(&strm, 0xC2);		//ret StackOffset
+	mem_stream_write_16		(&strm, StackOffset);
+
+	/*
+	55						//push ebp
+	89 E5					//mov  ebp	, esp
+	60						//pusha
+	66 B8 20 00				//mov ax	, StackSeg
+	
+	8E C0					//mov es	, ax
+	31 FF					//xor edi	, edi
+	8D 75 04				//lea esi	, [ebp+4]
+	B9 04 00 00 00			//mov ecx	, StackOffset
+	C1 E9 02				//shr ecx	, 2
+		
+	8B 06 89 07 83 EE 04 83 EF 04 49 75 F3	// stack cpy
+		
+	66 B8	20 00			//mov ax	,	StackSeg
+	8E D0					//mov ss	,	ax
+	31 E4					//xor esp	,	esp
+
+	66 B8 70 00				//mov ax	,	DataSeg
+	8E C0					//mov es	,	ax
+	8E D8					//mov ds	,	ax
+		
+	9A 84 01 00 00 50 00	//call CodeSeg:my_func
+	EA C7 01 00 00 60 00	//jmp OrigCodeSeg:export_stub_back
+		
+	66 B8 80 00				//mov ax		,	OrigDataSeg
+	8E C0					//mov es		,	ax
+	8E D8					//mov ds		,	ax
+	66 B8 40 00				//mov ax		,	OrigStackSeg
+	8E D0					//mov ss		,	ax
+	61						//popa
+	89 EC					//mov esp		, ebp
+	5D						//pop ebp
+	C2 04 00				//ret StackOffset
+	*/
+}
+
+
 OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_file,unsigned int imp_func_addr)
 {
 	char			mod_name[128];
-	char			modh[16];
+	
 	unsigned int	nsecs;
 	mem_ptr			section_remaps[16]={PTR_NULL};
 	unsigned int	section_remaps_n[16]= {0};
@@ -543,18 +673,22 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 	nsecs				=	mem_stream_read_32(file_stream);
 
 
-	uitoa_s(tpo_file->name_hash, modh, 16, 16);
+	
 
+	/*
+	char			modh[16];
+	uitoa_s(tpo_file->name_hash, modh, 16, 16);
 	log_output("load mod name ");
 	log_output(tpo_file->name);
 	log_output("[");
 	log_output(modh);
 	log_output("]\n");
-
+	*/
 
 	n=0;
 	while(n<nsecs)
 	{
+		char			name[8];
 		unsigned int	sec_data_len;
 		unsigned int	sec_imps_n;
 		unsigned int	sec_exps_n;
@@ -570,10 +704,8 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 		mem_ptr			sec_data_ptr;
 
 		
-
-		mem_stream_skip(file_stream,8);
+		mem_stream_read(file_stream, name, 8);
 		mem_stream_skip(file_stream,4);
-
 
 		sec_flags		=	mem_stream_read_32(file_stream);
 		crc_file		=	mem_stream_read_32(file_stream);
@@ -597,6 +729,10 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 		sec_imps_n		=	mem_stream_read_32(file_stream);
 		n_imps			=	0;
 
+		if (!strcmp_c(name, ".text"))
+			tpo_file->sections[sec_idx].is_code = 1;
+
+
 		if(sec_imps_n>0)
 		{
 			int sz;
@@ -615,15 +751,6 @@ OS_API_C_FUNC(int) tpo_mod_load_tpo(mem_stream *file_stream,tpo_mod_file *tpo_fi
 			unsigned int			fn_crc,dll_crc,ofs_addr,new_addr;
 			unsigned int			imp_ofs,str_n;
 			struct kern_mod_fn_t	*func_ptr;
-
-			if (n_imps == 47)
-			{
-				int bp = 1;
-
-				bp = 2;
-
-			}
-
 
 			memset_c(dll_name, 0, 64);
 			memset_c(dll_imp_name, 0, 64);
@@ -964,20 +1091,126 @@ OS_API_C_FUNC(tpo_mod_file *) find_mod_ptr(unsigned int name_hash)
 }
 
 
+#ifdef _DEBUG
+
+#include <windows.h>
+#include <psapi.h>
+
+void mark_modz_zones(mem_ptr lower_bound, mem_ptr higher_bound)
+{
+	HMODULE hMods[1024];
+	HANDLE hProcess;
+	DWORD cbNeeded;
+	unsigned int i;
+	unsigned int scan_id = 1;
+
+	hProcess = OpenProcess(PROCESS_QUERY_INFORMATION |
+		PROCESS_VM_READ,
+		FALSE, GetCurrentProcessId());
+	if (NULL == hProcess)
+		return 1;
+
+	// Get a list of all the modules in this process.
+
+	if (EnumProcessModules(hProcess, hMods, sizeof(hMods), &cbNeeded))
+	{
+		for (i = 0; i < (cbNeeded / sizeof(HMODULE)); i++)
+		{
+			char szModName[MAX_PATH];
+			char *bn;
+			size_t len;
+			size_t pos;
+			MODULEINFO modinfos;
+			mem_ptr	   sec_ptr, end_ptr;
+
+			// Get the full path to the module's file.
+			GetModuleFileName(hMods[i], szModName, sizeof(szModName));
+
+			if ((pos = strrpos_c(szModName, '\\')) != INVALID_SIZE)
+				bn = &szModName[pos];
+			else
+				bn = szModName;
+
+			if (!strncmp_c(bn, "libcon", 6))continue;
+
+			len = strlen_c(bn);
+
+			if (!strncmp_c(&bn[len-6],"_d",2))
+			{
+				GetModuleInformation(GetCurrentProcess(), hMods[i], &modinfos, sizeof(MODULEINFO));
+				sec_ptr = modinfos.lpBaseOfDll;
+				end_ptr = mem_add(sec_ptr, modinfos.SizeOfImage);
+
+				while (sec_ptr < end_ptr)
+				{
+					mem_ptr my_zone = *((mem_ptr *)(sec_ptr));
+					if ((my_zone >= lower_bound) && (my_zone < higher_bound))
+					{
+						mark_zone(my_zone, scan_id++);
+					}
+
+					sec_ptr = mem_add(sec_ptr, 4);
+				}
+			}
+			/*
+			if (GetModuleFileNameEx(hProcess, hMods[i], szModName,
+				sizeof(szModName) / sizeof(TCHAR)))
+			{
+				// Print the module name and handle value.
+
+				_tprintf(TEXT("\t%s (0x%08X)\n"), szModName, hMods[i]);
+			}
+			*/
+		}
+	}
+
+	// Release the handle to the process.
+
+	CloseHandle(hProcess);
+}
+#else
+void mark_modz_zones(mem_ptr lower_bound, mem_ptr higher_bound)
+{
+	size_t n = 0;
+	unsigned int scan_id = 1;
+	while (n<n_modz)
+	{
+		size_t nsecs=0;
+
+
+		while (modz[n]->sections[nsecs].section_ptr != 0xFFFFFFFF)
+		{
+			if (!modz[n]->sections[nsecs].is_code)
+			{
+				mem_ptr sec_ptr = get_zone_ptr(&modz[n]->data_sections, modz[n]->sections[nsecs].section_ptr);
+				mem_ptr end_ptr = mem_add(sec_ptr, modz[n]->sections[nsecs].section_size);
+
+				while (sec_ptr < end_ptr)
+				{
+					mem_ptr my_zone = *((mem_ptr *)(sec_ptr));
+					if ((my_zone >= lower_bound) && (my_zone < higher_bound))
+					{
+						mark_zone(my_zone, scan_id++);
+					}
+
+					sec_ptr = mem_add(sec_ptr, 4);
+				}
+			}
+			nsecs++;
+		}
+		n++;
+	}
+
+	return;
+}
+#endif
+
 OS_API_C_FUNC(int) load_module(const char *file, const char *mod_name, tpo_mod_file *mod)
 {
-	mem_stream			mod_file;
-	mem_zone_ref		tpo_file_data = { PTR_NULL };
-	unsigned char		*data;
-	size_t				data_len;
+	char				mod_addr[16];
+	mem_stream			mod_file = { 0 };
 
-	log_output("mod open ");
-	log_output(file);
-	log_output(" ");
-	log_output(mod_name);
-	log_output("\n");
-
-	if (get_file(file, &data, &data_len) <= 0)
+	if (!get_file_to_memstream(file, &mod_file))
 	{
 		log_output("error opening mod file ");
 		log_output(file);
@@ -987,20 +1220,34 @@ OS_API_C_FUNC(int) load_module(const char *file, const char *mod_name, tpo_mod_f
 		return 0;
 	}
 
-	allocate_new_zone(0, data_len, &tpo_file_data);
-	memcpy_c(get_zone_ptr(&tpo_file_data, 0), data, data_len);
-	memset_c(&mod_file, 0, sizeof(mem_stream));
-	mem_stream_init(&mod_file, &tpo_file_data, 0);
-	tpo_mod_init(mod);
-	tpo_mod_load_tpo(&mod_file, mod, 0);
+	log_output	("mod open ");
+	log_output	(file);
+	log_output	(" ");
+	log_output	(mod_name);
+	log_output	("\n");
+
+	tpo_mod_init		(mod);
+	tpo_mod_load_tpo	(&mod_file, mod, 0);
+
+
+	uitoa_s				(get_zone_ptr(&mod->data_sections, 0), mod_addr, 16, 16);
+	log_output			("mod addr ");
+	log_output			(mod_addr);
+	log_output			("\n");
+
 	register_tpo_exports(mod, mod_name);
-	release_zone_ref(&tpo_file_data);
-	free_c(data);
 	
+	
+	/*
+	release_zone_ref	(&tpo_file_data);
+	free_c(data); 
+	*/
+	
+	/*
 	log_output("register new mod ");
 	log_output(mod_name);
 	log_output("\n");
-	
+	*/
 
 
 	if (n_modz<32)
@@ -1012,7 +1259,7 @@ OS_API_C_FUNC(int) load_module(const char *file, const char *mod_name, tpo_mod_f
 
 #ifdef _DEBUG
 module_rproc_ptr  init_protocol;
-module_rproc_ptr  init_blocks;
+module_rwproc_ptr init_blocks;
 module_rproc_ptr  node_init_self;
 module_rproc_ptr  node_log_version_infos;
 
@@ -1026,16 +1273,18 @@ module_rwproc_ptr get_sess_account;
 
 module_rproc_ptr  queue_verack_message, queue_getblock_hdrs_message, queue_getaddr_message, queue_version_message, node_is_next_block, connect_peer_node, node_get_script_modules, node_get_script_msg_handlers, node_get_mem_pool, node_del_txs_from_mempool, node_add_tx_to_mempool, queue_mempool_message;
 module_rwproc_ptr make_genesis_block, node_add_block_header;
-module_proc_ptr	  node_load_block_indexes, node_load_last_blks, node_check_chain, node_del_btree_from_mempool;
+module_proc_ptr	  node_load_block_indexes, node_load_last_blks, node_check_chain, node_del_btree_from_mempool,node_load_bookmark;
 
-module_rproc_ptr  queue_ping_message, node_has_service_module, node_get_root_app, node_get_root_app_addr, node_get_root_app_fee, node_get_mempool_hashes, node_get_apps, node_get_types_def, node_add_tmp_file, get_nscene;
-module_rwproc_ptr queue_pong_message, queue_getdata_message, queue_inv_message, node_get_app, node_get_app_types_def, node_get_app_objs, check_tx_files, get_scene_list;
+module_rproc_ptr  queue_ping_message, node_has_service_module, node_get_root_app, node_get_root_app_addr, node_get_root_app_fee, node_get_mempool_hashes, node_get_apps, node_get_types_def, node_add_tmp_file, get_nscene, blog_get_ncats, node_broadcast_addr;
+module_rwproc_ptr queue_pong_message, queue_getdata_message, queue_inv_message, node_get_app, node_get_app_types_def, node_get_app_objs, check_tx_files, get_scene_list, blog_get_cats, blog_get_cat_posts, blog_get_cat, blog_get_post, blog_get_last_posts, blog_get_accounts, node_add_remote_peers, node_set_bookmark, blog_get_msgs;
+
+
 
 // set_block_hash add_money_supply node_truncate_chain_to sub_money_supply remove_stored_block store_block block_has_pow set_next_check 
 //node_add_block_header accept_block compute_last_pow_diff 
 
 //  
-OS_API_C_FUNC(int) set_dbg_ptr2(module_rwproc_ptr  a, module_rwproc_ptr b, module_rwproc_ptr  c, module_rwproc_ptr d, module_rwproc_ptr e, module_rproc_ptr f, module_rwproc_ptr g, module_rproc_ptr h, module_rproc_ptr i, module_rproc_ptr j, module_rproc_ptr k, module_rproc_ptr l, module_rproc_ptr m, module_rproc_ptr n, module_rproc_ptr o, module_rwproc_ptr p, module_rwproc_ptr q, module_rproc_ptr r, module_rproc_ptr s, module_rproc_ptr t, module_rproc_ptr u, module_rproc_ptr v, module_rproc_ptr w, module_rproc_ptr x, module_rwproc_ptr y, module_rwproc_ptr z, module_rproc_ptr zz, module_rwproc_ptr zz2, module_rproc_ptr  zz3, module_rwproc_ptr  zz4, module_rwproc_ptr zz5, module_rproc_ptr zz6, module_proc_ptr zz7)
+OS_API_C_FUNC(int) set_dbg_ptr2(module_rwproc_ptr  a, module_rwproc_ptr b, module_rwproc_ptr  c, module_rwproc_ptr d, module_rwproc_ptr e, module_rproc_ptr f, module_rwproc_ptr g, module_rproc_ptr h, module_rproc_ptr i, module_rproc_ptr j, module_rproc_ptr k, module_rproc_ptr l, module_rproc_ptr m, module_rproc_ptr n, module_rproc_ptr o, module_rwproc_ptr p, module_rwproc_ptr q, module_rproc_ptr r, module_rproc_ptr s, module_rproc_ptr t, module_rproc_ptr u, module_rproc_ptr v, module_rproc_ptr w, module_rproc_ptr x, module_rwproc_ptr y, module_rwproc_ptr z, module_rproc_ptr zz, module_rwproc_ptr zz2, module_rproc_ptr  zz3, module_rwproc_ptr  zz4, module_rwproc_ptr zz5, module_rproc_ptr zz6, module_proc_ptr zz7, module_rproc_ptr zz8, module_rwproc_ptr zz9, module_rwproc_ptr zz10, module_rwproc_ptr zz11, module_rwproc_ptr zz12, module_rwproc_ptr zz13, module_rproc_ptr zz14, module_rwproc_ptr zz15, module_rwproc_ptr zz16, module_proc_ptr zz17, module_rproc_ptr zz18, module_rwproc_ptr zz19)
 {
 	node_add_block_header = a;
 	accept_block = b;
@@ -1071,10 +1320,23 @@ OS_API_C_FUNC(int) set_dbg_ptr2(module_rwproc_ptr  a, module_rwproc_ptr b, modul
 	get_scene_list = zz5;
 	get_nscene = zz6;
 	node_del_btree_from_mempool = zz7;
+
+	blog_get_ncats = zz8;
+	blog_get_cats = zz9;
+	blog_get_cat_posts = zz10;
+	blog_get_cat = zz11;
+	blog_get_post = zz12;
+	blog_get_last_posts = zz13;
+	node_broadcast_addr = zz14;
+	node_add_remote_peers = zz15;
+	node_set_bookmark = zz16;
+	node_load_bookmark = zz17;
+	blog_get_accounts = zz18;
+	blog_get_msgs = zz19;
 	return 1;
 }
 
-OS_API_C_FUNC(int) set_dbg_ptr(module_rproc_ptr a, module_rproc_ptr b, module_rproc_ptr c, module_proc_ptr d, module_rwproc_ptr  e, module_proc_ptr f, module_rproc_ptr  g, module_rproc_ptr h, module_rproc_ptr  i, module_rproc_ptr  j, module_rproc_ptr  k, module_rproc_ptr  l, module_rwproc_ptr  m, module_rwproc_ptr  n, module_rwproc_ptr o, module_rproc_ptr p, module_rwproc_ptr q, module_rproc_ptr r, module_rproc_ptr s, module_rproc_ptr t, module_rproc_ptr u, module_rproc_ptr v, module_rproc_ptr w, module_rproc_ptr x, module_rproc_ptr y, module_rproc_ptr z)
+OS_API_C_FUNC(int) set_dbg_ptr(module_rproc_ptr a, module_rwproc_ptr b, module_rproc_ptr c, module_proc_ptr d, module_rwproc_ptr  e, module_proc_ptr f, module_rproc_ptr  g, module_rproc_ptr h, module_rproc_ptr  i, module_rproc_ptr  j, module_rproc_ptr  k, module_rproc_ptr  l, module_rwproc_ptr  m, module_rwproc_ptr  n, module_rwproc_ptr o, module_rproc_ptr p, module_rwproc_ptr q, module_rproc_ptr r, module_rproc_ptr s, module_rproc_ptr t, module_rproc_ptr u, module_rproc_ptr v, module_rproc_ptr w, module_rproc_ptr x, module_rproc_ptr y, module_rproc_ptr z)
 {
 	init_protocol=a;
 	init_blocks=b;
@@ -1138,6 +1400,8 @@ OS_API_C_FUNC(int) execute_script_mod_rwcall(tpo_mod_file		*tpo_mod, const char 
 #ifdef _DEBUG
 	if (!strcmp_c(method, "make_genesis_block"))
 		return make_genesis_block(input, output);
+	else if (!strcmp_c(method, "init_blocks"))
+		return init_blocks(input, output);
 	else if (!strcmp_c(method, "compute_last_pos_diff"))
 		return compute_last_pos_diff(input, output);
 	else if (!strcmp_c(method, "queue_pong_message"))
@@ -1176,8 +1440,26 @@ OS_API_C_FUNC(int) execute_script_mod_rwcall(tpo_mod_file		*tpo_mod, const char 
 		return 	check_tx_files(input, output);
 	else if (!strcmp_c(method, "get_scene_list"))
 		return 	get_scene_list(input, output);
+	else if (!strcmp_c(method, "blog_get_cats"))
+		return 	blog_get_cats(input, output);
+	else if (!strcmp_c(method, "blog_get_cat_posts"))
+		return 	blog_get_cat_posts(input, output);
+	else if (!strcmp_c(method, "blog_get_cat"))
+		return 	blog_get_cat(input, output);
+	else if (!strcmp_c(method, "blog_get_post"))
+		return 	blog_get_post(input, output);
+	else if (!strcmp_c(method, "blog_get_last_posts"))
+		return 	blog_get_last_posts(input, output);
+	else if (!strcmp_c(method, "node_add_remote_peers"))
+		return 	node_add_remote_peers(input, output);
+	else if (!strcmp_c(method, "node_set_bookmark"))
+		return 	node_set_bookmark(input, output);
+	else if (!strcmp_c(method, "blog_get_accounts"))
+		return 	blog_get_accounts(input, output);
+	else if (!strcmp_c(method, "blog_get_msgs"))
+		return 	blog_get_msgs(input, output);
 
-
+	
 	return -1;
 #endif
 
@@ -1201,8 +1483,6 @@ OS_API_C_FUNC(int) execute_script_mod_rcall(tpo_mod_file		*tpo_mod, const char *
 #ifdef _DEBUG
 	if (!strcmp_c(method, "init_protocol"))
 		return init_protocol(input);
-	else if (!strcmp_c(method, "init_blocks"))
-		return init_blocks(input);
 	else if (!strcmp_c(method, "node_init_self"))
 		return node_init_self(input);
 	else if (!strcmp_c(method, "init_pos"))
@@ -1285,6 +1565,11 @@ OS_API_C_FUNC(int) execute_script_mod_rcall(tpo_mod_file		*tpo_mod, const char *
 		return 	node_add_tmp_file(input);
 	else if (!strcmp_c(method, "get_nscene"))
 		return 	get_nscene(input);
+	else if (!strcmp_c(method, "blog_get_ncats"))
+		return 	blog_get_ncats(input);
+	else if (!strcmp_c(method, "node_broadcast_addr"))
+		return 	node_broadcast_addr(input);
+
 	
 	return -1;
 
@@ -1311,13 +1596,14 @@ OS_API_C_FUNC(int) execute_script_mod_call(tpo_mod_file		*tpo_mod, const char *m
 
 	if (!strcmp_c(method, "node_load_block_indexes"))
 		return node_load_block_indexes();
-
-
-	if (!strcmp_c(method, "node_load_last_blks"))
+	else if (!strcmp_c(method, "node_load_last_blks"))
 		return node_load_last_blks();
-
-	if (!strcmp_c(method, "node_del_btree_from_mempool"))
+	else if (!strcmp_c(method, "node_del_btree_from_mempool"))
 		return node_del_btree_from_mempool();
+	else if (!strcmp_c(method, "node_load_bookmark"))
+		return node_load_bookmark();
+
+	
 
 	
 

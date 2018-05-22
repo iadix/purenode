@@ -145,7 +145,7 @@ int b58tobin(void *bin, size_t *binszp, const char *b58, size_t b58sz)
 
 
 
-int compute_script_size(mem_zone_ref_ptr script_node)
+int compute_script_size(mem_zone_ref_const_ptr script_node)
 {
 	mem_zone_ref_ptr	key = PTR_NULL;
 	mem_zone_ref		my_list = { PTR_NULL };
@@ -247,7 +247,7 @@ int compute_script_size(mem_zone_ref_ptr script_node)
 	return length;
 }
 
-OS_API_C_FUNC(int) serialize_script(mem_zone_ref_ptr script_node, struct string *script)
+OS_API_C_FUNC(int) serialize_script(mem_zone_ref_const_ptr script_node, struct string *script)
 {
 	mem_zone_ref_ptr	key=PTR_NULL;
 	mem_zone_ref		my_list = { PTR_NULL };
@@ -455,14 +455,14 @@ void keyh_to_addr(unsigned char *pkeyh, btc_addr_t addr)
 	base58(hin, addr);
 }
 
-OS_API_C_FUNC(void) key_to_hash(unsigned char *pkey, unsigned char *keyHash)
+OS_API_C_FUNC(void) key_to_hash(const unsigned char *pkey, unsigned char *keyHash)
 {
 	hash_t			tmp_hash;
 	mbedtls_sha256	(pkey, 33, tmp_hash, 0);
 	ripemd160		(tmp_hash, 32, keyHash);
 }
 
-OS_API_C_FUNC(void) key_to_addr(unsigned char *pkey,btc_addr_t addr)
+OS_API_C_FUNC(void) key_to_addr(const unsigned char *pkey,btc_addr_t addr)
 {
 	hash_t			tmp_hash;
 	mbedtls_sha256	(pkey, 33, tmp_hash, 0);
@@ -477,7 +477,7 @@ struct string get_next_script_var(const struct string *script,size_t *offset)
 
 	if ((*offset) >= script->len)return var;
 
-	if ((*p) < 80)
+	if ((*p) < 0xFD)
 	{
 		var.len		= (*p);
 
@@ -538,7 +538,7 @@ int add_script_opcode(mem_zone_ref_ptr script_node, unsigned char opcode)
 	return ret;
 }
 
-int add_script_push_data(mem_zone_ref_ptr script_node,mem_ptr data, size_t size)
+int add_script_push_data(mem_zone_ref_ptr script_node,const_mem_ptr data, size_t size)
 {
 	mem_zone_ref	new_var = { PTR_NULL };
 	int				ret;
@@ -616,21 +616,24 @@ int get_script_file(struct string *script,mem_zone_ref_ptr file)
 	if(ret)sign	= get_next_script_var(script, &offset);
 	if (ret)ret = blk_check_sign(&sign, &pKey, hash);
 	if(ret)fileName = get_next_script_var(script, &offset);
-	if(ret)ret = (fileName.len > 0) ? 1 : 0;
 	if(ret)mime = get_next_script_var(script, &offset);
 	if(ret)ret = (mime.len > 0) ? 1 : 0;
 	if(ret)sizeStr = get_next_script_var(script, &offset);
 	if(ret)ret = (sizeStr.len > 0) ? 1 : 0;
 
-	if (sizeStr.len == 1)
-		size = *((unsigned char *)(sizeStr.str));
-	else if (sizeStr.len == 2)
-		size = *((unsigned short *)(sizeStr.str));
-	else if (sizeStr.len == 4)
-		size = *((unsigned int *)(sizeStr.str));
-	else 
-		size = *((uint64_t *)(sizeStr.str));
-
+	if (ret)
+	{
+		if (sizeStr.len == 0)
+			ret = 0;
+		else if (sizeStr.len == 1)
+			size = *((unsigned char *)(sizeStr.str));
+		else if (sizeStr.len == 2)
+			size = *((unsigned short *)(sizeStr.str));
+		else if (sizeStr.len == 4)
+			size = *((unsigned int *)(sizeStr.str));
+		else
+			size = *((uint64_t *)(sizeStr.str));
+	}
 
 
 	if (ret)
@@ -1136,7 +1139,7 @@ OS_API_C_FUNC(int) create_p2sh_script_byte(btc_addr_t addr,mem_zone_ref_ptr scri
 	return 0;
 }
 
-OS_API_C_FUNC(int) create_p2sh_script_data(btc_addr_t addr, mem_zone_ref_ptr script_node, unsigned char *data,size_t len)
+OS_API_C_FUNC(int) create_p2sh_script_data(btc_addr_t addr, mem_zone_ref_ptr script_node, const unsigned char *data,size_t len)
 {
 	unsigned char	addrBin[26];
 	struct string  strKey = { PTR_NULL };
@@ -1182,7 +1185,7 @@ OS_API_C_FUNC(int) create_p2sh_script(btc_addr_t addr,mem_zone_ref_ptr script_no
 	return 0;
 }
 
-OS_API_C_FUNC(int) create_payment_script(struct string *pubk, unsigned int type, mem_zone_ref_ptr script_node)
+OS_API_C_FUNC(int) create_payment_script(const struct string *pubk, unsigned int type, mem_zone_ref_ptr script_node)
 {
 	if (type == 1)
 	{
@@ -1211,7 +1214,7 @@ OS_API_C_FUNC(int) create_payment_script(struct string *pubk, unsigned int type,
 	return 0;
 }
 
-OS_API_C_FUNC(int) create_payment_script_data(struct string *pubk, unsigned int type, mem_zone_ref_ptr script_node, unsigned char *data, size_t len)
+OS_API_C_FUNC(int) create_payment_script_data(const struct string *pubk, unsigned int type, mem_zone_ref_ptr script_node, const  unsigned char *data, size_t len)
 {
 	if (type == 1)
 	{

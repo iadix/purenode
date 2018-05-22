@@ -239,6 +239,70 @@ OS_API_C_FUNC(int) prepare_new_data(struct string *str, size_t len)
 	return (int)str->len;
 }
 
+OS_API_C_FUNC(int) str_end_with(const struct string *str, const char *end)
+{
+	size_t		endLen,strOfs;
+	
+
+	endLen = strlen_c(end);
+
+	if (str->len < endLen)
+		return 0;
+
+	strOfs = str->len - endLen;
+
+	while (endLen--)
+	{
+		if (str->str[strOfs+ endLen] != end[endLen])
+			return 0;
+	}
+	return 1;
+}
+
+OS_API_C_FUNC(int) str_start_with(const struct string *str, const char *start)
+{
+	size_t		n=0;
+
+	if (str->len < strlen_c(start))return 0;
+
+	while ((n<str->len)&&(start[n]!=0))
+	{
+		if (str->str[n] != start[n])
+			return 0;
+	
+		n++;
+	}
+	return 1;
+}
+
+OS_API_C_FUNC(int) vstr_to_str(mem_ptr data_ptr, struct string *str)
+{
+	if (*((unsigned char *)(data_ptr)) < 0xFD)
+	{
+		str->len = *((unsigned char *)(data_ptr));
+		str->str = mem_add(data_ptr, 1);
+	}
+	else if (*((unsigned char *)(data_ptr)) == 0xFD)
+	{
+		str->len = *((unsigned short *)(mem_add(data_ptr, 1)));
+		str->str = mem_add(data_ptr, 3);
+	}
+	else if (*((unsigned char *)(data_ptr)) == 0xFE)
+	{
+		str->len = *((unsigned int *)(mem_add(data_ptr, 1)));
+		str->str = mem_add(data_ptr, 5);
+	}
+	else if (*((unsigned char *)(data_ptr)) == 0xFF)
+	{
+		str->len = *((uint64_t *)(mem_add(data_ptr, 1)));
+		str->str = mem_add(data_ptr, 9);
+	}
+
+	str->size			= str->len + 1;
+	str->str[str->len]	= 0;
+
+	return 1;
+}
 
 OS_API_C_FUNC(int) strcat_uint(struct string *str, size_t i)
 {

@@ -21,6 +21,7 @@ LIBC_API int			C_API_FUNC set_data_dir(const struct string *path,const char *nam
 LIBC_API int			C_API_FUNC set_exe_path();
 LIBC_API int			C_API_FUNC get_exe_path(struct string *outPath);
 LIBC_API int			C_API_FUNC daemonize(const char *name);
+LIBC_API int			C_API_FUNC aquire_lock_file(const char *name);
 LIBC_API ctime_t		C_API_FUNC get_time_c(void);
 LIBC_API void			C_API_FUNC get_system_time_c(ctime_t *time);
 LIBC_API void			C_API_FUNC console_print(const char *msg);

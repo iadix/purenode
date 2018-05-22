@@ -10,7 +10,9 @@ section .text
 	export  _memcpy_asm
 	export  _memcpy
 	export  _compare_z_exchange_c
+	export  _compare_exchange_c
 
+	export  _get_stack_c
 	export _libc_sind
 	export _libc_cosd
 	export _libc_sqrtd
@@ -31,6 +33,11 @@ section .text
 	global  _memcpy_asm
 	
 	global  _compare_z_exchange_c
+	global  _compare_exchange_c
+
+	global  _scan_stack_c
+	global  _get_stack_frame_c
+	global  _get_stack_c
 
 	global _libc_sind
 	global _libc_cosd
@@ -49,7 +56,7 @@ section .text
 	global  memset_asm:function
 	global  memcpy_asm:function
 	GLOBAL  compare_z_exchange_c:function
-	
+	global  compare_exchange_c:function
 	global libc_sind:function
 	global libc_cosd:function
 	global libc_sqrtd:function
@@ -58,8 +65,14 @@ section .text
 	global libc_cosf:function
 	global libc_atanf:function
 	global libc_ftol:function
-	global _libc_ftouc:function
+	global libc_ftouc:function
+
+	global scan_stack_c:function
+	global get_stack_frame_c:function
+	global get_stack_c:function
+
 %endif
+
 
 
 %ifdef PREFIX
@@ -121,6 +134,33 @@ memset_asm:
 
 ret
 
+%ifdef PREFIX
+_compare_exchange_c:
+%else
+compare_exchange_c:
+%endif
+
+	push edi
+	push ebx
+	
+	mov edi	,	[esp+12]
+	mov eax ,	[esp+16]
+	mov ebx ,	[esp+20]
+
+	;Compare EAX with r/m32. If equal, ZF is set and r32 is	 loaded into r/m32. Else, clear ZF and load r/m32 into AL
+	lock CMPXCHG [edi]	,	ebx
+	jnz _compare_exchange_c_not_changed
+		mov eax,1
+		jmp _compare_exchange_c_done
+	_compare_exchange_c_not_changed:
+		xor eax,eax
+	 
+	_compare_exchange_c_done:
+
+	pop ebx
+	pop edi
+ret
+
 
 %ifdef PREFIX
 _compare_z_exchange_c:
@@ -131,13 +171,11 @@ compare_z_exchange_c:
 	push edi
 	push ebx
 	
-	mov  edi,	[esp+12]
-	mov  ebx,	[esp+16]
-	
-	mfence
+	mov edi	,	[esp+12]
+	mov ebx ,	[esp+16]
 	
 	;Compare EAX with r/m32. If equal, ZF is set and r32 is	 loaded into r/m32. Else, clear ZF and load r/m32 into AL
-	
+
 	xor	eax				,	eax
 	lock CMPXCHG [edi]	,	ebx
 	jnz _compare_z_exchange_c_not_changed
@@ -148,7 +186,6 @@ compare_z_exchange_c:
 	 
 	_compare_z_exchange_c_done:
 
-	mfence
 	pop ebx
 	pop edi
 ret
@@ -158,16 +195,11 @@ _fetch_add_c:
 %else
 fetch_add_c:
 %endif
-    push ebp
-    mov  ebp, esp
 	push edi
-	mov  edi,	[ebp+8]
-	mov  eax,	[ebp+12]
-	mfence
-	lock xadd byte [edi]	, al
-	mfence
+	mov  edi				, [esp+8]
+	mov  eax				, [esp+12]
+	lock xadd dword [edi]	, eax
 	pop edi
-	pop ebp
 ret
 
 
@@ -176,7 +208,7 @@ _mfence_c:
 %else
 mfence_c:
 %endif
-	;mfence
+	sfence
 ret
 
 ;----------------
@@ -334,3 +366,165 @@ _powd_c:
     mov esp, ebp
     pop ebp
  ret
+
+
+%ifdef PREFIX
+	_get_stack_frame_c:
+%else
+	get_stack_frame_c:
+%endif
+	mov eax,ebp
+ret
+
+%ifdef PREFIX
+	_get_stack_c:
+%else
+	get_stack_c:
+%endif
+	mov eax,esp
+ret
+
+ %ifdef PREFIX
+	extern _mark_zone@8
+	_scan_stack_c:
+ %else
+	extern mark_zone
+	scan_stack_c:
+ %endif
+	push ebp
+	mov ebp,esp
+
+	pusha
+
+    mov eax	, [ebp + 8 ]	; lower bound of zone buffer
+	mov ebx	, [ebp + 12 ]	; upper bound of zone buffer
+	mov edi , [ebp + 16 ]	; upper bound of zone buffer
+
+	mov ecx , edi			; get last stack frame pointer
+	sub ecx , [ebp + 20 ]	; get last strack frame size
+	 
+	global_stack_loop:
+
+		stack_frame_loop:
+
+			lea esi,[edi]
+			sub esi,ecx
+
+			cmp [esi], eax
+			jl  no_mark
+
+			cmp [esi], ebx
+			jg  no_mark
+
+				mov edx				,	[esi]
+
+				pusha
+
+				push 1
+				push edx
+ 
+ %ifdef PREFIX
+				call _mark_zone@8
+%else
+				call mark_zone
+%endif
+
+				popa
+
+			no_mark:
+
+		sub ecx, 4
+		jnz stack_frame_loop
+
+		mov ebp, [edi] ;next stack frame
+		mov ecx, ebp
+		sub ecx, edi
+		jz scan_stack_done
+
+		mov edi, ebp
+
+		cmp edi,0
+	jnz global_stack_loop
+
+	scan_stack_done:
+	
+	popa
+	mov esp,ebp
+	pop ebp
+
+ ret
+
+
+ %if 0
+
+ my_func:
+
+ ret
+
+
+ %define StackSeg		 0x20
+ %define OrigStackSeg	 0x40
+ 
+ %define CodeSeg		 0x50
+ %define OrigCodeSeg	 0x60
+
+ %define DataSeg		 0x70
+ %define OrigDataSeg	 0x80
+ 
+ 
+ %define StackOffset	 4
+
+ export_stub:
+	
+	push ebp
+	mov  ebp	, esp
+
+	pusha 
+
+	mov ax		, StackSeg
+	mov es		, ax
+	xor edi		, edi
+	
+	lea esi		, [ebp+4]
+	mov ecx		, StackOffset
+	shr ecx		, 2
+		
+	export_stub_cpy_stack:
+		mov eax		,	[esi]
+		mov [edi]	,	eax
+
+		sub esi		,	4
+		sub edi		,	4
+
+		dec ecx
+	jnz export_stub_cpy_stack
+
+	mov ax		,	StackSeg
+	mov ss		,	ax
+	xor esp		,	esp
+
+	mov ax		,	DataSeg
+	mov es		,	ax
+	mov ds		,	ax
+	
+	call CodeSeg:my_func
+	
+	jmp OrigCodeSeg:export_stub_back
+
+	export_stub_back:
+
+	mov ax		,	OrigDataSeg
+	mov es		,	ax
+	mov ds		,	ax
+
+	mov ax		,	OrigStackSeg
+	mov ss		,	ax
+
+	popa
+
+	mov esp		, ebp
+	pop ebp
+
+ ret StackOffset
+
+ %endif
