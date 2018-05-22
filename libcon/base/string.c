@@ -42,100 +42,172 @@ void init_kernel_log()
 
 
 
-OS_API_C_FUNC(char * ) itoa_s(int value, char *string,size_t len, int radix)
-{
-	char		tmp[33];
-	char		*tp	= tmp;
-	int			i;
-	unsigned	v;
-	int			sign;
-	char		*sp;
 
-	if (radix > 36 || radix <= 1)return 0;
-	sign = (radix == 10 && value < 0);
-	if (sign)
-		v = -value;
+
+OS_API_C_FUNC(void) strrev_c(unsigned char *str)
+{
+	int i;
+	int j;
+	unsigned char a;
+	unsigned len = strlen_c((const char *)str);
+	for (i = 0, j = len - 1; i < j; i++, j--)
+	{
+		a = str[i];
+		str[i] = str[j];
+		str[j] = a;
+	}
+}
+
+OS_API_C_FUNC(int) itoa_s(int num, char* str, size_t len, int base)
+{
+	int sum;
+	int i = 0, sign;
+	int digit;
+
+	if (len == 0)
+		return 0;
+
+	if (num < 0) 
+	{
+		num = -num;
+		sign = 1;
+	}
 	else
-		v = (unsigned)value;
+		sign = 0;
 
-	while (v || tp == tmp)
+	sum = num;
+
+	do
 	{
-		i = v % radix;
-		v = v / radix;
-		if (i < 10)
-		  *tp++ = i+'0';
+		digit = sum % base;
+		if (digit < 0xA)
+			str[i++] = '0' + digit;
 		else
-		  *tp++ = i + 'a' - 10;
-	}
-
-	sp = string;
+			str[i++] = 'A' + digit - 0xA;
+		sum /= base;
+	} while (sum && (i < (len - sign - 2)));
+	
 
 	if (sign)
-		*sp++ = '-';
-	while (tp > tmp)
-		*sp++ = *--tp;
-	*sp = 0;
-	return string;
-}
-
-OS_API_C_FUNC(char * ) uitoa_s(size_t value, char *string,size_t len, int radix)
-{
-	char			tmp[33];
-	char			*tp	= tmp;
-	unsigned int	i;
-	unsigned int	v;
-	char			*sp;
-
-	if (radix > 36 || radix <= 1)return 0;
+		str[i++] = '-';
 	
-	v = (unsigned int)value;
+	str[i] = 0;
 
-	while (v || tp == tmp)
-	{
-		i = v % radix;
-		v = v / radix;
-		if (i < 10)
-		  *tp++ = i+'0';
-		else
-		  *tp++ = i + 'a' - 10;
-	}
+	strrev_c(str);
 
-	sp = string;
+	if (i == (len - sign - 2) && sum)
+		return 0;
 
-	while (tp > tmp)
-		*sp++ = *--tp;
-	*sp = 0;
-	return string;
+	
+	return 1;
 }
 
-OS_API_C_FUNC(char *) luitoa_s(uint64_t value, char *string, size_t len, int radix)
+OS_API_C_FUNC(int) uitoa_s(unsigned int num, char* str, size_t len, int base)
 {
-	char		tmp[65];
-	char		*tp = tmp;
-	uint64_t	i;
-	uint64_t	v;
-	char		*sp;
+	unsigned int sum = num;
+	int i = 0;
+	unsigned int digit;
 
-	if (radix > 36 || radix <= 1)return 0;
+	if (len == 0)
+		return 0;
+	if (base == 0)
+		return 0;
 
-	v = (uint64_t)value;
-
-	while (v || tp == tmp)
+	do
 	{
-		i = v % radix;
-		v = v / radix;
-		if (i < 10)
-			*tp++ = i + '0';
+		digit = sum % base;
+		if (digit < 0xA)
+			str[i++] = '0' + digit;
 		else
-			*tp++ = i + 'a' - 10;
+			str[i++] = 'A' + digit - 0xA;
+		sum /= base;
+	} while (sum && (i < (len - 2)));
+
+	str[i] = 0;
+
+	strrev_c(str);
+
+	if (i == (len - 2) && sum)
+		return 0;
+
+
+
+	return 1;
+}
+
+
+OS_API_C_FUNC(int) luitoa_s(uint64_t value, char *str, size_t len, int base)
+{
+	uint64_t sum = value;
+	int i = 0;
+	unsigned int digit;
+
+	if (len == 0)
+		return 0;
+	do
+	{
+		digit = sum % base;
+		if (digit < 0xA)
+			str[i++] = '0' + digit;
+		else
+			str[i++] = 'A' + digit - 0xA;
+		sum /= base;
+	} while (sum && (i < (len - 2)));
+
+	str[i] = 0;
+
+	strrev_c(str);
+
+	if (i == (len - 2) && sum)
+		return 0;
+
+	
+
+	return 1;
+}
+OS_API_C_FUNC(int) litoa_s(int64_t value, char *str, size_t len, int base)
+{
+	int64_t sum;
+	int i = 0,sign;
+	unsigned int digit;
+
+	if (len == 0)
+		return 0;
+
+	if (value < 0)
+	{
+		value = -value;
+		sign = 1;
 	}
+	else
+		sign = 0;
 
-	sp = string;
+	sum = value;
 
-	while (tp > tmp)
-		*sp++ = *--tp;
-	*sp = 0;
-	return string;
+	do
+	{
+		digit = sum % base;
+		if (digit < 0xA)
+			str[i++] = '0' + digit;
+		else
+			str[i++] = 'A' + digit - 0xA;
+		sum /= base;
+	} while (sum && (i < (len - sign - 2)));
+
+
+	if (sign)
+		str[i++] = '-';
+	
+	str[i] = 0;
+
+	strrev_c(str);
+
+	if (i == (len - sign - 2) && sum)
+		return 0;
+
+	
+
+	return 1;
 }
 
 
@@ -148,8 +220,7 @@ OS_API_C_FUNC(char *)strncpy_c(char *string,const char *src_string,size_t		 cnt)
 	while(((src=src_string[n])!=0))
 	{
 		if(n>=cnt)break;
-		string[n]=src;
-		n++;
+		string[n++]=src;
 	}
 	string[n]=0;
 
@@ -394,6 +465,16 @@ OS_API_C_FUNC(int)  strncat_c(char *string,const char *src_string,size_t max)
 	int		n;
 	char	c1='0',c2='0';
 
+	if (string1 == PTR_NULL)return -1;
+	n = strlen_c(string1);
+
+	if (string2 == PTR_NULL){
+		if (n==0)
+			return 0;
+		else
+			return -1;
+	}
+
 	n=0;
 	while((c1!=0)&&(c2!=0))
 	{
@@ -426,6 +507,10 @@ OS_API_C_FUNC(int)  strncat_c(char *string,const char *src_string,size_t max)
 {
 	unsigned int		n;
 	char	c1 = '0', c2 = '0';
+
+	if (string1 == PTR_NULL)return -1;
+	if (string2 == PTR_NULL)return 1;
+	
 
 	n=0;
 	while((c1!=0)&&(c2!=0))
@@ -581,7 +666,7 @@ OS_API_C_FUNC(int) isdigit_c(int c)
 }
 OS_API_C_FUNC(int) isxdigit_c(int c)
 {
-
+	c = toupper_c(c);
 	  return ((c >= '0' && c <= '9')||(c >= 'A' && c <= 'F'));
 }
 
@@ -1147,4 +1232,9 @@ OS_API_C_FUNC(void) store_bigendian(unsigned char *x, uint64_t u)
 	x[2] = u; u >>= 8;
 	x[1] = u; u >>= 8;
 	x[0] = u;
+}
+
+OS_API_C_FUNC(void) dtoll_c(double dAmount, uint64_t *nAmount)
+{
+	(*nAmount) = dAmount;
 }

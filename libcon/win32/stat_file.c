@@ -1,4 +1,4 @@
-//copyright iadix 2016
+//copyright antoine bentue-ferrer 2016
 #define LIBC_API C_EXPORT
 
 
@@ -14,6 +14,7 @@
 #include <time.h>
 #include <direct.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <io.h>
 
 
@@ -22,23 +23,29 @@
 #include "shlobj.h"
 
 char path_sep='\\';
-struct string log_file_name = { (char*)PTR_INVALID,0,0 };
-struct string home_path = { (char*)PTR_INVALID,0,0 };
-struct string exe_path = { (char*)PTR_INVALID,0,0 };
-unsigned int running = 1;
-struct tm tmtime = { 0xCD };
+struct string log_file_name = { PTR_INVALID,0,0};
+struct string lck_file_name = { PTR_INVALID,0,0 };
+struct string home_path		= { PTR_INVALID,0,0};
+struct string exe_path		= { PTR_INVALID,0,0};
+HANDLE		  lockFile		= PTR_INVALID;
+unsigned int running		= 1;
+struct tm tmtime			= { 0xCD };
+
+
 struct thread
 {
 	thread_func_ptr		func;
 	mem_zone_ref		params;
+	mem_ptr				stack;
 	unsigned int		status;
 	unsigned int		tree_area_id;
 	unsigned int		mem_area_id;
 	DWORD				h;
+	HANDLE				th;
 };
 
 
-struct thread threads[16] = { PTR_INVALID };
+struct thread threads[32] = { PTR_INVALID };
 
 
 OS_API_C_FUNC(int) set_mem_exe(mem_zone_ref_ptr zone)
@@ -272,7 +279,95 @@ OS_API_C_FUNC(int) get_file_to_memstream(const char *path, mem_stream *stream)
 
 	return (int)len;
 }
+
+
 OS_API_C_FUNC(int) get_file(const char *path, unsigned char **data, size_t *data_len)
+{
+	HANDLE hFile;
+	size_t len;
+
+	if (path == PTR_NULL)return 0;
+
+	if ((hFile = CreateFile(path, FILE_READ_DATA|FILE_READ_ATTRIBUTES, 0, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0)) == INVALID_HANDLE_VALUE)
+	{
+		struct string t;
+		clone_string		(&t, &exe_path);
+		cat_cstring_p		(&t, path);
+		hFile = CreateFile	(t.str, FILE_READ_DATA|FILE_READ_ATTRIBUTES, 0, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
+		free_string(&t);
+		if (hFile == INVALID_HANDLE_VALUE)
+		{
+			*data_len = 0;
+			return -1;
+		}
+	}
+	
+	(*data_len) = GetFileSize(hFile, NULL);
+
+	if ((*data_len)>0)
+	{
+		(*data) = malloc_c((*data_len) + 1);
+		if ((*data) != PTR_NULL)
+		{
+			SetFilePointer	(hFile, 0, 0, FILE_BEGIN);
+			ReadFile		(hFile, (*data), (*data_len), &len, PTR_NULL);
+			(*data)[*data_len] = 0;
+		}
+		else
+			len = 0;
+	}
+	else
+		len = 0;
+	CloseHandle	(hFile);
+
+	return (int)len;
+}
+
+
+OS_API_C_FUNC(int) get_file_chunk(const char *path, size_t ofset, unsigned char **data, size_t *data_len)
+{
+	HANDLE hFile;
+	size_t len,filesize;
+
+	if ((hFile = CreateFile(path, FILE_READ_DATA|FILE_READ_ATTRIBUTES, 0, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0)) == INVALID_HANDLE_VALUE)
+	{
+		struct string t;
+		clone_string		(&t, &exe_path);
+		cat_cstring_p		(&t, path);
+		hFile = CreateFile	(t.str, FILE_READ_DATA|FILE_READ_ATTRIBUTES, 0, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
+		free_string(&t);
+		if (hFile == INVALID_HANDLE_VALUE)
+		{
+			*data_len = 0;
+			return -1;
+		}
+	}
+	len		 = 0;
+	filesize = GetFileSize(hFile, NULL);
+
+	if (filesize>=(ofset+4))
+	{
+		unsigned int	chunk_size;
+		SetFilePointer	(hFile, ofset, 0, FILE_BEGIN);
+		ReadFile		(hFile, &chunk_size, 4, &len, PTR_NULL);
+
+		if (filesize>=(ofset+4+chunk_size))
+		{
+			(*data_len)	= chunk_size;
+			(*data)		= (unsigned char *)malloc_c( (*data_len) + 1);
+			if ((*data) != PTR_NULL)
+			{
+				ReadFile		(hFile, (*data), (*data_len), &len, PTR_NULL);
+				(*data)[*data_len] = 0;
+			}
+		}
+	}
+	CloseHandle	(hFile);
+	return (int)len;
+}
+
+
+OS_API_C_FUNC(int) get_file_len(const char *path, size_t size, unsigned char **data, size_t *data_len)
 {
 	HANDLE hFile;
 	size_t len;
@@ -295,6 +390,9 @@ OS_API_C_FUNC(int) get_file(const char *path, unsigned char **data, size_t *data
 
 	if ((*data_len)>0)
 	{
+		if((*data_len)>size)
+			(*data_len)=size;
+
 		(*data) = malloc_c((*data_len) + 1);
 		if ((*data) != PTR_NULL)
 		{
@@ -343,7 +441,7 @@ OS_API_C_FUNC(int) put_file(const char *path, void *data, size_t data_len)
 	HANDLE		hFile;
 	size_t		len;
 
-	if ((hFile = CreateFile(path, GENERIC_WRITE, 0, 0, CREATE_ALWAYS, FILE_FLAG_BACKUP_SEMANTICS, 0)) == INVALID_HANDLE_VALUE)
+	if ((hFile = CreateFile(path, GENERIC_WRITE, 0, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0)) == INVALID_HANDLE_VALUE)
 		return 0;
 
 	if (data_len > 0)
@@ -352,7 +450,7 @@ OS_API_C_FUNC(int) put_file(const char *path, void *data, size_t data_len)
 		len = 1;
 
 	CloseHandle(hFile);
-	return (len>0) ? 1 : 0;
+	return len;
 
 }
 OS_API_C_FUNC(int) append_file(const char *path, const void *data, size_t data_len)
@@ -361,11 +459,14 @@ OS_API_C_FUNC(int) append_file(const char *path, const void *data, size_t data_l
 	size_t		len;
 
 
-	if ((hFile = CreateFile(path, FILE_APPEND_DATA, 0, 0, OPEN_ALWAYS, FILE_FLAG_BACKUP_SEMANTICS, 0)) == INVALID_HANDLE_VALUE)
+	if ((hFile = CreateFile(path, FILE_APPEND_DATA, FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL)) == INVALID_HANDLE_VALUE)
 		return 0;
 
 	if (data_len > 0)
-		WriteFile(hFile, data, data_len, &len, PTR_NULL);
+	{
+		SetFilePointer		(hFile, 0, NULL, FILE_END);
+		WriteFile			(hFile, data, data_len, &len, PTR_NULL);
+	}
 	else
 		len = 1;
 
@@ -395,7 +496,7 @@ OS_API_C_FUNC(int) truncate_file(const char *path, size_t ofset, const void *dat
 		return 1;
 	}
 
-	if ((hFile = CreateFile(path, GENERIC_WRITE, 0, 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0)) == INVALID_HANDLE_VALUE)
+	if ((hFile = CreateFile(path, GENERIC_WRITE, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0)) == INVALID_HANDLE_VALUE)
 		return 0;
 
 	if (SetFilePointer(hFile, ofset, 0, FILE_BEGIN) == INVALID_SET_FILE_POINTER)
@@ -404,13 +505,14 @@ OS_API_C_FUNC(int) truncate_file(const char *path, size_t ofset, const void *dat
 		return 0;
 	}
 
+	SetEndOfFile(hFile);
+
 	if ((data != PTR_NULL) && (data_len > 0))
 	{
 		WriteFile		(hFile, data, data_len, &len, PTR_NULL);
 	}
 	else
 	{
-		SetEndOfFile(hFile);
 		len = 1;
 	}
 
@@ -451,7 +553,20 @@ OS_API_C_FUNC(int) set_exe_path()
 	return 1;
 }
 
+OS_API_C_FUNC(int) get_exe_path(struct string *outPath)
+{
+	clone_string(outPath, &exe_path);
+	return 1;
+}
 
+OS_API_C_FUNC(int) set_data_dir(const struct string *path,const char *name)
+{
+	clone_string  (&home_path,path);	
+	cat_cstring_p (&home_path, name);
+	create_dir	  (home_path.str);
+	set_cwd		  (home_path.str);
+	return 1;
+}
 OS_API_C_FUNC(int) set_home_path(const char *name)
 {
 	init_string  (&home_path);
@@ -460,11 +575,26 @@ OS_API_C_FUNC(int) set_home_path(const char *name)
 	create_dir	 (home_path.str);
 	set_cwd		 (home_path.str);
 	return 1;
-
 }
+
+OS_API_C_FUNC(int) aquire_lock_file(const char *name)
+{
+	init_string(&lck_file_name);
+	make_string(&lck_file_name, name);
+	cat_cstring(&lck_file_name, ".pid");
+
+	lockFile = CreateFile(lck_file_name.str, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
+	if (lockFile == INVALID_HANDLE_VALUE)
+	{
+		console_print("unable to open lock file \n");
+		return 0;
+	}
+
+	return 1;
+}
+
 OS_API_C_FUNC(int) daemonize(const char *name)
 {
-	set_home_path(name);
 	init_string (&log_file_name);
 	make_string	(&log_file_name,name);
 	cat_cstring	(&log_file_name,".log");
@@ -554,24 +684,83 @@ OS_API_C_FUNC(unsigned int) get_mem_area_id()
 	return threads[cur].mem_area_id;
 }
 
+extern mem_ptr ASM_API_FUNC get_stack_frame_c();
+
 DWORD WINAPI thread_start(void *p)
 {
 	thread_func_ptr		func;
-	struct thread	    *thread;
-	int ret;
+	struct thread	    *mythread;
+	HANDLE				ph;
+	int					ret;
 
-	thread			= (struct thread *)p;
-	thread->h		= GetCurrentThreadId();
-	func			= thread->func;
+	mythread			= (struct thread *)p;
+	mythread->h		= GetCurrentThreadId();
+	ph				= GetCurrentProcess();
+
+
+	DuplicateHandle(ph, GetCurrentThread(), ph, &mythread->th, DUPLICATE_SAME_ACCESS, FALSE, DUPLICATE_SAME_ACCESS);
+
+
+	func			= mythread->func;
 
 	init_default_mem_area(4 * 1024 * 1024);
-	ret = func			 (&thread->params, &thread->status);
+
+	ret = func			 (&mythread->params, &mythread->status);
 	free_mem_area		 (0);
 	
 	return ret;
 }
 
 unsigned int next_ttid=1;
+extern ASM_API_FUNC scan_stack_c(mem_ptr lower, mem_ptr upper, mem_ptr stack_frame, mem_ptr stack);
+
+void scan_threads_stack(mem_ptr lower, mem_ptr upper)
+{
+	unsigned int n = 0;
+	DWORD h;
+
+	h = GetCurrentThreadId();
+	for (n = 1; n < 16; n++)
+	{
+		CONTEXT ctx;
+
+		if (threads[n].h == 0)continue;
+		if (threads[n].h == h)continue;
+		if (SuspendThread(threads[n].th) == -1)
+		{
+			log_output("could not suspend thread \n");
+			continue;
+		}
+
+		memset_c(&ctx, 0, sizeof(CONTEXT));
+
+		ctx.ContextFlags = CONTEXT_ALL;
+		
+		if (GetThreadContext(threads[n].th, &ctx))
+		{ 
+			if ((ctx.Esp != 0) && (ctx.Ebp!=0) && (ctx.Ebp > ctx.Esp))
+				scan_stack_c(lower, upper, ctx.Ebp, ctx.Esp);
+		}
+		else
+		{
+			log_output("could not get thread ctx\n");
+		}
+
+		ResumeThread(threads[n].th);
+		
+	}
+}
+
+void resume_threads()
+{
+	unsigned int n = 0;
+
+	for (n = 0; n < 16; n++)
+	{
+		if (threads[n].h == 0)continue;
+		ResumeThread(threads[n].th);
+	}
+}
 
 
 OS_API_C_FUNC(int) background_func(thread_func_ptr func,mem_zone_ref_ptr params)
@@ -585,9 +774,21 @@ OS_API_C_FUNC(int) background_func(thread_func_ptr func,mem_zone_ref_ptr params)
 
 	copy_zone_ref(&threads[cur].params, params);
 	threads[cur].func = func;
+
 	threads[cur].status = 0;
 
-	newThread	= CreateThread(NULL, 4096, thread_start, &threads[cur], 0, &threadid);
+
+	/*
+	SECURITY_ATTRIBUTES		secs;
+	SECURITY_DESCRIPTOR		desc;
+
+	desc.Sacl
+	desc.Control = THREAD_GET_CONTEXT;
+
+	secs.lpSecurityDescriptor
+	*/
+
+	newThread = CreateThread(NULL, 32 * 1024, thread_start, &threads[cur], 0, &threadid);
 
 	while (threads[cur].status == 0)
 	{
@@ -617,14 +818,14 @@ OS_API_C_FUNC(int)kernel_memory_free_c(mem_ptr ptr)
 {
 	return HeapFree(GetProcessHeap(),0,ptr);
 }
-OS_API_C_FUNC(ctime_t) get_system_time_c()
+OS_API_C_FUNC(void) get_system_time_c(ctime_t *time)
 {
 	SYSTEMTIME st;
 	FILETIME   ft;
 
 	GetSystemTime(&st);
 	SystemTimeToFileTime(&st, &ft);
-	return FileTime_to_Milli(ft);
+	*time=FileTime_to_Milli(ft);
 }
 
 
@@ -642,7 +843,7 @@ OS_API_C_FUNC(ctime_t) get_system_time_c()
  OS_API_C_FUNC(int) log_output(const char *data)
  {
 	console_print(data);
-	if (log_file_name.str != PTR_NULL)
+	if ((log_file_name.str != PTR_NULL) && (log_file_name.str!=PTR_INVALID))
 		append_file(log_file_name.str, data, strlen_c(data));
 	 return 1;
  }
@@ -682,7 +883,6 @@ OS_API_C_FUNC(ctime_t) get_system_time_c()
 	 unsigned int	y, m, d;
 	 SYSTEMTIME st;
 	 FILETIME ft;
-	 struct tm t;
 
 	 y = strtoul_c(s, PTR_NULL, 10);
 	 m = strtoul_c(&s[5], PTR_NULL, 10);
@@ -694,7 +894,7 @@ OS_API_C_FUNC(ctime_t) get_system_time_c()
 	 st.wDayOfWeek = 0;
 	 st.wHour = 0;
 	 st.wMinute = 0;
-	 st.wSecond = 0;
+	 st.wSecond = 1;
 	 st.wMilliseconds = 0;
 	 SystemTimeToFileTime(&st, &ft);
 	 return FileTime_to_POSIX(ft);
@@ -737,3 +937,16 @@ OS_API_C_FUNC(int) default_RNG(unsigned char *dest, size_t size)
 	  CryptReleaseContext(prov, 0);
 	  return 1;
 }
+
+
+OS_API_C_FUNC(void) strtod_c(const char *str,double *d)
+{
+	*d = strtod(str, NULL);
+}
+
+OS_API_C_FUNC(void) snooze_c(size_t n)
+{
+	SleepEx(n/1000, 1);
+}
+
+

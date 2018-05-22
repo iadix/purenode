@@ -1,0 +1,148 @@
+<style>
+    .accnt_pw
+    {
+        display:none;
+    }
+    #anon_wallet
+    {
+        display:none;
+    }
+</style>
+<!--=== Wallet ===-->
+<div class="container content">
+  <section>
+  <div class="row">
+      <div class="col-md-2"><label>Units</label></div>
+      <div class="col-md-2">
+          <select onchange="unit = this.options[this.selectedIndex].value; update_blocks(); update_txs(txs, 'tx_list');" style="max-width:120px;" id="units" name="units">
+              <option value="100000000">ADX</option>
+              <option value="100000">mADX</option>
+              <option value="100">µADX</option>
+          </select>
+      </div>
+  </div>
+
+
+  
+  </section>
+
+    <div id="anon_wallet">
+        <section>
+            <h2>anonymous wallet passphrase</h2>
+            <div id="anon_pw_error"></div>
+            <label>password </label><input type="password" id="anon_pw" />
+            <label>timeout</label><input type="text" id="anon_timeout" value="1800" />
+            <input type="button" onclick="set_anon_pw($('#anon_pw').val(), parseInt($('#anon_timeout').val()));" value="set passphrase" />
+            <div id="anon_pw_ok"></div>
+        </section>
+    </div>
+
+
+
+
+
+  <form class="sky-form" id="sky-form" action="#">
+  <!-- Wallet-Form -->
+  <section>
+      <h2 class="heading-md">Manage your wallet</h2>
+
+      <p>Below are the addresses for your account. <br /> <span id="uname"></span>&nbsp;<span id="myaddrhdr"></span></p>
+      <br />
+
+      <div class="row">
+          <div class="col-md-2">
+              <label>account</label>
+          </div>
+          <div class="col-md-4">
+              <select id="my_account" name="my_account" style="display:inline;max-width:120px;" onchange="var value = $(this).val(); if (value.length == 0) { $('#signin').css('display', 'none'); $('#accnt_pw').css('display', 'inline'); $('#account_name').prop('disabled', false); my_addrs = null; update_my_addrs('my_address_list_table'); } else { $('#accnt_pw').css('display', 'block'); select_account(value); get_addrs(value, 'my_address_list_table'); }"></select>
+              <input type="text" size="12" name="account_name" id="account_name" />
+          </div>
+
+      </div>
+      <div id="accnt_pw">
+          <div class="row">
+               <div class="col-md-2"><label>password</label></div><div class="col-md-2"><input size="12" type="password" name="pw" id="pw" /><input type="button" id="signin" name="signin" /></div>
+          </div>
+      </div>
+      <!-- <div id="my_address_list_table"></div>-->
+      <table id="my_address_list_table" class="table table-hover" txdiv="addr_list">
+          <thead><tr><th>label</th><th>balance</th><th>uncomfirmed balance</th></tr></thead>
+          <tbody></tbody>
+      </table>
+  </section>
+  <section>
+      <div id="newaddr">
+          <h3>import</h3>
+          <input type="button" value="create new" onclick="generateKeys();" />
+          <dl class="dl-horizontal">
+              <dt>label</dt>
+              <dd>
+                  <section>
+                      <label class="input">
+                          <b class="tooltip tooltip-bottom-right">Key label</b>
+                          <input size="32" type="text" id="addrlabel" value="" />
+                      </label>
+                  </section>
+              </dd>
+              <dt>address</dt>
+              <dd>
+                  <section>
+                      <label class="input state-disabled">
+                          <b class="tooltip tooltip-bottom-right">public address</b>
+                          <input size="32" type="text" id="pubaddr" value="" disabled="disabled" />
+                      </label>
+                  </section>
+              </dd>
+              <dt>privkey</dt>
+              <dd>
+                  <section>
+                      <label class="input">
+                          <b class="tooltip tooltip-bottom-right">private key</b>
+                          <input size="58" type="text" id="privkey" oninput="newkey(this.value);" value="" /><span style="color:red;" id="prv_key_msg"></span>
+                      </label>
+                  </section>
+              </dd>
+              <dt>secret key : </dt>
+              <dd>
+                  <section>
+                      <label class="input">
+                          <b class="tooltip tooltip-bottom-right">Do not forget this key, we do not own a copy, it is your responsibility to note it somewhere. <br /> You will not be able to withdraw your coins or make any transaction on our website if you loose it, neither sign bounties & get key your reward !</b>
+                          <input type="text" value="" name="imp_key" id="imp_key" /><span style="color:red;" id="imp_key_msg"></span><input type="button" value="import" onclick="import_keys($('#account_name').val(), $('#addrlabel').val(), 'my_address_list_table'); " /><i class="icon-append fa fa-lock"></i>
+                          <span>
+                              Do not forget this key, we do not own a copy, it is your responsibility to note it somewhere. <br /> You will not be able to withdraw your coins or make any transaction on our website if you loose it, neither sign bounties & get key your reward !
+                          </span>
+                      </label>
+                  </section>
+              </dd>
+          </dl>
+          <br />
+      </div>
+  </section>
+  <section>
+      <h2 class="heading-md">Manage your transactions</h2>
+      <div id="my_wallet" class="container">
+          <section>
+              <h3 id="unspentaddr"></h3>
+              <div class="row">
+                  <span id="privAddr"></span><br />
+                  enter your secret :<input type="text" id="viewPrivSecret" /><input type="button" onclick="privKeyAddr(accountName, $('#unspentaddr').html(), $('#viewPrivSecret').val());" value="get private addr" />
+              </div>
+          </section>
+          <section>
+              <div class="row">
+                  <div class="col-md-6">
+                      <h2 id="tab_unspent" onclick="list_unspent($('#unspentaddr').html(),'addr_list');">unspent</h2><h2 id="tab_spent" onclick="list_spent($('#unspentaddr').html());">spent</h2><h2 id="tab_received" onclick="list_recvs($('#unspentaddr').html());">received</h2>
+                      <div class="info">total:<span id="txtotal"></span></div>
+                      <div class="info">showing:<span id="ntx"></span>/<span id="total_tx"></span></div>
+                  </div>
+              </div>
+              <div class="row"><div class="col-md-8"><table id="addr_list" class="table hover"><thead><tr><th>time</th><th>tx</th><th>amount</th><th>nconf</th></tr></thead><tbody></tbody></table></div></div>
+          </section>
+      </div>
+  </section>
+  <!-- End Wallet-Form -->
+</form>
+</div>
+<!--=== End Wallet ===-->
+</div>
+<!--/wrapper-->

@@ -1,4 +1,4 @@
-//copyright iadix 2016
+//copyright antoine bentue-ferrer 2016
 #include <stdio.h>
 #include <string.h>
 #include "coff.h"
@@ -45,14 +45,29 @@ void dump_reloc(PEFile *PE)
 			else
 			{
 				remap_section_idx	=	FindSectionMem		(PE,sec->RemapList[n].base_addr);
-				mem_ofset			=	sec->RemapList[n].base_addr-PE->Sections[remap_section_idx]->SectionHeader.s_vaddr;
-				total_ofset			=	sec->RemapList[n].offset+mem_ofset;
+				
+				if(remap_section_idx == 0xFFFFFFFF)
+				{
+				  printf("section not found:[%d] %x \n",n,sec->RemapList[n].base_addr);
+				}
+				else
+				{
+					mem_ofset			=	sec->RemapList[n].base_addr-PE->Sections[remap_section_idx]->SectionHeader.s_vaddr;
+					total_ofset			=	sec->RemapList[n].offset+mem_ofset;
+					
+					if(sec->RemapList[n].offset>sec->SectionDataLen)
+					{
+						printf("offset too far \n");
+					}
+					else
+					{
+						printf("section idx: '%d' mem ofset %d total ofset %d \n",remap_section_idx,mem_ofset,total_ofset);
 
-				printf("section idx: '%d' mem ofset %d total ofset %d \n",remap_section_idx,mem_ofset,total_ofset);
-
-				addr		=	&sec->Data[total_ofset];
-				value		=	*addr;
-				printf("section : '%s' (0x%8.8x) [0x%8.8x + %d] = %8.8x (%8.8x) \n",sec->Name,sec->RemapList[n].base_addr,sec->Data,sec->RemapList[n].offset,value,PE->OptionalHeader.ImageBase);
+						addr		=	&sec->Data[total_ofset];
+						value		=	*addr;
+						printf("section : '%s' (0x%8.8x) [0x%8.8x + %d] = %8.8x (%8.8x) \n",sec->Name,sec->RemapList[n].base_addr,sec->Data,sec->RemapList[n].offset,value,PE->OptionalHeader.ImageBase);
+					}		    
+			    }
 			}
 
 		}
@@ -484,13 +499,9 @@ void WriteTPOFile(PEFile *PE,char *file_name)
 			{	
 				unsigned int *addr;
 				unsigned int value;
-				unsigned int *target_mem_addr;
 				unsigned int target_r_addr;
 
 				unsigned int target_sec_id;
-				unsigned int target_data_ptr;
-				unsigned int target_data_ofset;
-
 
 				unsigned int mem_ofset;
 				unsigned int total_ofset;
@@ -503,6 +514,8 @@ void WriteTPOFile(PEFile *PE,char *file_name)
 				else
 				{
 					remap_section_idx	=	FindSectionMem		(PE,sec->RemapList[n].base_addr);
+					if(remap_section_idx == 0xFFFFFFFF)break;
+					
 					mem_ofset			=	sec->RemapList[n].base_addr-PE->Sections[remap_section_idx]->v_addr;
 					total_ofset			=	sec->RemapList[n].offset+mem_ofset;
 
@@ -572,8 +585,6 @@ void WriteTPOFile(PEFile *PE,char *file_name)
 
 		for(n=0;n<sec->num_sec_exp_name;n++)
 		{	
-			int ofset;
-
 			if(!strcmp(sec->ExportsName[n].func_name,"mod_name_deco_type"))
 			{
 				mod_deco_type	=	*((unsigned int	*)(sec->Data+sec->ExportsName[n].addr_reloc));
@@ -598,7 +609,6 @@ void WriteTPOFile(PEFile *PE,char *file_name)
 		if((stricmp(sec->Name,".reloc"))&&(sec->SectionDataLen>0))
 		{
 			unsigned int	file_pos;
-			unsigned int	align;
 			unsigned int	crc32;
 			unsigned int	crc32_section;
 			unsigned int	section_flags;
@@ -767,6 +777,8 @@ void WriteTPOFile(PEFile *PE,char *file_name)
 
 
 				remap_section_idx	=	FindSectionMem		(PE,sec->RemapList[n].base_addr);
+				if(remap_section_idx == 0xFFFFFFFF)continue;
+				
 				mem_ofset			=	sec->RemapList[n].base_addr-PE->Sections[remap_section_idx]->v_addr;
 
 				if(sec->RemapList[n].type==2)

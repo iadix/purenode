@@ -1,0 +1,126 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Fichiers Sources">
+      <UniqueIdentifier>{53ab53b0-978a-4718-be85-2452dd0f1610}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Fichiers Sources\html">
+      <UniqueIdentifier>{8a1623db-6275-4f01-8e64-02b7d67a412a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Fichiers Sources\pages">
+      <UniqueIdentifier>{3f343fb8-de06-4be8-a0a7-8778153232c8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Fichiers Sources\js">
+      <UniqueIdentifier>{74af90fe-7638-4758-9f21-060e2aae7e95}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Fichiers Sources\html\nodix">
+      <UniqueIdentifier>{7d7d31d2-e9fa-4fec-9623-880ca160dca0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Fichiers Sources\html\site">
+      <UniqueIdentifier>{c70a0f75-94f1-4978-b12e-e57e26208076}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Fichiers Sources\html\site\framework">
+      <UniqueIdentifier>{2e69bdf2-cb29-41ab-a14b-dd9de107f522}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Fichiers Sources\html\site\blockchain">
+      <UniqueIdentifier>{a649ba67-0710-44c8-a723-6620cbe361ef}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Fichiers Sources\html\site\webapp">
+      <UniqueIdentifier>{ab5fe161-af9d-4c86-8c8b-594034058847}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.c">
+      <Filter>Fichiers Sources</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\export\web\index.site">
+      <Filter>Fichiers Sources\pages</Filter>
+    </None>
+    <None Include="..\export\web\nodix.site">
+      <Filter>Fichiers Sources\pages</Filter>
+    </None>
+    <None Include="..\export\web\site\footer.html">
+      <Filter>Fichiers Sources\html\site</Filter>
+    </None>
+    <None Include="..\export\web\site\index.html">
+      <Filter>Fichiers Sources\html\site</Filter>
+    </None>
+    <None Include="..\export\web\site\menu.html">
+      <Filter>Fichiers Sources\html\site</Filter>
+    </None>
+    <None Include="..\export\web\site\framework\index.html">
+      <Filter>Fichiers Sources\html\site\framework</Filter>
+    </None>
+    <None Include="..\export\web\site\framework\menu.html">
+      <Filter>Fichiers Sources\html\site\framework</Filter>
+    </None>
+    <None Include="..\export\web\site\blockchain\block_explorer.html">
+      <Filter>Fichiers Sources\html\site\blockchain</Filter>
+    </None>
+    <None Include="..\export\web\site\blockchain\index.html">
+      <Filter>Fichiers Sources\html\site\blockchain</Filter>
+    </None>
+    <None Include="..\export\web\site\blockchain\menu.html">
+      <Filter>Fichiers Sources\html\site\blockchain</Filter>
+    </None>
+    <None Include="..\export\web\site\blockchain\wallet.html">
+      <Filter>Fichiers Sources\html\site\blockchain</Filter>
+    </None>
+    <None Include="..\export\web\site\webapp\index.html">
+      <Filter>Fichiers Sources\html\site\webapp</Filter>
+    </None>
+    <None Include="..\export\web\site\webapp\menu.html">
+      <Filter>Fichiers Sources\html\site\webapp</Filter>
+    </None>
+    <None Include="..\export\nodix.node">
+      <Filter>Fichiers Sources</Filter>
+    </None>
+    <None Include="..\export\web\assets\js\blocks.js">
+      <Filter>Fichiers Sources\js</Filter>
+    </None>
+    <None Include="..\export\web\assets\js\keys.js">
+      <Filter>Fichiers Sources\js</Filter>
+    </None>
+    <None Include="..\export\web\assets\js\custom.js">
+      <Filter>Fichiers Sources\js</Filter>
+    </None>
+    <None Include="..\export\web\templates\address.html">
+      <Filter>Fichiers Sources\html\nodix</Filter>
+    </None>
+    <None Include="..\export\web\templates\block.html">
+      <Filter>Fichiers Sources\html\nodix</Filter>
+    </None>
+    <None Include="..\export\web\templates\blocks.html">
+      <Filter>Fichiers Sources\html\nodix</Filter>
+    </None>
+    <None Include="..\export\web\templates\footer.html">
+      <Filter>Fichiers Sources\html\nodix</Filter>
+    </None>
+    <None Include="..\export\web\templates\menu.html">
+      <Filter>Fichiers Sources\html\nodix</Filter>
+    </None>
+    <None Include="..\export\web\templates\node.html">
+      <Filter>Fichiers Sources\html\nodix</Filter>
+    </None>
+    <None Include="..\export\web\templates\services.html">
+      <Filter>Fichiers Sources\html\nodix</Filter>
+    </None>
+    <None Include="..\export\web\templates\staking.html">
+      <Filter>Fichiers Sources\html\nodix</Filter>
+    </None>
+    <None Include="..\export\web\templates\transaction.html">
+      <Filter>Fichiers Sources\html\nodix</Filter>
+    </None>
+    <None Include="..\export\web\templates\tx.html">
+      <Filter>Fichiers Sources\html\nodix</Filter>
+    </None>
+    <None Include="..\export\web\templates\wallet.html">
+      <Filter>Fichiers Sources\html\nodix</Filter>
+    </None>
+    <None Include="..\export\web\site\articles\libcon_en.html">
+      <Filter>Fichiers Sources\html\site\framework</Filter>
+    </None>
+  </ItemGroup>
+</Project>

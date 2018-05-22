@@ -1,0 +1,61 @@
+/* Add here all your css styles (customizations) */
+
+#my_wallet h2
+{
+	display:inline-block;
+	margin:8px;
+	padding:4px;
+	border:1px solid #000;
+}
+
+#addr_list th {
+	border-bottom: 1px solid;
+	padding:2px;
+}  
+
+#addr_list td {
+    border-bottom: 1px solid #000;
+	padding:2px;
+}
+
+
+.my_wallet_addr
+{
+	cursor:pointer;
+}
+
+.infos
+{
+	font-size:0.8em;
+	font-style:italic;
+	font-weight:lighter;
+
+}
+
+.sky-form td
+{
+	vertical-align:top;
+}
+
+.short-field
+{
+    width:80px;
+    max-width:80px;
+    overflow:hidden;
+}
+#article_list_table td,th
+{
+   padding:4px;
+}
+.error
+{
+  color:red;
+}
+.checked 
+{
+  border:1px solid #0F0;
+}
+.invalid
+{
+  border:1px solid #F00;
+}

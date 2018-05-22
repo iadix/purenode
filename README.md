@@ -1,3 +1,8 @@
+More informations at
+
+http://nodix.eu:16820/index.site
+
+
 Prerequisites:
 
 install nasm
@@ -12,10 +17,10 @@ For building on 64 bits linux, you need gcc multilib to build and link 32 bit el
 Building instruction :
 
 
-git clone https://github.com/iadix/purenode
+git clone https://github.com/NodixBlockchain/nodix
 
 
-cd purenode
+cd nodix
 
 
 Libcon and launcher:
@@ -30,12 +35,12 @@ Modules: (optional)
 Running:
 
 	cd export
-	./launcher (use ~/purenode)
+	./launcher (use ~/nodix)
 
 
 No dependencies, all is included.
 
-	purenode/export# ldd libcon.so 
+	nodix/export# ldd libcon.so 
 
         linux-gate.so.1 (0xf772d000)
         libm.so.6 => /lib/i386-linux-gnu/libm.so.6 (0xf7651000)
@@ -43,7 +48,7 @@ No dependencies, all is included.
         /lib/ld-linux.so.2 (0x565ed000)
 
 
-	purenode/export# ldd launcher
+	nodix/export# ldd launcher
 
 	linux-gate.so.1 (0xf77e6000)
 	libc.so.6 => /lib/i386-linux-gnu/libc.so.6 (0xf760d000)

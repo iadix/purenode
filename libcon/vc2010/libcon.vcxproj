@@ -43,17 +43,17 @@
     <IntDir>$(Configuration)\</IntDir>
     <GenerateManifest>false</GenerateManifest>
     <TargetName>$(ProjectName)_d</TargetName>
-    <ExecutablePath>C:\Users\h0bby1\AppData\Local\NASM;$(ExecutablePath)</ExecutablePath>
+    <ExecutablePath>C:\Program Files\NASM;$(ExecutablePath)</ExecutablePath>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(SolutionDir)export\</OutDir>
     <IntDir>$(Configuration)\</IntDir>
-    <ExecutablePath>C:\Users\h0bby1\AppData\Local\NASM;$(VCInstallDir)bin;$(WindowsSdkDir)bin\NETFX 4.0 Tools;$(WindowsSdkDir)bin;$(VSInstallDir)Common7\Tools\bin;$(VSInstallDir)Common7\tools;$(VSInstallDir)Common7\ide;$(ProgramFiles)\HTML Help Workshop;$(FrameworkSDKDir)\bin;$(MSBuildToolsPath32);$(VSInstallDir);$(SystemRoot)\SysWow64;$(FxCopDir);$(PATH);</ExecutablePath>
+    <ExecutablePath>C:\Program Files\NASM;$(ExecutablePath);$(VCInstallDir)bin;$(WindowsSdkDir)bin\NETFX 4.0 Tools;$(WindowsSdkDir)bin;$(VSInstallDir)Common7\Tools\bin;$(VSInstallDir)Common7\tools;$(VSInstallDir)Common7\ide;$(ProgramFiles)\HTML Help Workshop;$(FrameworkSDKDir)\bin;$(MSBuildToolsPath32);$(VSInstallDir);$(SystemRoot)\SysWow64;$(FxCopDir);$(PATH);</ExecutablePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <Optimization>MaxSpeed</Optimization>
+      <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>..\win32\include;..\expat\xmltok;..\expat\xmlparse;..\include\;..\zlib-1.2.8;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;IMP_API=;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
@@ -86,6 +86,7 @@
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <Optimization>Disabled</Optimization>
       <StructMemberAlignment>1Byte</StructMemberAlignment>
+      <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
       <AdditionalDependencies>Ws2_32.lib;Shlwapi.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -105,11 +106,24 @@
     <ClCompile Include="..\base\utf.c">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsC</CompileAs>
     </ClCompile>
+    <ClCompile Include="..\dozip.c" />
     <ClCompile Include="..\exp.c" />
     <ClCompile Include="..\expat\xmlparse\xmlparse.c" />
     <ClCompile Include="..\expat\xmltok\xmlrole.c" />
     <ClCompile Include="..\expat\xmltok\xmltok.c" />
     <ClCompile Include="..\mem_stream.c" />
+    <ClCompile Include="..\minizip-master\ioapi.c">
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NOCRYPT;WIN32;_DEBUG;_LIB;IMP_API=;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NOCRYPT;WIN32;NDEBUG;_LIB;IMP_API=;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="..\minizip-master\ioapi_mem.c">
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NOCRYPT;WIN32;_DEBUG;_LIB;IMP_API=;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NOCRYPT;WIN32;NDEBUG;_LIB;IMP_API=;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="..\minizip-master\zip.c">
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NOCRYPT;WIN32;_DEBUG;_LIB;IMP_API=;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NOCRYPT;WIN32;NDEBUG;_LIB;IMP_API=;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
     <ClCompile Include="..\strs.c" />
     <ClCompile Include="..\tpo_mod.c" />
     <ClCompile Include="..\unix\connect.c">

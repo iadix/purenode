@@ -9,3 +9,4 @@ struct pnpgw
 
 LIBBASE_API int		C_API_FUNC forwardPort			(struct string *port_str);
 LIBBASE_API int		C_API_FUNC broadcastDiscovery	();
+LIBBASE_API void	C_API_FUNC init_upnp			();

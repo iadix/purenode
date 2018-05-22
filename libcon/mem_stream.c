@@ -60,7 +60,12 @@ OS_API_C_FUNC(void) mem_stream_close(mem_stream *stream)
 	stream->current_ptr		=0;
 }
 
-OS_API_C_FUNC(size_t)	mem_stream_write(mem_stream *stream,char *data,size_t len)
+OS_API_C_FUNC(size_t) mem_stream_get_pos(mem_stream *stream)
+{
+	return mem_sub(get_zone_ptr(&stream->data, stream->buf_ofs), stream->current_ptr);
+}
+
+OS_API_C_FUNC(size_t)	mem_stream_write(mem_stream *stream,unsigned char *data,size_t len)
 {
 	if(realloc_zone (&stream->data,(stream->current_ptr+stream->buf_ofs+len))<0)return 0;
 	memcpy_c(get_zone_ptr(&stream->data,stream->current_ptr+stream->buf_ofs),data,len);
@@ -70,6 +75,28 @@ OS_API_C_FUNC(size_t)	mem_stream_write(mem_stream *stream,char *data,size_t len)
 }
 
 
+OS_API_C_FUNC(size_t)	mem_stream_write_8(mem_stream *stream, unsigned char data)
+{
+	if (realloc_zone(&stream->data, (stream->current_ptr + stream->buf_ofs + 1))<0)return 0;
+	*((unsigned char *)(get_zone_ptr(&stream->data, stream->current_ptr + stream->buf_ofs))) = data;
+	stream->current_ptr ++;
+	return 1;
+}
+
+OS_API_C_FUNC(size_t)	mem_stream_write_16(mem_stream *stream, unsigned short data)
+{
+	if (realloc_zone(&stream->data, (stream->current_ptr + stream->buf_ofs + 2))<0)return 0;
+	*((unsigned short *)(get_zone_ptr(&stream->data, stream->current_ptr + stream->buf_ofs))) = data;
+	stream->current_ptr+=2;
+	return 1;
+}
+OS_API_C_FUNC(size_t)	mem_stream_write_32(mem_stream *stream, unsigned int data)
+{
+	if (realloc_zone(&stream->data, (stream->current_ptr + stream->buf_ofs + 4))<0)return 0;
+	*((unsigned int *)(get_zone_ptr(&stream->data, stream->current_ptr + stream->buf_ofs))) = data;
+	stream->current_ptr += 4;
+	return 1;
+}
 OS_API_C_FUNC(size_t)	mem_stream_read		(mem_stream *stream,char *data,size_t len)
 {
 	mem_size		left;
